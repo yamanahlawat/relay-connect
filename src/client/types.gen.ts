@@ -4,98 +4,98 @@
  * Schema for token usage and costs
  */
 export type ChatUsage = {
-    input_tokens: number;
-    output_tokens: number;
-    input_cost: number;
-    output_cost: number;
-    /**
-     * Total cost (input + output)
-     */
-    total_cost: number;
+  input_tokens: number;
+  output_tokens: number;
+  input_cost: number;
+  output_cost: number;
+  /**
+   * Total cost (input + output)
+   */
+  total_cost: number;
 };
 
 /**
  * Parameters for completion generation
  */
 export type CompletionParams = {
-    max_tokens?: number;
-    temperature?: number;
-    top_p?: number;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
 };
 
 /**
  * Schema for chat request
  */
 export type CompletionRequest = {
-    provider_id: string;
-    llm_model_id: string;
-    prompt: string;
-    parent_id?: (string | null);
-    model_params?: CompletionParams;
+  provider_id: string;
+  llm_model_id: string;
+  prompt: string;
+  parent_id?: string | null;
+  model_params?: CompletionParams;
 };
 
 /**
  * Schema for chat response
  */
 export type CompletionResponse = {
-    content: string;
-    model: string;
-    provider: string;
-    usage: ChatUsage;
+  content: string;
+  model: string;
+  provider: string;
+  usage: ChatUsage;
 };
 
 /**
  * Details for provider-specific errors
  */
 export type ErrorDetail = {
-    code: string;
-    message: string;
-    provider: string;
-    details?: (unknown | null);
+  code: string;
+  message: string;
+  provider: string;
+  details?: unknown | null;
 };
 
 /**
  * Standard error response model for OpenAPI documentation
  */
 export type ErrorResponseModel = {
-    detail: (string | ErrorDetail);
+  detail: string | ErrorDetail;
 };
 
 export type HTTPValidationError = {
-    detail?: Array<ValidationError>;
+  detail?: Array<ValidationError>;
 };
 
 /**
  * Schema for creating a new message
  */
 export type MessageCreate = {
-    content: string;
-    role?: MessageRole;
-    status?: MessageStatus;
-    parent_id?: (string | null);
-    usage?: MessageUsage;
-    extra_data?: {
-        [key: string]: unknown;
-    };
+  content: string;
+  role?: MessageRole;
+  status?: MessageStatus;
+  parent_id?: string | null;
+  usage?: MessageUsage;
+  extra_data?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Schema for reading a message
  */
 export type MessageRead = {
-    id: string;
-    session_id: string;
-    role: MessageRole;
-    content: string;
-    status: MessageStatus;
-    parent_id?: (string | null);
-    created_at: string;
-    usage?: (ChatUsage | null);
-    error_code?: (string | null);
-    error_message?: (string | null);
-    extra_data: {
-        [key: string]: unknown;
-    };
+  id: string;
+  session_id: string;
+  role: MessageRole;
+  content: string;
+  status: MessageStatus;
+  parent_id?: string | null;
+  created_at: string;
+  usage?: ChatUsage | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  extra_data: {
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -112,105 +112,105 @@ export type MessageStatus = 'pending' | 'processing' | 'completed' | 'failed';
  * Schema for updating a message
  */
 export type MessageUpdate = {
-    content?: (string | null);
-    status?: (MessageStatus | null);
-    extra_data?: ({
+  content?: string | null;
+  status?: MessageStatus | null;
+  extra_data?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Schema for message usage metrics
  */
 export type MessageUsage = {
-    input_tokens?: number;
-    output_tokens?: number;
-    input_cost?: number;
-    output_cost?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  input_cost?: number;
+  output_cost?: number;
 };
 
 /**
  * Schema for creating a new model.
  */
 export type ModelCreate = {
-    name: string;
-    is_active?: boolean;
-    max_tokens?: number;
-    temperature?: number;
-    top_p?: number;
-    config?: {
-        [key: string]: unknown;
-    };
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
-    provider_id: string;
+  name: string;
+  is_active?: boolean;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  config?: {
+    [key: string]: unknown;
+  };
+  input_cost_per_token?: number;
+  output_cost_per_token?: number;
+  provider_id: string;
 };
 
 /**
  * Schema for reading a model
  */
 export type ModelRead = {
-    name: string;
-    is_active?: boolean;
-    max_tokens?: number;
-    temperature?: number;
-    top_p?: number;
-    config?: {
-        [key: string]: unknown;
-    };
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
-    id: string;
-    provider_id: string;
-    created_at: string;
-    updated_at: string;
+  name: string;
+  is_active?: boolean;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  config?: {
+    [key: string]: unknown;
+  };
+  input_cost_per_token?: number;
+  output_cost_per_token?: number;
+  id: string;
+  provider_id: string;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Schema for updating a model.
  */
 export type ModelUpdate = {
-    name?: (string | null);
-    is_active?: (boolean | null);
-    max_tokens?: (number | null);
-    temperature?: (number | null);
-    top_p?: (number | null);
-    config?: ({
+  name?: string | null;
+  is_active?: boolean | null;
+  max_tokens?: number | null;
+  temperature?: number | null;
+  top_p?: number | null;
+  config?: {
     [key: string]: unknown;
-} | null);
-    input_cost_per_token?: (number | null);
-    output_cost_per_token?: (number | null);
+  } | null;
+  input_cost_per_token?: number | null;
+  output_cost_per_token?: number | null;
 };
 
 /**
  * Schema for creating a new provider.
  */
 export type ProviderCreate = {
-    name: string;
-    type: ProviderType;
-    is_active?: boolean;
-    base_url?: (string | null);
-    config?: {
-        [key: string]: unknown;
-    };
-    api_key?: (string | null);
+  name: string;
+  type: ProviderType;
+  is_active?: boolean;
+  base_url?: string | null;
+  config?: {
+    [key: string]: unknown;
+  };
+  api_key?: string | null;
 };
 
 /**
  * Schema for reading a provider.
  */
 export type ProviderRead = {
-    name: string;
-    type: ProviderType;
-    is_active?: boolean;
-    base_url?: (string | null);
-    config?: {
-        [key: string]: unknown;
-    };
-    id: string;
-    api_key?: (string | null);
-    created_at: string;
-    updated_at: string;
+  name: string;
+  type: ProviderType;
+  is_active?: boolean;
+  base_url?: string | null;
+  config?: {
+    [key: string]: unknown;
+  };
+  id: string;
+  api_key?: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
@@ -222,46 +222,46 @@ export type ProviderType = 'anthropic' | 'openai' | 'ollama' | 'custom';
  * Schema for updating a provider.
  */
 export type ProviderUpdate = {
-    name?: (string | null);
-    type?: (ProviderType | null);
-    is_active?: (boolean | null);
-    api_key?: (string | null);
-    base_url?: (string | null);
-    config?: ({
+  name?: string | null;
+  type?: ProviderType | null;
+  is_active?: boolean | null;
+  api_key?: string | null;
+  base_url?: string | null;
+  config?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Schema for creating a new chat session
  */
 export type SessionCreate = {
-    title: string;
-    system_context?: (string | null);
-    provider_id: string;
-    llm_model_id: string;
-    extra_data?: {
-        [key: string]: unknown;
-    };
+  title: string;
+  system_context?: string | null;
+  provider_id: string;
+  llm_model_id: string;
+  extra_data?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Schema for reading a chat session
  */
 export type SessionRead = {
-    id: string;
-    title: string;
-    status: SessionStatus;
-    system_context: (string | null);
-    provider_id: string;
-    llm_model_id: string;
-    created_at: string;
-    updated_at: string;
-    last_message_at: (string | null);
-    usage?: (ChatUsage | null);
-    extra_data: {
-        [key: string]: unknown;
-    };
+  id: string;
+  title: string;
+  status: SessionStatus;
+  system_context: string | null;
+  provider_id: string;
+  llm_model_id: string;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
+  usage?: ChatUsage | null;
+  extra_data: {
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -273,253 +273,255 @@ export type SessionStatus = 'active' | 'archived' | 'deleted';
  * Schema for updating a chat session
  */
 export type SessionUpdate = {
-    title?: (string | null);
-    status?: (SessionStatus | null);
-    system_context?: (string | null);
-    extra_data?: ({
+  title?: string | null;
+  status?: SessionStatus | null;
+  system_context?: string | null;
+  extra_data?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 export type ValidationError = {
-    loc: Array<(string | number)>;
-    msg: string;
-    type: string;
+  loc: Array<string | number>;
+  msg: string;
+  type: string;
 };
 
 export type CreateProviderApiV1ProvidersPostData = {
-    body: ProviderCreate;
+  body: ProviderCreate;
 };
 
-export type CreateProviderApiV1ProvidersPostResponse = (ProviderRead);
+export type CreateProviderApiV1ProvidersPostResponse = ProviderRead;
 
-export type CreateProviderApiV1ProvidersPostError = (ErrorResponseModel | HTTPValidationError);
+export type CreateProviderApiV1ProvidersPostError = ErrorResponseModel | HTTPValidationError;
 
 export type ListProvidersApiV1ProvidersGetData = {
-    query?: {
-        limit?: number;
-        offset?: number;
-    };
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
 };
 
-export type ListProvidersApiV1ProvidersGetResponse = (Array<ProviderRead>);
+export type ListProvidersApiV1ProvidersGetResponse = Array<ProviderRead>;
 
-export type ListProvidersApiV1ProvidersGetError = (HTTPValidationError);
+export type ListProvidersApiV1ProvidersGetError = HTTPValidationError;
 
 export type GetProviderApiV1ProvidersProviderIdGetData = {
-    path: {
-        provider_id: string;
-    };
+  path: {
+    provider_id: string;
+  };
 };
 
-export type GetProviderApiV1ProvidersProviderIdGetResponse = (ProviderRead);
+export type GetProviderApiV1ProvidersProviderIdGetResponse = ProviderRead;
 
-export type GetProviderApiV1ProvidersProviderIdGetError = (ErrorResponseModel | HTTPValidationError);
+export type GetProviderApiV1ProvidersProviderIdGetError = ErrorResponseModel | HTTPValidationError;
 
 export type UpdateProviderApiV1ProvidersProviderIdPatchData = {
-    body: ProviderUpdate;
-    path: {
-        provider_id: string;
-    };
+  body: ProviderUpdate;
+  path: {
+    provider_id: string;
+  };
 };
 
-export type UpdateProviderApiV1ProvidersProviderIdPatchResponse = (ProviderRead);
+export type UpdateProviderApiV1ProvidersProviderIdPatchResponse = ProviderRead;
 
-export type UpdateProviderApiV1ProvidersProviderIdPatchError = (ErrorResponseModel | HTTPValidationError);
+export type UpdateProviderApiV1ProvidersProviderIdPatchError = ErrorResponseModel | HTTPValidationError;
 
 export type DeleteProviderApiV1ProvidersProviderIdDeleteData = {
-    path: {
-        provider_id: string;
-    };
+  path: {
+    provider_id: string;
+  };
 };
 
-export type DeleteProviderApiV1ProvidersProviderIdDeleteResponse = (void);
+export type DeleteProviderApiV1ProvidersProviderIdDeleteResponse = void;
 
-export type DeleteProviderApiV1ProvidersProviderIdDeleteError = (ErrorResponseModel | HTTPValidationError);
+export type DeleteProviderApiV1ProvidersProviderIdDeleteError = ErrorResponseModel | HTTPValidationError;
 
 export type CreateModelApiV1ModelsPostData = {
-    body: ModelCreate;
+  body: ModelCreate;
 };
 
-export type CreateModelApiV1ModelsPostResponse = (ModelRead);
+export type CreateModelApiV1ModelsPostResponse = ModelRead;
 
-export type CreateModelApiV1ModelsPostError = (ErrorResponseModel | HTTPValidationError);
+export type CreateModelApiV1ModelsPostError = ErrorResponseModel | HTTPValidationError;
 
 export type ListModelsApiV1ModelsGetData = {
-    query?: {
-        limit?: number;
-        offset?: number;
-        provider_id?: (string | null);
-    };
+  query?: {
+    limit?: number;
+    offset?: number;
+    provider_id?: string | null;
+  };
 };
 
-export type ListModelsApiV1ModelsGetResponse = (Array<ModelRead>);
+export type ListModelsApiV1ModelsGetResponse = Array<ModelRead>;
 
-export type ListModelsApiV1ModelsGetError = (HTTPValidationError);
+export type ListModelsApiV1ModelsGetError = HTTPValidationError;
 
 export type GetModelApiV1ModelsLlmModelIdGetData = {
-    path: {
-        llm_model_id: string;
-    };
+  path: {
+    llm_model_id: string;
+  };
 };
 
-export type GetModelApiV1ModelsLlmModelIdGetResponse = (ModelRead);
+export type GetModelApiV1ModelsLlmModelIdGetResponse = ModelRead;
 
-export type GetModelApiV1ModelsLlmModelIdGetError = (ErrorResponseModel | HTTPValidationError);
+export type GetModelApiV1ModelsLlmModelIdGetError = ErrorResponseModel | HTTPValidationError;
 
 export type UpdateModelApiV1ModelsLlmModelIdPatchData = {
-    body: ModelUpdate;
-    path: {
-        llm_model_id: string;
-    };
+  body: ModelUpdate;
+  path: {
+    llm_model_id: string;
+  };
 };
 
-export type UpdateModelApiV1ModelsLlmModelIdPatchResponse = (ModelRead);
+export type UpdateModelApiV1ModelsLlmModelIdPatchResponse = ModelRead;
 
-export type UpdateModelApiV1ModelsLlmModelIdPatchError = (ErrorResponseModel | HTTPValidationError);
+export type UpdateModelApiV1ModelsLlmModelIdPatchError = ErrorResponseModel | HTTPValidationError;
 
 export type DeleteModelApiV1ModelsLlmModelIdDeleteData = {
-    path: {
-        llm_model_id: string;
-    };
+  path: {
+    llm_model_id: string;
+  };
 };
 
-export type DeleteModelApiV1ModelsLlmModelIdDeleteResponse = (void);
+export type DeleteModelApiV1ModelsLlmModelIdDeleteResponse = void;
 
-export type DeleteModelApiV1ModelsLlmModelIdDeleteError = (ErrorResponseModel | HTTPValidationError);
+export type DeleteModelApiV1ModelsLlmModelIdDeleteError = ErrorResponseModel | HTTPValidationError;
 
 export type StreamCompletionApiV1ChatCompleteSessionIdMessageIdStreamGetData = {
-    path: {
-        message_id: string;
-        session_id: string;
-    };
-    query?: {
-        max_tokens?: number;
-        temperature?: number;
-        top_p?: number;
-    };
+  path: {
+    message_id: string;
+    session_id: string;
+  };
+  query?: {
+    max_tokens?: number;
+    temperature?: number;
+    top_p?: number;
+  };
 };
 
-export type StreamCompletionApiV1ChatCompleteSessionIdMessageIdStreamGetResponse = (unknown);
+export type StreamCompletionApiV1ChatCompleteSessionIdMessageIdStreamGetResponse = unknown;
 
-export type StreamCompletionApiV1ChatCompleteSessionIdMessageIdStreamGetError = (ErrorResponseModel | HTTPValidationError);
+export type StreamCompletionApiV1ChatCompleteSessionIdMessageIdStreamGetError =
+  | ErrorResponseModel
+  | HTTPValidationError;
 
 export type CompleteApiV1ChatCompleteSessionIdPostData = {
-    body: CompletionRequest;
-    path: {
-        session_id: string;
-    };
+  body: CompletionRequest;
+  path: {
+    session_id: string;
+  };
 };
 
-export type CompleteApiV1ChatCompleteSessionIdPostResponse = (CompletionResponse);
+export type CompleteApiV1ChatCompleteSessionIdPostResponse = CompletionResponse;
 
-export type CompleteApiV1ChatCompleteSessionIdPostError = (ErrorResponseModel | HTTPValidationError);
+export type CompleteApiV1ChatCompleteSessionIdPostError = ErrorResponseModel | HTTPValidationError;
 
 export type CreateChatSessionApiV1SessionsPostData = {
-    body: SessionCreate;
+  body: SessionCreate;
 };
 
-export type CreateChatSessionApiV1SessionsPostResponse = (SessionRead);
+export type CreateChatSessionApiV1SessionsPostResponse = SessionRead;
 
-export type CreateChatSessionApiV1SessionsPostError = (HTTPValidationError);
+export type CreateChatSessionApiV1SessionsPostError = HTTPValidationError;
 
 export type ListChatSessionsApiV1SessionsGetData = {
-    query?: {
-        limit?: number;
-        offset?: number;
-    };
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
 };
 
-export type ListChatSessionsApiV1SessionsGetResponse = (Array<SessionRead>);
+export type ListChatSessionsApiV1SessionsGetResponse = Array<SessionRead>;
 
-export type ListChatSessionsApiV1SessionsGetError = (HTTPValidationError);
+export type ListChatSessionsApiV1SessionsGetError = HTTPValidationError;
 
 export type GetChatSessionApiV1SessionsSessionIdGetData = {
-    path: {
-        session_id: string;
-    };
+  path: {
+    session_id: string;
+  };
 };
 
-export type GetChatSessionApiV1SessionsSessionIdGetResponse = (SessionRead);
+export type GetChatSessionApiV1SessionsSessionIdGetResponse = SessionRead;
 
-export type GetChatSessionApiV1SessionsSessionIdGetError = (HTTPValidationError);
+export type GetChatSessionApiV1SessionsSessionIdGetError = HTTPValidationError;
 
 export type UpdateChatSessionApiV1SessionsSessionIdPatchData = {
-    body: SessionUpdate;
-    path: {
-        session_id: string;
-    };
+  body: SessionUpdate;
+  path: {
+    session_id: string;
+  };
 };
 
-export type UpdateChatSessionApiV1SessionsSessionIdPatchResponse = (SessionRead);
+export type UpdateChatSessionApiV1SessionsSessionIdPatchResponse = SessionRead;
 
-export type UpdateChatSessionApiV1SessionsSessionIdPatchError = (HTTPValidationError);
+export type UpdateChatSessionApiV1SessionsSessionIdPatchError = HTTPValidationError;
 
 export type DeleteChatSessionApiV1SessionsSessionIdDeleteData = {
-    path: {
-        session_id: string;
-    };
+  path: {
+    session_id: string;
+  };
 };
 
-export type DeleteChatSessionApiV1SessionsSessionIdDeleteResponse = (void);
+export type DeleteChatSessionApiV1SessionsSessionIdDeleteResponse = void;
 
-export type DeleteChatSessionApiV1SessionsSessionIdDeleteError = (HTTPValidationError);
+export type DeleteChatSessionApiV1SessionsSessionIdDeleteError = HTTPValidationError;
 
 export type CreateMessageApiV1MessagesSessionIdPostData = {
-    body: MessageCreate;
-    path: {
-        session_id: string;
-    };
+  body: MessageCreate;
+  path: {
+    session_id: string;
+  };
 };
 
-export type CreateMessageApiV1MessagesSessionIdPostResponse = (MessageRead);
+export type CreateMessageApiV1MessagesSessionIdPostResponse = MessageRead;
 
-export type CreateMessageApiV1MessagesSessionIdPostError = (HTTPValidationError);
+export type CreateMessageApiV1MessagesSessionIdPostError = HTTPValidationError;
 
 export type ListSessionMessagesApiV1MessagesSessionIdGetData = {
-    path: {
-        session_id: string;
-    };
-    query?: {
-        limit?: number;
-        offset?: number;
-    };
+  path: {
+    session_id: string;
+  };
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
 };
 
-export type ListSessionMessagesApiV1MessagesSessionIdGetResponse = (Array<MessageRead>);
+export type ListSessionMessagesApiV1MessagesSessionIdGetResponse = Array<MessageRead>;
 
-export type ListSessionMessagesApiV1MessagesSessionIdGetError = (HTTPValidationError);
+export type ListSessionMessagesApiV1MessagesSessionIdGetError = HTTPValidationError;
 
 export type GetMessageApiV1MessagesSessionIdMessageIdGetData = {
-    path: {
-        message_id: string;
-        session_id: string;
-    };
+  path: {
+    message_id: string;
+    session_id: string;
+  };
 };
 
-export type GetMessageApiV1MessagesSessionIdMessageIdGetResponse = (MessageRead);
+export type GetMessageApiV1MessagesSessionIdMessageIdGetResponse = MessageRead;
 
-export type GetMessageApiV1MessagesSessionIdMessageIdGetError = (HTTPValidationError);
+export type GetMessageApiV1MessagesSessionIdMessageIdGetError = HTTPValidationError;
 
 export type UpdateMessageApiV1MessagesSessionIdMessageIdPatchData = {
-    body: MessageUpdate;
-    path: {
-        message_id: string;
-        session_id: string;
-    };
+  body: MessageUpdate;
+  path: {
+    message_id: string;
+    session_id: string;
+  };
 };
 
-export type UpdateMessageApiV1MessagesSessionIdMessageIdPatchResponse = (MessageRead);
+export type UpdateMessageApiV1MessagesSessionIdMessageIdPatchResponse = MessageRead;
 
-export type UpdateMessageApiV1MessagesSessionIdMessageIdPatchError = (HTTPValidationError);
+export type UpdateMessageApiV1MessagesSessionIdMessageIdPatchError = HTTPValidationError;
 
 export type DeleteMessageApiV1MessagesSessionIdMessageIdDeleteData = {
-    path: {
-        message_id: string;
-        session_id: string;
-    };
+  path: {
+    message_id: string;
+    session_id: string;
+  };
 };
 
-export type DeleteMessageApiV1MessagesSessionIdMessageIdDeleteResponse = (void);
+export type DeleteMessageApiV1MessagesSessionIdMessageIdDeleteResponse = void;
 
-export type DeleteMessageApiV1MessagesSessionIdMessageIdDeleteError = (HTTPValidationError);
+export type DeleteMessageApiV1MessagesSessionIdMessageIdDeleteError = HTTPValidationError;

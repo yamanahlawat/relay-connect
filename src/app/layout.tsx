@@ -1,6 +1,4 @@
-import ApiClientProvider from '@/context/ApiClientProvider';
 import ReactQueryProvider from '@/context/ReactQueryProvider';
-import '@/lib/apiClient';
 import { inter } from '@/lib/fonts';
 import '@/styles/globals.css';
 import type { Metadata } from 'next';
@@ -20,10 +18,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased bg-background text-foreground`}>
-        <ReactQueryProvider>
-          <ApiClientProvider>{children}</ApiClientProvider>
-        </ReactQueryProvider>
+      <body className={`${inter.variable} bg-background text-foreground antialiased`}>
+        <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
   );

@@ -1,7 +1,8 @@
 'use client';
 
-import { listModelsApiV1ModelsGet, listProvidersApiV1ProvidersGet } from '@/client/sdk.gen';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { listModels } from '@/lib/api/models';
+import { listProviders } from '@/lib/api/providers';
 import { useQuery } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 
@@ -12,8 +13,7 @@ export default function ProviderModelSelect() {
   const { data: providers = [], isLoading: isLoadingProviders } = useQuery({
     queryKey: ['providers'],
     queryFn: async () => {
-      const response = await listProvidersApiV1ProvidersGet();
-      return response.data;
+      return await listProviders();
     },
   });
 
@@ -21,12 +21,7 @@ export default function ProviderModelSelect() {
     queryKey: ['models', selectedProvider],
     queryFn: async () => {
       if (!selectedProvider) return [];
-      const response = await listModelsApiV1ModelsGet({
-        query: {
-          provider_id: selectedProvider,
-        },
-      });
-      return response.data;
+      return await listModels(selectedProvider);
     },
     enabled: !!selectedProvider,
   });
@@ -44,7 +39,7 @@ export default function ProviderModelSelect() {
   }, [selectedProvider]);
 
   return (
-    <div className="flex gap-4 items-center">
+    <div className="flex items-center gap-4">
       <Select value={selectedProvider} onValueChange={setSelectedProvider} disabled={isLoadingProviders}>
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="Select Provider" />

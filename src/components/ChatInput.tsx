@@ -1,5 +1,3 @@
-'use client';
-
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -28,7 +26,11 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+      const newHeight = Math.min(textarea.scrollHeight, 200);
+      textarea.style.height = `${newHeight}px`;
+
+      // If content exceeds max height, enable scrolling
+      textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
     }
   }, [currentValue]);
 
@@ -45,6 +47,12 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
     if (currentValue.trim() && onSend) {
       onSend(currentValue.trim());
       handleChange('');
+
+      // Reset textarea height after sending
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.overflowY = 'hidden';
+      }
     }
   };
 
@@ -68,7 +76,8 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
             placeholder={placeholder}
             onKeyDown={handleKeyDown}
             className={cn(
-              'min-h-[56px] w-full resize-none overflow-y-hidden px-4 py-4',
+              'min-h-[56px] w-full resize-none px-4 py-4',
+              'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',
               'transition-[padding] duration-200 ease-in-out',
               hasContent ? 'pr-20' : 'pr-4',
               'border-0 focus-visible:ring-0',

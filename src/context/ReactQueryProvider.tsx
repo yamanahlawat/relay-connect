@@ -38,5 +38,10 @@ export default function ReactQueryProvider({ children }: { children: React.React
   //       render if it suspends and there is no boundary
   const queryClient = getQueryClient();
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+    </QueryClientProvider>
+  );
 }

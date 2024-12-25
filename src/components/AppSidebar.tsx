@@ -133,16 +133,16 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
     <Sidebar className={cn('w-64 border-r', className)} {...props}>
       <SidebarHeader className="h-14 justify-center border-b px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link href="#" className="flex items-center gap-2">
+          <Link href="/#" className="flex items-center gap-2">
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground transition-transform hover:scale-105">
               <Sparkles className="size-4" />
             </div>
             <span className="font-semibold">Relay Connect</span>
           </Link>
           <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground" asChild>
-            <a href="/new" title="New Chat">
+            <Link href="/#" title="New Chat">
               <MessageSquarePlus className="size-5" />
-            </a>
+            </Link>
           </Button>
         </div>
       </SidebarHeader>
@@ -167,14 +167,15 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
 
                       return (
                         <SidebarMenuItem key={chat.id} ref={isLastElement ? lastChatElementRef : undefined}>
-                          <a
-                            href={`chat/${chat.id}`}
-                            className="block w-full rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          <Link
+                            href={`/chat/${chat.id}`}
+                            className="block w-full rounded-md px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:pl-4 hover:text-foreground"
+                            aria-label={`Chat titled ${chat.title}`}
                           >
                             <span className="line-clamp-1" title={chat.title}>
                               {chat.title}
                             </span>
-                          </a>
+                          </Link>
                         </SidebarMenuItem>
                       );
                     })}

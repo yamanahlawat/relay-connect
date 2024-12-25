@@ -3,44 +3,50 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { listModels } from '@/lib/api/models';
 import { listProviders } from '@/lib/api/providers';
+import { useProviderModel } from '@/stores/providerModel';
 import { useQuery } from '@tanstack/react-query';
-import React, { useEffect } from 'react';
 
 export default function ProviderModelSelect() {
-  const [selectedProvider, setSelectedProvider] = React.useState<string>();
-  const [selectedModel, setSelectedModel] = React.useState<string>();
+  const { selectedProvider, selectedModel, setSelectedProvider, setSelectedModel, setLoading } = useProviderModel();
 
+  // Fetch providers
   const { data: providers = [], isLoading: isLoadingProviders } = useQuery({
     queryKey: ['providers'],
     queryFn: async () => {
-      return await listProviders();
+      setLoading(true);
+      try {
+        return await listProviders();
+      } finally {
+        setLoading(false);
+      }
     },
   });
 
+  // Fetch models for selected provider
   const { data: models = [], isLoading: isLoadingModels } = useQuery({
-    queryKey: ['models', selectedProvider],
+    queryKey: ['models', selectedProvider?.id],
     queryFn: async () => {
-      if (!selectedProvider) return [];
-      return await listModels(selectedProvider);
+      if (!selectedProvider?.id) return [];
+      setLoading(true);
+      try {
+        return await listModels(selectedProvider.id);
+      } finally {
+        setLoading(false);
+      }
     },
-    enabled: !!selectedProvider,
+    enabled: !!selectedProvider?.id,
   });
-
-  // Auto-select first model when models are loaded
-  useEffect(() => {
-    if (models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id);
-    }
-  }, [models, selectedModel]);
-
-  // Reset selected model when provider changes
-  useEffect(() => {
-    setSelectedModel(undefined);
-  }, [selectedProvider]);
 
   return (
     <div className="flex items-center gap-4">
-      <Select value={selectedProvider} onValueChange={setSelectedProvider} disabled={isLoadingProviders}>
+      <Select
+        value={selectedProvider?.id}
+        onValueChange={(id) => {
+          const provider = providers.find((p) => p.id === id);
+          setSelectedProvider(provider);
+        }}
+        disabled={isLoadingProviders}
+      >
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="Select Provider" />
         </SelectTrigger>
@@ -53,7 +59,14 @@ export default function ProviderModelSelect() {
         </SelectContent>
       </Select>
 
-      <Select value={selectedModel} onValueChange={setSelectedModel} disabled={!selectedProvider || isLoadingModels}>
+      <Select
+        value={selectedModel?.id}
+        onValueChange={(id) => {
+          const model = models.find((m) => m.id === id);
+          setSelectedModel(model);
+        }}
+        disabled={!selectedProvider || isLoadingModels}
+      >
         <SelectTrigger className="w-[250px]">
           <SelectValue placeholder="Select Model" />
         </SelectTrigger>

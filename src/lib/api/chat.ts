@@ -1,16 +1,11 @@
 import client from '@/lib/api/client';
 import type { paths } from '@/lib/api/schema';
+import { StreamParams } from '@/types/chat';
 
 type CompletionRequest =
   paths['/api/v1/chat/complete/{session_id}']['post']['requestBody']['content']['application/json'];
 type CompletionResponse =
   paths['/api/v1/chat/complete/{session_id}']['post']['responses']['200']['content']['application/json'];
-
-interface StreamParams {
-  max_tokens?: number;
-  temperature?: number;
-  top_p?: number;
-}
 
 /**
  * Creates a one-time chat completion

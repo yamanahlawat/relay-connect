@@ -1,20 +1,28 @@
-'use client';
-
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { FileIcon, Globe, SendHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-interface ChatInputProps {
-  value?: string;
-  onChange?: (value: string) => void;
-  onSend?: (message: string) => void;
-  disabled?: boolean;
-  placeholder?: string;
-}
+import { AdvancedSettings } from '@/components/AdvancedSettings';
+import { ChatInputProps, ChatSettings } from '@/types/chat';
 
-export function ChatInput({ value, onChange, onSend, disabled, placeholder }: ChatInputProps) {
+const defaultSettings: ChatSettings = {
+  systemPrompt: '',
+  maxTokens: 4096,
+  temperature: 0.7,
+  topP: 0.9,
+};
+
+export function ChatInput({
+  value,
+  onChange,
+  onSend,
+  disabled,
+  placeholder,
+  settings = defaultSettings,
+  onSettingsChange,
+}: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -28,7 +36,11 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+      const newHeight = Math.min(textarea.scrollHeight, 200);
+      textarea.style.height = `${newHeight}px`;
+
+      // If content exceeds max height, enable scrolling
+      textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
     }
   }, [currentValue]);
 
@@ -43,8 +55,14 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentValue.trim() && onSend) {
-      onSend(currentValue.trim());
+      onSend(currentValue.trim(), settings || defaultSettings);
       handleChange('');
+
+      // Reset textarea height after sending
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.overflowY = 'hidden';
+      }
     }
   };
 
@@ -68,7 +86,8 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
             placeholder={placeholder}
             onKeyDown={handleKeyDown}
             className={cn(
-              'min-h-[56px] w-full resize-none overflow-y-hidden px-4 py-4',
+              'min-h-[56px] w-full resize-none px-4 py-4',
+              'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',
               'transition-[padding] duration-200 ease-in-out',
               hasContent ? 'pr-20' : 'pr-4',
               'border-0 focus-visible:ring-0',
@@ -120,6 +139,11 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
               <Globe className="h-4 w-4" />
               <span className="sr-only">Search web</span>
             </Button>
+            <AdvancedSettings
+              settings={settings}
+              onSettingsChange={onSettingsChange || (() => {})}
+              disabled={disabled}
+            />
           </div>
 
           {hasContent && (

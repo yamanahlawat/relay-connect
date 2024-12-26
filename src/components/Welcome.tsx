@@ -13,15 +13,14 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-// Types
 type MessageCreate = components['schemas']['MessageCreate'];
 type SessionCreate = components['schemas']['SessionCreate'];
 
 const ALL_SUGGESTIONS = [
-  { icon: FileText, text: 'Summarize text' },
-  { icon: MessageSquare, text: 'Generate interview questions' },
-  { icon: NotebookPen, text: 'Make a plan' },
-  { icon: Sparkles, text: 'Generate excel formulas' },
+  { icon: FileText, text: 'Summarize text', color: 'text-blue-500' },
+  { icon: MessageSquare, text: 'Generate interview questions', color: 'text-purple-500' },
+  { icon: NotebookPen, text: 'Make a plan', color: 'text-green-500' },
+  { icon: Sparkles, text: 'Generate excel formulas', color: 'text-amber-500' },
 ] as const;
 
 export function WelcomeContent() {
@@ -29,7 +28,6 @@ export function WelcomeContent() {
   const { selectedProvider, selectedModel } = useProviderModel();
   const [message, setMessage] = useState('');
 
-  // Mutations
   const mutations = {
     createSession: useMutation({
       mutationFn: (data: SessionCreate) => createChatSession(data),
@@ -44,7 +42,6 @@ export function WelcomeContent() {
   };
 
   const isSubmitting = mutations.createSession.isPending || mutations.createMessage.isPending;
-
   const setInitialMessageId = useMessageStreamingStore((state) => state.setInitialMessageId);
 
   const handleSendMessage = async (content: string) => {
@@ -71,10 +68,7 @@ export function WelcomeContent() {
         },
       });
 
-      // Set the message ID in the store instead of URL
       setInitialMessageId(message.id);
-
-      // Navigate without query params
       router.push(`/chat/${session.id}`);
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
@@ -83,30 +77,47 @@ export function WelcomeContent() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8">
-        <div className="w-full max-w-3xl space-y-12">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-2xl font-medium tracking-tight text-foreground/90 sm:text-3xl">
-              What can I help you with?
-            </h1>
-          </div>
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-2xl space-y-6">
+          <h1 className="text-center text-2xl font-medium text-foreground/90">What can I help you with?</h1>
 
-          {/* Suggestions */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {ALL_SUGGESTIONS.map(({ icon: Icon, text }) => (
+          <div className="grid grid-cols-2 gap-2">
+            {ALL_SUGGESTIONS.map(({ icon: Icon, text, color }) => (
               <Button
                 key={text}
                 variant="outline"
                 onClick={() => setMessage(text)}
                 disabled={isSubmitting || !selectedProvider || !selectedModel}
-                className="h-10 justify-start gap-2 px-4"
+                className="h-auto justify-start gap-2 p-4 transition-all hover:scale-[1.02] hover:bg-accent/50 active:scale-[0.98]"
               >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{text}</span>
+                <Icon className={`h-4 w-4 shrink-0 ${color}`} />
+                <span className="text-sm font-medium">{text}</span>
               </Button>
             ))}
           </div>
+
+          {/* Model Selection Status - More distinct states */}
+          {!selectedProvider || !selectedModel ? (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 text-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500"></span>
+              </span>
+              <span className="font-medium text-yellow-700 dark:text-yellow-400">
+                Select a provider and model to get started
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 p-3 text-sm text-green-700 dark:text-green-400">
+              <div className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Using <span className="font-medium text-green-700 dark:text-green-300">{selectedModel.name}</span> by{' '}
+                <span className="font-medium text-green-700 dark:text-green-300">{selectedProvider.name}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import ReactQueryProvider from '@/context/ReactQueryProvider';
+import { ThemeProvider } from '@/context/ThemeProvider';
 import { inter } from '@/lib/fonts';
 import '@/styles/globals.css';
 import type { Metadata } from 'next';
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} bg-background text-foreground antialiased`}>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ThemeProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

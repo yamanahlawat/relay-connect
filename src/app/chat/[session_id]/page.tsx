@@ -9,6 +9,7 @@ import { createMessage, getMessage, listSessionMessages } from '@/lib/api/messag
 import type { components } from '@/lib/api/schema';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
+import { ChatSettings, ChatState, StreamParams } from '@/types/chat';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -19,12 +20,6 @@ import { toast } from 'sonner';
 type MessageRead = components['schemas']['MessageRead'];
 type MessageCreate = components['schemas']['MessageCreate'];
 type SessionCreate = components['schemas']['SessionCreate'];
-
-interface ChatState {
-  sessionId: string;
-  messages: MessageRead[];
-  streamingMessageId: string | null;
-}
 
 export default function ChatPage() {
   const params = useParams();
@@ -42,6 +37,13 @@ export default function ChatPage() {
     sessionId: params.session_id as string,
     messages: [],
     streamingMessageId: null,
+  });
+
+  const [chatSettings, setChatSettings] = useState<ChatSettings>({
+    systemPrompt: 'You are a helpful assistant.',
+    maxTokens: 4096,
+    temperature: 0.7,
+    topP: 0.9,
   });
 
   // Message fetching query
@@ -89,7 +91,7 @@ export default function ChatPage() {
 
   // Message streaming handler
   const handleMessageStream = useCallback(
-    async (sessionId: string, userMessage: MessageRead) => {
+    async (sessionId: string, userMessage: MessageRead, params?: StreamParams) => {
       // Create placeholder for assistant response
       const placeholderId = `placeholder-${Date.now()}`;
       const assistantPlaceholder: MessageRead = {
@@ -112,7 +114,7 @@ export default function ChatPage() {
         streamingMessageId: placeholderId,
       }));
       try {
-        const reader = await streamCompletion(sessionId, userMessage.id);
+        const reader = await streamCompletion(sessionId, userMessage.id, params);
         const decoder = new TextDecoder();
         let streamContent = '';
 
@@ -188,7 +190,7 @@ export default function ChatPage() {
   }, [isError, error, clearInitialMessageId]);
 
   // Message sending handler
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, settings: ChatSettings) => {
     if (!selectedProvider || !selectedModel) {
       toast.error('Please select a provider and model');
       return;
@@ -203,6 +205,7 @@ export default function ChatPage() {
             title: content.slice(0, 50),
             provider_id: selectedProvider.id,
             llm_model_id: selectedModel.id,
+            system_context: settings.systemPrompt || undefined,
           })
         ).id;
 
@@ -212,8 +215,12 @@ export default function ChatPage() {
         messageData: { content, role: 'user', status: 'completed' },
       });
 
-      // Start streaming
-      await handleMessageStream(currentSessionId, userMessage);
+      // Start streaming with model parameters
+      await handleMessageStream(currentSessionId, userMessage, {
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature,
+        top_p: settings.topP,
+      });
     } catch (error) {
       console.error('Message sending error:', error);
       toast.error('Failed to send message');
@@ -302,6 +309,8 @@ export default function ChatPage() {
             selectedModel ? { id: selectedModel.id } : null,
             chatState.streamingMessageId
           )}
+          settings={chatSettings}
+          onSettingsChange={setChatSettings}
         />
       </div>
     </div>

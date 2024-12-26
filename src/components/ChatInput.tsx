@@ -4,15 +4,25 @@ import { cn } from '@/lib/utils';
 import { FileIcon, Globe, SendHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-interface ChatInputProps {
-  value?: string;
-  onChange?: (value: string) => void;
-  onSend?: (message: string) => void;
-  disabled?: boolean;
-  placeholder?: string;
-}
+import { AdvancedSettings } from '@/components/AdvancedSettings';
+import { ChatInputProps, ChatSettings } from '@/types/chat';
 
-export function ChatInput({ value, onChange, onSend, disabled, placeholder }: ChatInputProps) {
+const defaultSettings: ChatSettings = {
+  systemPrompt: '',
+  maxTokens: 4096,
+  temperature: 0.7,
+  topP: 0.9,
+};
+
+export function ChatInput({
+  value,
+  onChange,
+  onSend,
+  disabled,
+  placeholder,
+  settings = defaultSettings,
+  onSettingsChange,
+}: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,7 +55,7 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentValue.trim() && onSend) {
-      onSend(currentValue.trim());
+      onSend(currentValue.trim(), settings || defaultSettings);
       handleChange('');
 
       // Reset textarea height after sending
@@ -129,6 +139,11 @@ export function ChatInput({ value, onChange, onSend, disabled, placeholder }: Ch
               <Globe className="h-4 w-4" />
               <span className="sr-only">Search web</span>
             </Button>
+            <AdvancedSettings
+              settings={settings}
+              onSettingsChange={onSettingsChange || (() => {})}
+              disabled={disabled}
+            />
           </div>
 
           {hasContent && (

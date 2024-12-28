@@ -1,60 +1,87 @@
-// components/CodeBlock.tsx
-import { CopyButton } from '@/components/CopyButton';
-import { CodeBlockProps } from '@/types/chat';
-import { Terminal } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useCodeCascade } from '@/context/CodeCascadeProvider';
+import { cn } from '@/lib/utils';
+import { CodeXml } from 'lucide-react';
+import { useEffect } from 'react';
 
-export function CodeBlock({ inline, className, children, ...props }: CodeBlockProps) {
-  const { theme } = useTheme();
+function CodeBlock({
+  inline,
+  className,
+  children,
+}: {
+  inline: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { setActiveCode } = useCodeCascade();
+
+  // Extract language from className
   const match = /language-(\w+)/.exec(className || '');
-  const lang = match?.[1] || '';
+  const lang = match?.[1] || 'text';
   const code = String(children).replace(/\n$/, '');
 
-  if (inline) {
+  // Always define useEffect at the top level
+  useEffect(() => {
+    // Only trigger for non-inline code blocks with content
+    if (!inline && code.trim()) {
+      const codeLines = code.split('\n');
+      const shouldShowCTA = codeLines.length > 1 || code.length > 50;
+
+      if (shouldShowCTA) {
+        setActiveCode(code, lang);
+      }
+    }
+  }, [code, lang, inline, setActiveCode]);
+
+  // Handle empty or invalid code blocks
+  if (!code.trim()) {
+    return null;
+  }
+
+  // For inline code or single-word code references
+  if (inline || (code.trim().split(/\s+/).length === 1 && !code.includes('\n'))) {
+    return <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-sm text-primary">{children}</code>;
+  }
+
+  // Only show CTA if code contains actual content
+  const codeLines = code.split('\n');
+  const shouldShowCTA = codeLines.length > 1 || code.length > 50;
+
+  if (!shouldShowCTA) {
     return (
-      <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-sm text-primary" {...props}>
-        {children}
-      </code>
+      <div className="relative my-4 overflow-x-auto rounded-lg bg-muted p-4">
+        <code className="text-sm">{code}</code>
+      </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden rounded-lg border bg-muted">
-      {/* Header */}
-      <div className="flex h-9 items-center justify-between border-b bg-muted/50 px-3">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium uppercase text-muted-foreground">{lang || 'Code'}</span>
+    <div className="my-4 w-full">
+      <div
+        role="button"
+        onClick={() => setActiveCode(code, lang)}
+        className={cn(
+          'flex cursor-pointer items-center gap-3',
+          'rounded-lg border bg-muted/50 p-3',
+          'transition-colors hover:bg-muted'
+        )}
+      >
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+          <CodeXml className="h-5 w-5 text-primary" />
         </div>
-        <CopyButton text={code} size="icon" className="h-7 w-7" />
-      </div>
 
-      {/* Code Content */}
-      <div className="max-h-[400px] overflow-auto">
-        <SyntaxHighlighter
-          {...props}
-          style={theme === 'dark' ? oneDark : oneLight}
-          language={lang}
-          PreTag="div"
-          showLineNumbers
-          customStyle={{
-            margin: 0,
-            background: 'transparent',
-            fontSize: '14px',
-            lineHeight: '1.5',
-          }}
-          codeTagProps={{
-            style: {
-              fontSize: '14px',
-              fontFamily: 'var(--font-mono)',
-            },
-          }}
-        >
-          {code}
-        </SyntaxHighlighter>
+        <div className="flex flex-col gap-1 overflow-hidden">
+          <span className="font-medium">{lang.charAt(0).toUpperCase() + lang.slice(1)} Code</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="truncate">Click to view in editor</span>
+            <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground/30" />
+            <span>
+              {codeLines.length} {codeLines.length === 1 ? 'line' : 'lines'}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+export default CodeBlock;

@@ -2,6 +2,7 @@
 
 import { ChatInput } from '@/components/ChatInput';
 import { ChatMessage } from '@/components/ChatMessage';
+import { ChatSplitView } from '@/components/ChatSplitView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { streamCompletion } from '@/lib/api/chat';
 import { createChatSession } from '@/lib/api/chatSessions';
@@ -274,46 +275,48 @@ export default function ChatPage() {
   }, [chatState.messages, chatState.streamingMessageId]);
 
   return (
-    <div className="flex h-full flex-col">
-      <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={handleScroll}>
-        <div className="mx-auto max-w-5xl space-y-4">
-          {messagesQuery.isFetchingNextPage && (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
+    <ChatSplitView>
+      <div className="flex h-full flex-col">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={handleScroll}>
+          <div className="mx-auto max-w-5xl space-y-4">
+            {messagesQuery.isFetchingNextPage && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
 
-          {messageGroups.length === 0 ? (
-            <EmptyStatePlaceholder />
-          ) : (
-            messageGroups.map((group) => (
-              <ChatMessage
-                key={group[0]?.id}
-                messages={group}
-                role={group[0]?.role}
-                isStreaming={group.some((msg) => msg.id === chatState.streamingMessageId)}
-              />
-            ))
-          )}
+            {messageGroups.length === 0 ? (
+              <EmptyStatePlaceholder />
+            ) : (
+              messageGroups.map((group) => (
+                <ChatMessage
+                  key={group[0]?.id}
+                  messages={group}
+                  role={group[0]?.role}
+                  isStreaming={group.some((msg) => msg.id === chatState.streamingMessageId)}
+                />
+              ))
+            )}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        <div className="w-full border-t border-border/40">
+          <ChatInput
+            onSend={handleSendMessage}
+            disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}
+            placeholder={getInputPlaceholder(
+              selectedProvider ? { id: selectedProvider.id } : null,
+              selectedModel ? { id: selectedModel.id } : null,
+              chatState.streamingMessageId
+            )}
+            settings={chatSettings}
+            onSettingsChange={setChatSettings}
+          />
         </div>
-      </ScrollArea>
-
-      <div className="w-full border-t border-border/40">
-        <ChatInput
-          onSend={handleSendMessage}
-          disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}
-          placeholder={getInputPlaceholder(
-            selectedProvider ? { id: selectedProvider.id } : null,
-            selectedModel ? { id: selectedModel.id } : null,
-            chatState.streamingMessageId
-          )}
-          settings={chatSettings}
-          onSettingsChange={setChatSettings}
-        />
       </div>
-    </div>
+    </ChatSplitView>
   );
 }
 

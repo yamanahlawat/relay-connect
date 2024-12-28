@@ -1,9 +1,9 @@
 import { CopyButton } from '@/components/CopyButton';
+import { MessageContent } from '@/components/MessageContent';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ChatMessageProps } from '@/types/chat';
 import { Bot, User2 } from 'lucide-react';
-import { MessageContent } from './MessageContent';
 
 export function ChatMessage({ messages, role, isStreaming }: ChatMessageProps) {
   return (
@@ -27,9 +27,7 @@ export function ChatMessage({ messages, role, isStreaming }: ChatMessageProps) {
         {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              {role === 'user' ? 'You' : 'Assistant'}
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">{role === 'user' ? 'You' : 'Assistant'}</span>
 
             {/* Copy button - Only for AI messages */}
             {role === 'assistant' && (

@@ -38,14 +38,16 @@ export interface ChatMessageProps {
   isStreaming?: boolean;
 }
 
-export interface CodeBlockProps {
-  inline?: boolean;
+interface CodeBlockProps {
+  inline: boolean;
   className?: string;
   children: React.ReactNode;
+  isStreaming?: boolean;
 }
 
 export interface MarkdownRendererProps {
   content: string;
+  isStreaming?: boolean;
 }
 
 export interface MessageContentProps {

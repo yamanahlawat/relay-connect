@@ -153,7 +153,7 @@ export function ChatInput({
                 hasContent ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0'
               )}
             >
-              <span className="hidden rounded border px-2 py-0.5 text-[10px] text-muted-foreground/80 sm:inline-block">
+              <span className="hidden rounded border px-2 py-0.5 text-xs text-muted-foreground/80 sm:inline-block">
                 Shift + ⏎ for new line
               </span>
             </div>

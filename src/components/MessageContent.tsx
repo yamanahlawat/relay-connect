@@ -12,12 +12,18 @@ export function MessageContent({
   return (
     <div className="space-y-1.5">
       {/* Message content */}
-      <div className="prose prose-xs dark:prose-invert prose-p:leading-relaxed prose-pre:my-0 max-w-none break-words text-[13px]">
-        <MarkdownRenderer content={message.content} />
+      <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:my-0 max-w-none break-words">
+        {role === 'user' ? (
+          // For user messages, just render the content directly
+          <div className="whitespace-pre-wrap">{message.content}</div>
+        ) : (
+          // For AI messages, use markdown renderer
+          <MarkdownRenderer content={message.content} />
+        )}
       </div>
 
       {/* Metadata */}
-      <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-[11px]">
+      <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-xs">
         {/* Left side metadata - Always visible with hover states */}
         <div className="flex items-center gap-2">
           {/* Timestamp */}
@@ -30,7 +36,7 @@ export function MessageContent({
                 {format(new Date(message.created_at), 'h:mm a')}
               </time>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-[11px]">
+            <TooltipContent side="bottom" className="text-xs">
               {format(new Date(message.created_at), 'MMMM d, yyyy h:mm a')}
             </TooltipContent>
           </Tooltip>
@@ -45,7 +51,7 @@ export function MessageContent({
                     {message.usage.input_tokens + message.usage.output_tokens} tokens
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="space-y-1 text-[11px]">
+                <TooltipContent side="bottom" className="space-y-1 text-xs">
                   <div>Input: {message.usage.input_tokens} tokens</div>
                   <div>Output: {message.usage.output_tokens} tokens</div>
                 </TooltipContent>
@@ -59,7 +65,7 @@ export function MessageContent({
                     <span className="tabular-nums">${message.usage.total_cost.toFixed(4)}</span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-[11px]">
+                <TooltipContent side="bottom" className="text-xs">
                   Total cost for this message
                 </TooltipContent>
               </Tooltip>
@@ -84,7 +90,7 @@ export function MessageContent({
                   <span className="font-medium">Error</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="left" className="text-[11px] text-destructive">
+              <TooltipContent side="left" className="text-xs text-destructive">
                 {message.error_message}
               </TooltipContent>
             </Tooltip>

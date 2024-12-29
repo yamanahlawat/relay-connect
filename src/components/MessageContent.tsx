@@ -1,6 +1,7 @@
+import { CopyButton } from '@/components/CopyButton';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MessageContentProps } from '@/types/chat';
+import { MessageContentProps, MessageRole } from '@/types/chat';
 import { format } from 'date-fns';
 import { AlertCircle, Coins, Loader2 } from 'lucide-react';
 
@@ -8,7 +9,7 @@ export function MessageContent({
   message,
   isStreaming,
   role,
-}: MessageContentProps & { isStreaming?: boolean; role: 'user' | 'assistant' }) {
+}: MessageContentProps & { isStreaming?: boolean; role: MessageRole }) {
   return (
     <div className="space-y-1.5">
       {/* Message content */}
@@ -94,6 +95,14 @@ export function MessageContent({
                 {message.error_message}
               </TooltipContent>
             </Tooltip>
+          )}
+
+          {/* Copy button - Only for non-streaming AI messages, shown on hover */}
+          {role === 'assistant' && !isStreaming && (
+            <CopyButton
+              text={message.content}
+              className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+            />
           )}
         </div>
       </div>

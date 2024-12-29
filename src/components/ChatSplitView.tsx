@@ -2,7 +2,7 @@
 
 import { CodeCascadeView } from '@/components/CodeCascadeView';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { useCodeCascade } from '@/context/CodeCascadeProvider';
+import { useCodeCascade } from '@/stores/codeCascade';
 
 interface ChatSplitViewProps {
   children: React.ReactNode;

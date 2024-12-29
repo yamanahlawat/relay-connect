@@ -1,5 +1,5 @@
-import { useCodeCascade } from '@/context/CodeCascadeProvider';
 import { cn } from '@/lib/utils';
+import { useCodeCascade } from '@/stores/codeCascade';
 import { CodeXml } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -19,18 +19,18 @@ function CodeBlock({
   const lang = match?.[1] || 'text';
   const code = String(children).replace(/\n$/, '');
 
+  const codeLines = code.split('\n');
+  const shouldShowCTA = codeLines.length > 1 || code.length > 50;
+
   // Always define useEffect at the top level
   useEffect(() => {
     // Only trigger for non-inline code blocks with content
     if (!inline && code.trim()) {
-      const codeLines = code.split('\n');
-      const shouldShowCTA = codeLines.length > 1 || code.length > 50;
-
       if (shouldShowCTA) {
         setActiveCode(code, lang);
       }
     }
-  }, [code, lang, inline, setActiveCode]);
+  }, [code, lang, inline, setActiveCode, shouldShowCTA]);
 
   // Handle empty or invalid code blocks
   if (!code.trim()) {
@@ -43,9 +43,6 @@ function CodeBlock({
   }
 
   // Only show CTA if code contains actual content
-  const codeLines = code.split('\n');
-  const shouldShowCTA = codeLines.length > 1 || code.length > 50;
-
   if (!shouldShowCTA) {
     return (
       <div className="relative my-4 overflow-x-auto rounded-lg bg-muted p-4">

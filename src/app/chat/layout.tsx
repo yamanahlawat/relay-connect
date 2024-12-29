@@ -2,7 +2,6 @@ import { AppSidebar } from '@/components/AppSidebar';
 import ProviderModelSelect from '@/components/ProviderModelSelect';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { CodeCascadeProvider } from '@/context/CodeCascadeProvider';
 import { listChatSessions } from '@/lib/api/chatSessions';
 import { listProviders } from '@/lib/api/providers';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
@@ -41,9 +40,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
               <ProviderModelSelect />
             </HydrationBoundary>
           </div>
-          <CodeCascadeProvider>
-            <main className="relative flex-1 overflow-hidden">{children}</main>
-          </CodeCascadeProvider>
+          <main className="relative flex-1 overflow-hidden">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

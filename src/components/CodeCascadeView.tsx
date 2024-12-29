@@ -1,6 +1,7 @@
 import { CopyButton } from '@/components/CopyButton';
 import { Button } from '@/components/ui/button';
-import { useCodeCascade } from '@/context/CodeCascadeProvider';
+import { useCodeCascade } from '@/stores/codeCascade';
+
 import { Loader2, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef } from 'react';
@@ -40,7 +41,7 @@ export function CodeCascadeView() {
       <div className="flex h-11 items-center justify-between border-b px-3 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-            {language?.charAt(0).toUpperCase() + language?.slice(1) || 'Code'}
+            {language ? language.charAt(0).toUpperCase() + language.slice(1) : 'Code'}
           </span>
           {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
         </div>

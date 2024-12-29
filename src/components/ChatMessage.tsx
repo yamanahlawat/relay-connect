@@ -1,4 +1,3 @@
-import { CopyButton } from '@/components/CopyButton';
 import { MessageContent } from '@/components/MessageContent';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -28,11 +27,6 @@ export function ChatMessage({ messages, role, isStreaming }: ChatMessageProps) {
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">{role === 'user' ? 'You' : 'Assistant'}</span>
-
-            {/* Copy button - Only for AI messages */}
-            {role === 'assistant' && (
-              <CopyButton text={messages[messages.length - 1]?.content || ''} className="h-5 w-5" showOnHover />
-            )}
           </div>
 
           {/* Messages */}

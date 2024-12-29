@@ -11,22 +11,49 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 export function CodeCascadeView() {
   const { activeCode, language, isStreaming, clearCode } = useCodeCascade();
   const { theme } = useTheme();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
 
-  // Effect for auto-scrolling during streaming
+  // Setup MutationObserver for content changes
   useEffect(() => {
-    if (isStreaming && scrollRef.current) {
-      const scrollElement = scrollRef.current;
-      requestAnimationFrame(() => {
-        scrollElement.scrollTo({
-          top: scrollElement.scrollHeight,
-          behavior: 'smooth',
-        });
-      });
-    }
-  }, [activeCode, isStreaming]);
+    if (wrapperRef.current && isStreaming) {
+      // Cleanup previous observer if exists
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
 
-  // If there's no code, show empty state
+      // Create new observer
+      const observer = new MutationObserver(() => {
+        const element = wrapperRef.current;
+        if (element) {
+          element.scrollTop = element.scrollHeight;
+        }
+      });
+
+      // Start observing the wrapper for content changes
+      observer.observe(wrapperRef.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      observerRef.current = observer;
+
+      // Cleanup
+      return () => {
+        observer.disconnect();
+        observerRef.current = null;
+      };
+    }
+  }, [isStreaming]);
+
+  // Initial scroll for new content
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.scrollTop = wrapperRef.current.scrollHeight;
+    }
+  }, [activeCode]);
+
   if (!activeCode) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-background p-4">
@@ -37,7 +64,7 @@ export function CodeCascadeView() {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      {/* Header */}
+      {/* Header remains the same */}
       <div className="flex h-11 items-center justify-between border-b px-3 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
@@ -54,9 +81,9 @@ export function CodeCascadeView() {
         </div>
       </div>
 
-      {/* Code Content */}
-      <div className="flex-1 overflow-hidden" ref={scrollRef}>
-        <div className="h-full">
+      {/* Code Content with position relative for proper scrolling */}
+      <div className="relative flex-1">
+        <div className="absolute inset-0 overflow-auto" ref={wrapperRef}>
           <SyntaxHighlighter
             language={language?.toLowerCase() || 'text'}
             style={theme === 'dark' ? oneDark : oneLight}
@@ -64,7 +91,6 @@ export function CodeCascadeView() {
             wrapLines
             customStyle={{
               margin: 0,
-              height: '100%',
               backgroundColor: 'transparent',
               fontSize: '13px',
               lineHeight: '1.6',

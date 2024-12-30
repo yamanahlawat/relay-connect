@@ -5,9 +5,11 @@ import { ChatMessage } from '@/components/ChatMessage';
 import { ChatSplitView } from '@/components/ChatSplitView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { streamCompletion } from '@/lib/api/chat';
-import { createChatSession } from '@/lib/api/chatSessions';
+import { createChatSession, getChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, getMessage, listSessionMessages } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
+import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings, ChatState, StreamParams } from '@/types/chat';
@@ -21,6 +23,7 @@ import { toast } from 'sonner';
 type MessageRead = components['schemas']['MessageRead'];
 type MessageCreate = components['schemas']['MessageCreate'];
 type SessionCreate = components['schemas']['SessionCreate'];
+type SessionUpdate = components['schemas']['SessionUpdate'];
 
 export default function ChatPage() {
   const params = useParams();
@@ -40,12 +43,9 @@ export default function ChatPage() {
     streamingMessageId: null,
   });
 
-  const [chatSettings, setChatSettings] = useState<ChatSettings>({
-    systemPrompt: 'You are a helpful assistant.',
-    maxTokens: 4096,
-    temperature: 0.7,
-    topP: 0.9,
-  });
+  const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
+
+  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
 
   // Message fetching query
   const messagesQuery = useInfiniteQuery({
@@ -75,6 +75,12 @@ export default function ChatPage() {
       mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
         createMessage(sessionId, messageData),
       onError: () => toast.error('Failed to send message'),
+    }),
+
+    updateSession: useMutation({
+      mutationFn: ({ sessionId, update }: { sessionId: string; update: SessionUpdate }) =>
+        updateChatSession(sessionId, update),
+      onError: () => toast.error('Failed to update session'),
     }),
   };
 
@@ -149,6 +155,19 @@ export default function ChatPage() {
     [handleStreamError, queryClient]
   );
 
+  const handleSystemContextChange = async (newPrompt: string) => {
+    setSystemContext(newPrompt);
+
+    if (chatState.sessionId) {
+      await mutations.updateSession.mutateAsync({
+        sessionId: chatState.sessionId,
+        update: {
+          system_context: newPrompt,
+        },
+      });
+    }
+  };
+
   // Query for initial message when streaming from welcome page
   const {
     data: initialMessage,
@@ -206,9 +225,17 @@ export default function ChatPage() {
             title: content.slice(0, 50),
             provider_id: selectedProvider.id,
             llm_model_id: selectedModel.id,
-            system_context: settings.systemPrompt || undefined,
+            system_context: systemContext,
           })
         ).id;
+
+      // If session exists and system prompt changed, update it
+      if (chatState.sessionId && systemContext) {
+        await mutations.updateSession.mutateAsync({
+          sessionId: chatState.sessionId,
+          update: { system_context: systemContext },
+        });
+      }
 
       // Create user message
       const userMessage = await mutations.createMessage.mutateAsync({
@@ -274,6 +301,28 @@ export default function ChatPage() {
     }
   }, [chatState.messages, chatState.streamingMessageId]);
 
+  const {
+    data: sessionDetails,
+    isError: isSessionError,
+    error: sessionError,
+  } = useQuery({
+    queryKey: ['session', params.session_id],
+    queryFn: () => getChatSession(params.session_id as string),
+    enabled: !!params.session_id,
+  });
+
+  useEffect(() => {
+    if (sessionDetails?.system_context) {
+      setSystemContext(sessionDetails.system_context);
+    }
+  }, [sessionDetails]);
+
+  useEffect(() => {
+    if (isSessionError) {
+      toast.error(sessionError instanceof Error ? sessionError.message : 'Failed to fetch session details');
+    }
+  }, [isSessionError, sessionError]);
+
   return (
     <ChatSplitView>
       <div className="flex h-full flex-col">
@@ -313,6 +362,8 @@ export default function ChatPage() {
             )}
             settings={chatSettings}
             onSettingsChange={setChatSettings}
+            systemContext={systemContext}
+            onSystemContextChange={handleSystemContextChange}
           />
         </div>
       </div>

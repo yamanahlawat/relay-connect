@@ -1,9 +1,29 @@
+// MessageContent.tsx
 import { CopyButton } from '@/components/CopyButton';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageContentProps, MessageRole } from '@/types/chat';
 import { format } from 'date-fns';
-import { AlertCircle, Coins, Loader2 } from 'lucide-react';
+import { AlertCircle, Coins } from 'lucide-react';
+
+function StatusIndicator() {
+  const dots = 3;
+
+  return (
+    <div className="flex h-2 items-center gap-[3px]" aria-label="Generating response">
+      {[...Array(dots)].map((_, i) => (
+        <div
+          key={i}
+          className="h-1 w-1 rounded-full bg-primary/60"
+          style={{
+            animation: 'fade 1.4s ease-in-out infinite',
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function MessageContent({
   message,
@@ -25,9 +45,8 @@ export function MessageContent({
 
       {/* Metadata */}
       <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-xs">
-        {/* Left side metadata - Always visible with hover states */}
+        {/* Left side metadata */}
         <div className="flex items-center gap-2">
-          {/* Timestamp */}
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <time
@@ -76,12 +95,7 @@ export function MessageContent({
 
         {/* Right side - Status indicators */}
         <div className="flex items-center gap-2">
-          {isStreaming && (
-            <div className="flex items-center gap-1 text-primary animate-in fade-in-0">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              <span className="font-medium">Generating...</span>
-            </div>
-          )}
+          {isStreaming && <StatusIndicator />}
 
           {message.status === 'failed' && (
             <Tooltip>

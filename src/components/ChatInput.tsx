@@ -5,14 +5,8 @@ import { FileIcon, Globe, SendHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { AdvancedSettings } from '@/components/AdvancedSettings';
-import { ChatInputProps, ChatSettings } from '@/types/chat';
-
-const defaultSettings: ChatSettings = {
-  systemPrompt: '',
-  maxTokens: 4096,
-  temperature: 0.7,
-  topP: 0.9,
-};
+import { defaultChatSettings } from '@/lib/defaults';
+import { ChatInputProps } from '@/types/chat';
 
 export function ChatInput({
   value,
@@ -20,8 +14,10 @@ export function ChatInput({
   onSend,
   disabled,
   placeholder,
-  settings = defaultSettings,
+  settings = defaultChatSettings,
   onSettingsChange,
+  systemContext = '',
+  onSystemContextChange,
 }: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
@@ -55,7 +51,7 @@ export function ChatInput({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentValue.trim() && onSend) {
-      onSend(currentValue.trim(), settings || defaultSettings);
+      onSend(currentValue.trim(), settings || defaultChatSettings);
       handleChange('');
 
       // Reset textarea height after sending
@@ -142,6 +138,8 @@ export function ChatInput({
             <AdvancedSettings
               settings={settings}
               onSettingsChange={onSettingsChange || (() => {})}
+              systemContext={systemContext}
+              onSystemContextChange={onSystemContextChange}
               disabled={disabled}
             />
           </div>

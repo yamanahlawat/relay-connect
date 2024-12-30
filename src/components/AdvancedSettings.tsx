@@ -4,8 +4,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useChatSettings } from '@/stores/chatSettings';
 import { AdvancedSettingsProps, ChatSettings } from '@/types/chat';
-import { HelpCircle, Settings2 } from 'lucide-react';
+import { HelpCircle, RotateCcw, Settings2 } from 'lucide-react';
 
 function SettingLabel({ label, tooltip }: { label: string; tooltip: string }) {
   return (
@@ -60,8 +61,16 @@ function SliderSetting({
   );
 }
 
-export function AdvancedSettings({ settings, onSettingsChange, disabled }: AdvancedSettingsProps) {
-  const handleChange = (field: keyof ChatSettings, value: string | number) => {
+export function AdvancedSettings({
+  settings,
+  onSettingsChange,
+  systemContext = '',
+  onSystemContextChange,
+  disabled,
+}: AdvancedSettingsProps) {
+  const resetToDefaults = useChatSettings((state) => state.resetToDefaults);
+
+  const handleChange = (field: keyof ChatSettings, value: number) => {
     onSettingsChange({
       ...settings,
       [field]: value,
@@ -87,30 +96,42 @@ export function AdvancedSettings({ settings, onSettingsChange, disabled }: Advan
             <h4 className="font-medium leading-none">Response Settings</h4>
             <p className="text-sm text-muted-foreground">Customize how the AI generates responses.</p>
           </div>
+
           <div className="grid gap-6">
             <div className="space-y-2">
-              <Label htmlFor="systemPrompt">
+              <Label htmlFor="systemContext">
                 <SettingLabel
                   label="AI Personality"
                   tooltip="Define how the AI should behave or what role it should take (e.g., 'Act as a math tutor' or 'Be concise and technical')"
                 />
               </Label>
               <Textarea
-                id="systemPrompt"
+                id="systemContext"
                 placeholder="Define AI behavior or role..."
-                value={settings.systemPrompt}
-                onChange={(e) => handleChange('systemPrompt', e.target.value)}
+                value={systemContext}
+                onChange={(e) => onSystemContextChange?.(e.target.value)}
                 className="h-20 resize-none"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>
-                <SettingLabel
-                  label="Response Length"
-                  tooltip="Maximum number of words in the response. Higher values allow for longer responses."
-                />
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label>
+                  <SettingLabel
+                    label="Response Length"
+                    tooltip="Maximum number of words in the response. Higher values allow for longer responses."
+                  />
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={resetToDefaults}
+                  className="h-8 w-8"
+                  title="Reset parameters to defaults"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
               <SliderSetting
                 value={settings.maxTokens}
                 onChange={(value) => handleChange('maxTokens', value)}

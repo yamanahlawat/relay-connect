@@ -75,9 +75,7 @@
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -109,5 +107,17 @@
   /* Hover effects */
   .hover-subtle {
     @apply transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03];
+  }
+
+  @keyframes fade {
+    0%,
+    100% {
+      opacity: 0.2;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }

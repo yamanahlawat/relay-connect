@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/context/ThemeProvider';
 import { inter } from '@/lib/fonts';
 import '@/styles/globals.css';
 import type { Metadata } from 'next';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: {
@@ -23,6 +24,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ReactQueryProvider>{children}</ReactQueryProvider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );

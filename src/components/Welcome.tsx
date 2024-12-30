@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/button';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
+import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { FileText, MessageSquare, NotebookPen, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
 type MessageCreate = components['schemas']['MessageCreate'];
 type SessionCreate = components['schemas']['SessionCreate'];
@@ -26,9 +29,12 @@ const ALL_SUGGESTIONS = [
 
 export function WelcomeContent() {
   const router = useRouter();
+  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
   const { selectedProvider, selectedModel } = useProviderModel();
   const [message, setMessage] = useState('');
   const { clearCode } = useCodeCascade();
+  const queryClient = useQueryClient();
+  const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
 
   const mutations = {
     createSession: useMutation({
@@ -60,7 +66,11 @@ export function WelcomeContent() {
         title: content.slice(0, 100),
         provider_id: selectedProvider.id,
         llm_model_id: selectedModel.id,
+        system_context: systemContext,
       });
+
+      // Invalidate the chat sessions query cache
+      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
 
       const message = await mutations.createMessage.mutateAsync({
         sessionId: session.id,
@@ -134,9 +144,12 @@ export function WelcomeContent() {
           placeholder={
             !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
           }
+          settings={chatSettings}
+          onSettingsChange={setChatSettings}
+          systemContext={systemContext}
+          onSystemContextChange={setSystemContext}
         />
       </div>
-      <Toaster />
     </main>
   );
 }

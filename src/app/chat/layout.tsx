@@ -1,7 +1,8 @@
 import { AppSidebar } from '@/components/AppSidebar';
 import ProviderModelSelect from '@/components/ProviderModelSelect';
+import { SidebarToggle } from '@/components/SidebarToggle';
 import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { listChatSessions } from '@/lib/api/chatSessions';
 import { listProviders } from '@/lib/api/providers';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
@@ -34,7 +35,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
         </HydrationBoundary>
         <SidebarInset className="flex min-w-0 flex-1 flex-col">
           <div className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border/40 bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarToggle className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <HydrationBoundary state={dehydrate(queryClient)}>
               <ProviderModelSelect />

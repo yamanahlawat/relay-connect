@@ -11,10 +11,14 @@ type UpdateSessionRequest =
 type UpdateSessionResponse =
   paths['/api/v1/sessions/{session_id}/']['patch']['responses']['200']['content']['application/json'];
 
-export async function listChatSessions(limit = 50, offset = 0): Promise<ChatSessionsListResponse> {
+export async function listChatSessions(
+  limit: number = 50,
+  offset: number = 0,
+  title?: string
+): Promise<ChatSessionsListResponse> {
   const { data, error } = await client.GET('/api/v1/sessions/', {
     params: {
-      query: { limit, offset },
+      query: { limit, offset, ...(title ? { title } : {}) },
     },
   });
   if (error) {

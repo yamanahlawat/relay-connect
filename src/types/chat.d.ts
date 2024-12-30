@@ -10,15 +10,16 @@ export interface ChatState {
 }
 
 export interface ChatSettings {
-  systemPrompt: string;
   maxTokens: number;
   temperature: number;
   topP: number;
 }
 
-export interface AdvancedSettingsProps {
+interface AdvancedSettingsProps {
   settings: ChatSettings;
   onSettingsChange: (settings: ChatSettings) => void;
+  systemContext?: string;
+  onSystemContextChange?: (prompt: string) => void;
   disabled?: boolean;
 }
 
@@ -30,6 +31,8 @@ export interface ChatInputProps {
   placeholder?: string;
   settings?: ChatSettings;
   onSettingsChange?: (settings: ChatSettings) => void;
+  systemContext?: string;
+  onSystemContextChange?: (prompt: string) => void;
 }
 
 export interface ChatMessageProps {

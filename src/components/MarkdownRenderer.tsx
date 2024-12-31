@@ -47,7 +47,20 @@ const components: Partial<Components> = {
     />
   ),
 
-  p: ({ children }) => <p className="leading-7 [&:not(:first-child)]:mt-4">{children}</p>,
+  pre: ({ children }) => children,
+
+  p: ({ children, node }) => {
+    const hasCodeBlock = node?.children?.some(
+      (child: { type: string; tagName: string }) =>
+        child.type === 'element' && (child.tagName === 'code' || child.tagName === 'pre')
+    );
+
+    if (hasCodeBlock) {
+      return <div className="my-4">{children}</div>;
+    }
+
+    return <p className="leading-7 [&:not(:first-child)]:mt-4">{children}</p>;
+  },
 
   h1: ({ children }) => <h1 className="scroll-m-20 text-3xl font-bold tracking-tight">{children}</h1>,
 

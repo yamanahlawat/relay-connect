@@ -110,7 +110,7 @@ export function AdvancedSettings({
                 placeholder="Define AI behavior or role..."
                 value={systemContext}
                 onChange={(e) => onSystemContextChange?.(e.target.value)}
-                className="h-20 resize-none"
+                className="h-40 resize-none"
               />
             </div>
 

@@ -11,6 +11,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   const queryClient = new QueryClient();
 
   await Promise.all([
+    // Prefetch the list of providers
     queryClient.prefetchQuery({
       queryKey: ['providers'],
       queryFn: async () => {
@@ -18,8 +19,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
         return response;
       },
     }),
+    // Prefetch the first page of chat sessions
     queryClient.prefetchInfiniteQuery({
-      queryKey: ['chat-sessions'],
+      queryKey: ['chat-sessions', ''],
       queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {
         const response = await listChatSessions(pageParam.limit, pageParam.offset);
         return response;

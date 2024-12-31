@@ -96,7 +96,7 @@ export function ChatInput({
 
           <div
             className={cn(
-              'absolute right-2 top-[13px] transition-all duration-200',
+              'absolute right-3 top-[13px] transition-all duration-200',
               hasContent ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-4 opacity-0'
             )}
           >
@@ -147,7 +147,7 @@ export function ChatInput({
           {hasContent && (
             <div
               className={cn(
-                'ml-auto pr-3 transition-all duration-200',
+                'ml-auto transition-all duration-200',
                 hasContent ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0'
               )}
             >

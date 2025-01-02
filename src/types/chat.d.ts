@@ -33,12 +33,17 @@ export interface ChatInputProps {
   onSettingsChange?: (settings: ChatSettings) => void;
   systemContext?: string;
   onSystemContextChange?: (prompt: string) => void;
+  isEditing?: boolean;
+  editMessage?: string;
+  onCancelEdit?: () => void;
 }
 
-export interface ChatMessageProps {
+interface ChatMessageProps {
   messages: MessageRead[];
   role: MessageRole;
   isStreaming?: boolean;
+  onEditClick?: (messageId: string) => void;
+  editingMessageId?: string | null;
 }
 
 interface CodeBlockProps {
@@ -54,17 +59,11 @@ export interface MarkdownRendererProps {
 }
 
 export interface MessageContentProps {
-  message: {
-    content: string;
-    created_at: string;
-    status?: string;
-    error_message?: string;
-    usage?: {
-      input_tokens: number;
-      output_tokens: number;
-      total_cost: number;
-    };
-  };
+  message: MessageRead;
+  isStreaming?: boolean;
+  role: MessageRole;
+  isEditing?: boolean;
+  onEditClick?: (messageId: string) => void;
 }
 
 export interface StreamParams {

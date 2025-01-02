@@ -6,7 +6,7 @@ import { ChatSplitView } from '@/components/ChatSplitView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { streamCompletion } from '@/lib/api/chat';
 import { createChatSession, getChatSession, updateChatSession } from '@/lib/api/chatSessions';
-import { createMessage, getMessage, listSessionMessages } from '@/lib/api/messages';
+import { createMessage, deleteMessage, getMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { useChatSettings } from '@/stores/chatSettings';
@@ -28,8 +28,10 @@ type SessionUpdate = components['schemas']['SessionUpdate'];
 export default function ChatPage() {
   const params = useParams();
   const { selectedProvider, selectedModel } = useProviderModel();
-  const queryClient = useQueryClient();
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<string>('');
 
+  const queryClient = useQueryClient();
   const { initialMessageId, clearInitialMessageId } = useMessageStreamingStore();
 
   // Refs for scroll management
@@ -60,7 +62,7 @@ export default function ChatPage() {
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? { limit: 20, offset: lastPage.nextOffset } : undefined),
     initialPageParam: { limit: 20, offset: 0 },
-    enabled: !!chatState.sessionId && !initialMessageId,
+    enabled: !!chatState.sessionId && !initialMessageId && !editingMessageId,
   });
 
   // Mutations
@@ -71,16 +73,35 @@ export default function ChatPage() {
       onError: () => toast.error('Failed to create session'),
     }),
 
+    updateSession: useMutation({
+      mutationFn: ({ sessionId, update }: { sessionId: string; update: SessionUpdate }) =>
+        updateChatSession(sessionId, update),
+      onError: () => toast.error('Failed to update session'),
+    }),
+
     createMessage: useMutation({
       mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
         createMessage(sessionId, messageData),
       onError: () => toast.error('Failed to send message'),
     }),
 
-    updateSession: useMutation({
-      mutationFn: ({ sessionId, update }: { sessionId: string; update: SessionUpdate }) =>
-        updateChatSession(sessionId, update),
-      onError: () => toast.error('Failed to update session'),
+    updateMessage: useMutation({
+      mutationFn: ({
+        sessionId,
+        messageId,
+        messageData,
+      }: {
+        sessionId: string;
+        messageId: string;
+        messageData: components['schemas']['MessageUpdate'];
+      }) => updateMessage(sessionId, messageId, messageData),
+      onError: () => toast.error('Failed to update message'),
+    }),
+
+    deleteMessage: useMutation({
+      mutationFn: ({ sessionId, messageId }: { sessionId: string; messageId: string }) =>
+        deleteMessage(sessionId, messageId),
+      onError: () => toast.error('Failed to delete message'),
     }),
   };
 
@@ -98,8 +119,7 @@ export default function ChatPage() {
 
   // Message streaming handler
   const handleMessageStream = useCallback(
-    async (sessionId: string, userMessage: MessageRead, params?: StreamParams) => {
-      // Create placeholder for assistant response
+    async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
       const placeholderId = `placeholder-${Date.now()}`;
       const assistantPlaceholder: MessageRead = {
         id: placeholderId,
@@ -117,9 +137,12 @@ export default function ChatPage() {
 
       setChatState((prev) => ({
         ...prev,
-        messages: [...prev.messages, userMessage, assistantPlaceholder],
+        messages: skipUserMessage
+          ? [...prev.messages, assistantPlaceholder]
+          : [...prev.messages, userMessage, assistantPlaceholder],
         streamingMessageId: placeholderId,
       }));
+
       try {
         const reader = await streamCompletion(sessionId, userMessage.id, params);
         const decoder = new TextDecoder();
@@ -209,8 +232,65 @@ export default function ChatPage() {
     }
   }, [isError, error, clearInitialMessageId]);
 
-  // Message sending handler
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
+    // Prevent empty messages
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
+
+    // Handle edit mode
+    if (editingMessageId) {
+      try {
+        const messageIndex = chatState.messages.findIndex((msg) => msg.id === editingMessageId);
+        const messagesToDelete = chatState.messages.slice(messageIndex + 1);
+
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages
+            .slice(0, messageIndex + 1)
+            .map((msg) =>
+              msg.id === editingMessageId ? { ...msg, content: trimmedContent, status: 'processing' } : msg
+            ),
+        }));
+
+        const updatedMessage = await mutations.updateMessage.mutateAsync({
+          sessionId: chatState.sessionId,
+          messageId: editingMessageId,
+          messageData: {
+            content: trimmedContent,
+            status: 'completed',
+          },
+        });
+
+        await Promise.all(
+          messagesToDelete.map((msg) =>
+            mutations.deleteMessage.mutateAsync({
+              sessionId: chatState.sessionId,
+              messageId: msg.id,
+            })
+          )
+        );
+
+        setChatState((prev) => ({
+          ...prev,
+          messages: [...prev.messages.slice(0, messageIndex), updatedMessage],
+        }));
+
+        handleCancelEdit();
+        await handleMessageStream(chatState.sessionId, updatedMessage, settings, true);
+        return;
+      } catch (error) {
+        console.error('Failed to edit message:', error);
+        toast.error('Failed to edit message');
+
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
+        }));
+        return;
+      }
+    }
+
+    // Regular message sending logic
     if (!selectedProvider || !selectedModel) {
       toast.error('Please select a provider and model');
       return;
@@ -285,7 +365,10 @@ export default function ChatPage() {
   useEffect(() => {
     if (messagesQuery.data) {
       const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
-      setChatState((prev) => ({ ...prev, messages: flattenedMessages }));
+      setChatState((prev) => ({
+        ...prev,
+        messages: prev.streamingMessageId ? prev.messages : flattenedMessages,
+      }));
     }
   }, [messagesQuery.data]);
 
@@ -323,6 +406,20 @@ export default function ChatPage() {
     }
   }, [isSessionError, sessionError]);
 
+  const handleEditStart = (messageId: string) => {
+    const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
+    if (messageToEdit) {
+      setEditingMessageId(messageId);
+      setEditingMessage(messageToEdit.content);
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setEditingMessage('');
+  }, []);
+
   return (
     <ChatSplitView>
       <div className="flex h-full flex-col">
@@ -343,6 +440,8 @@ export default function ChatPage() {
                   messages={group}
                   role={group[0]?.role}
                   isStreaming={group.some((msg) => msg.id === chatState.streamingMessageId)}
+                  onEditClick={group[0]?.role === 'user' ? handleEditStart : undefined}
+                  editingMessageId={editingMessageId}
                 />
               ))
             )}
@@ -364,6 +463,9 @@ export default function ChatPage() {
             onSettingsChange={setChatSettings}
             systemContext={systemContext}
             onSystemContextChange={handleSystemContextChange}
+            isEditing={!!editingMessageId}
+            editMessage={editingMessage}
+            onCancelEdit={handleCancelEdit}
           />
         </div>
       </div>

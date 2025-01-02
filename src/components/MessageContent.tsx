@@ -1,10 +1,9 @@
-// MessageContent.tsx
 import { CopyButton } from '@/components/CopyButton';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MessageContentProps, MessageRole } from '@/types/chat';
+import { MessageContentProps } from '@/types/chat';
 import { format } from 'date-fns';
-import { AlertCircle, Coins } from 'lucide-react';
+import { AlertCircle, Coins, Pencil } from 'lucide-react';
 
 function StatusIndicator() {
   const dots = 3;
@@ -25,11 +24,7 @@ function StatusIndicator() {
   );
 }
 
-export function MessageContent({
-  message,
-  isStreaming,
-  role,
-}: MessageContentProps & { isStreaming?: boolean; role: MessageRole }) {
+export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
   return (
     <div className="space-y-1.5">
       {/* Message content */}
@@ -93,7 +88,7 @@ export function MessageContent({
           )}
         </div>
 
-        {/* Right side - Status indicators */}
+        {/* Right side - Actions and Status */}
         <div className="flex items-center gap-2">
           {isStreaming && <StatusIndicator />}
 
@@ -111,13 +106,27 @@ export function MessageContent({
             </Tooltip>
           )}
 
-          {/* Copy button - Only for non-streaming AI messages, shown on hover */}
-          {role === 'assistant' && !isStreaming && (
-            <CopyButton
-              text={message.content}
-              className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-            />
-          )}
+          {/* Action buttons */}
+          <div className="flex items-center gap-1">
+            {/* Edit button */}
+            {role === 'user' && onEditClick && !isStreaming && (
+              <button
+                onClick={() => onEditClick(message.id)}
+                className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                disabled={isEditing}
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit message</span>
+              </button>
+            )}
+            {/* Copy button - Only for assistant messages */}
+            {role === 'assistant' && !isStreaming && (
+              <CopyButton
+                text={message.content}
+                className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

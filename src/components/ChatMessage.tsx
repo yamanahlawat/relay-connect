@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { ChatMessageProps } from '@/types/chat';
 import { Bot, User2 } from 'lucide-react';
 
-export function ChatMessage({ messages, role, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ messages, role, isStreaming, onEditClick, editingMessageId }: ChatMessageProps) {
   return (
     <div className="group relative w-full transition-all duration-300">
       <div
@@ -37,6 +37,8 @@ export function ChatMessage({ messages, role, isStreaming }: ChatMessageProps) {
                 message={message}
                 isStreaming={isStreaming && message === messages[messages.length - 1]}
                 role={role}
+                onEditClick={() => onEditClick?.(message.id)}
+                isEditing={editingMessageId === message.id}
               />
             ))}
           </div>

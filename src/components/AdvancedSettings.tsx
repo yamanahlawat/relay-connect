@@ -94,7 +94,7 @@ export function AdvancedSettings({
         <div className="grid gap-4">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Response Settings</h4>
-            <p className="text-sm text-muted-foreground">Customize how the AI generates responses.</p>
+            <p className="text-xs text-muted-foreground">Customize how the AI generates responses.</p>
           </div>
 
           <div className="grid gap-6">

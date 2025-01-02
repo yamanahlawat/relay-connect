@@ -102,14 +102,14 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
 
   return (
     <Sidebar className={cn('w-64 border-r', className)} {...props}>
-      <SidebarHeader className="h-12 justify-center px-3 py-2">
+      <SidebarHeader className="h-14 justify-center px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-1.5">
               <div className="flex aspect-square h-7 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform hover:scale-105">
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
-              <span className="pl-0.5 font-semibold">Relay Connect</span>
+              <span className="pl-1 font-semibold">Relay Connect</span>
             </Link>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground hover:text-foreground" asChild>

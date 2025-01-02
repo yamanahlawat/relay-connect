@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { FileIcon, Globe, SendHorizontal } from 'lucide-react';
+import { FileIcon, Globe, Pencil, SendHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { AdvancedSettings } from '@/components/AdvancedSettings';
@@ -18,6 +18,9 @@ export function ChatInput({
   onSettingsChange,
   systemContext = '',
   onSystemContextChange,
+  isEditing,
+  editMessage = '',
+  onCancelEdit,
 }: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
@@ -26,6 +29,27 @@ export function ChatInput({
   // Determine if we're in controlled or uncontrolled mode
   const isControlled = value !== undefined && onChange !== undefined;
   const currentValue = isControlled ? value : internalValue;
+
+  // Handle edit message initialization and changes
+  useEffect(() => {
+    if (editMessage) {
+      if (isControlled) {
+        onChange(editMessage);
+      } else {
+        setInternalValue(editMessage);
+      }
+    }
+  }, [isEditing, editMessage, isControlled, onChange]);
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    if (isControlled) {
+      onChange('');
+    } else {
+      setInternalValue('');
+    }
+    onCancelEdit?.();
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -75,44 +99,65 @@ export function ChatInput({
     <form onSubmit={handleSubmit} className="w-full border-t border-border">
       <div className="mx-auto p-4">
         <div className="relative rounded-lg border border-input bg-background">
-          <Textarea
-            ref={textareaRef}
-            value={currentValue}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder={placeholder}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              'min-h-[56px] w-full resize-none px-4 py-4',
-              'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',
-              'transition-[padding] duration-200 ease-in-out',
-              hasContent ? 'pr-20' : 'pr-4',
-              'border-0 focus-visible:ring-0',
-              'placeholder:text-muted-foreground/60',
-              disabled && 'opacity-50'
-            )}
-            disabled={disabled}
-            rows={1}
-          />
+          {isEditing && (
+            <div className="flex items-center justify-between bg-orange-100 px-4 py-1.5 dark:bg-orange-950/50">
+              <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Editing will remove all subsequent messages</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-orange-700/70 hover:text-orange-700 dark:text-orange-400/70 dark:hover:text-orange-400"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span className="sr-only">Cancel edit</span>
+              </button>
+            </div>
+          )}
 
-          <div
-            className={cn(
-              'absolute right-3 top-[13px] transition-all duration-200',
-              hasContent ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-4 opacity-0'
-            )}
-          >
-            <Button
-              type="submit"
-              size="icon"
-              disabled={disabled || !hasContent}
-              variant="default"
-              className="h-8 w-8 rounded-full"
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              value={currentValue}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder={placeholder}
+              onKeyDown={handleKeyDown}
+              className={cn(
+                'min-h-[56px] w-full resize-none px-4 py-4',
+                'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',
+                'transition-[padding] duration-200 ease-in-out',
+                hasContent ? 'pr-20' : 'pr-4',
+                'border-0 focus-visible:ring-0',
+                'placeholder:text-muted-foreground/60',
+                disabled && 'opacity-50',
+                isEditing && 'border-t border-orange-200 dark:border-orange-900'
+              )}
+              disabled={disabled}
+              rows={1}
+            />
+
+            <div
+              className={cn(
+                'absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-200',
+                hasContent ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-4 opacity-0'
+              )}
             >
-              <SendHorizontal className="h-4 w-4" />
-              <span className="sr-only">Send message</span>
-            </Button>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={disabled || !hasContent}
+                variant="default"
+                className="h-8 w-8 rounded-full"
+              >
+                <SendHorizontal className="h-4 w-4" />
+                <span className="sr-only">Send message</span>
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Bottom buttons */}
         <div className="mt-2 flex items-center justify-between px-1">
           <div className="flex items-center gap-0.5">
             <Button

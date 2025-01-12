@@ -1,6 +1,7 @@
 import { CopyButton } from '@/components/CopyButton';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { MessageContentProps } from '@/types/chat';
 import { format } from 'date-fns';
 import { AlertCircle, Coins, Pencil } from 'lucide-react';
@@ -89,7 +90,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
         </div>
 
         {/* Right side - Actions and Status */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isStreaming && <StatusIndicator />}
 
           {message.status === 'failed' && (
@@ -107,7 +108,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {/* Edit button */}
             {role === 'user' && onEditClick && !isStreaming && (
               <button
@@ -115,15 +116,18 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
                 className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
                 disabled={isEditing}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
                 <span className="sr-only">Edit message</span>
               </button>
             )}
-            {/* Copy button - Only for assistant messages */}
-            {role === 'assistant' && !isStreaming && (
+            {/* Copy button */}
+            {!isStreaming && (
               <CopyButton
                 text={message.content}
-                className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                className={cn(
+                  'p-1 text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100',
+                  isEditing && 'pointer-events-none opacity-50'
+                )}
               />
             )}
           </div>

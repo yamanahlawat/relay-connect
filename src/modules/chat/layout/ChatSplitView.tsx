@@ -1,6 +1,6 @@
 'use client';
 
-import { CodeCascadeView } from '@/components/CodeCascadeView';
+import { CodeCascadeView } from '@/modules/chat/components/code/CodeCascadeView';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useCodeCascade } from '@/stores/codeCascade';
 

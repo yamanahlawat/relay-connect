@@ -1,11 +1,11 @@
 'use client';
 
-import { ChatInput } from '@/components/ChatInput';
 import { Button } from '@/components/ui/button';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';

@@ -1,10 +1,10 @@
 'use client';
 
-import { ChatItem } from '@/components/sidebar/ChatItem';
-import { ChatSearch } from '@/components/sidebar/ChatSearch';
-import { useChatGroups } from '@/components/sidebar/hooks/useChatGroups';
-import { useIntersectionObserver } from '@/components/sidebar/hooks/useIntersectionObserver';
-import { NoResults } from '@/components/sidebar/NoResults';
+import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
+import { ChatSearch } from '@/modules/chat/components/sidebar/ChatSearch';
+import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
+import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
+import { NoResults } from '@/modules/chat/components/sidebar/NoResults';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {

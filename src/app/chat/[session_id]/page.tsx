@@ -1,19 +1,19 @@
 'use client';
 
-import { ChatInput } from '@/components/ChatInput';
-import { ChatMessage } from '@/components/ChatMessage';
-import { ChatSplitView } from '@/components/ChatSplitView';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { streamCompletion } from '@/lib/api/chat';
 import { createChatSession, getChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, deleteMessage, getMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { ChatInput } from '@/modules/chat/components/input/ChatInput';
+import { ChatMessage } from '@/modules/chat/components/message/ChatMessage';
+import { useChatState } from '@/modules/chat/hooks/useChatState';
+import { ChatSplitView } from '@/modules/chat/layout/ChatSplitView';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
-import { ChatSettings, ChatState, StreamParams } from '@/types/chat';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChatSettings } from '@/types/chat';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,26 +30,21 @@ export default function ChatPage() {
   const { selectedProvider, selectedModel } = useProviderModel();
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<string>('');
-
-  const queryClient = useQueryClient();
   const { initialMessageId, clearInitialMessageId } = useMessageStreamingStore();
 
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Chat state
-  const [chatState, setChatState] = useState<ChatState>({
-    sessionId: params.session_id as string,
-    messages: [],
-    streamingMessageId: null,
+  // Chat state and settings
+  const { chatState, streamMessage, updateMessagesFromQuery, setSessionId } = useChatState({
+    initialSessionId: params.session_id as string,
   });
 
   const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
-
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
 
-  // Message fetching query
+  // Queries
   const messagesQuery = useInfiniteQuery({
     queryKey: ['messages', chatState.sessionId],
     queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {
@@ -69,7 +64,7 @@ export default function ChatPage() {
   const mutations = {
     createSession: useMutation({
       mutationFn: (data: SessionCreate) => createChatSession(data),
-      onSuccess: (data) => setChatState((prev) => ({ ...prev, sessionId: data.id })),
+      onSuccess: (data) => setSessionId(data.id),
       onError: () => toast.error('Failed to create session'),
     }),
 
@@ -105,98 +100,8 @@ export default function ChatPage() {
     }),
   };
 
-  // Error handler
-  const handleStreamError = useCallback((placeholderId: string, errorMessage: string) => {
-    setChatState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === placeholderId ? { ...msg, status: 'failed', error_message: errorMessage } : msg
-      ),
-      streamingMessageId: null,
-    }));
-    toast.error(errorMessage);
-  }, []);
-
-  // Message streaming handler
-  const handleMessageStream = useCallback(
-    async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
-      const placeholderId = `placeholder-${Date.now()}`;
-      const assistantPlaceholder: MessageRead = {
-        id: placeholderId,
-        content: '',
-        role: 'assistant',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        session_id: sessionId,
-        error_message: null,
-        error_code: null,
-        usage: null,
-        parent_id: null,
-        extra_data: {},
-      };
-
-      setChatState((prev) => ({
-        ...prev,
-        messages: skipUserMessage
-          ? [...prev.messages, assistantPlaceholder]
-          : [...prev.messages, userMessage, assistantPlaceholder],
-        streamingMessageId: placeholderId,
-      }));
-
-      try {
-        const reader = await streamCompletion(sessionId, userMessage.id, params);
-        const decoder = new TextDecoder();
-        let streamContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          streamContent += decoder.decode(value, { stream: true });
-          setChatState((prev) => ({
-            ...prev,
-            messages: prev.messages.map((msg) =>
-              msg.id === placeholderId ? { ...msg, content: streamContent, status: 'processing' } : msg
-            ),
-          }));
-        }
-
-        // Mark message as completed
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) => (msg.id === placeholderId ? { ...msg, status: 'completed' } : msg)),
-          streamingMessageId: null,
-        }));
-
-        // Invalidate and refetch messages to get updated token/cost info
-        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-        handleStreamError(placeholderId, errorMessage);
-      }
-    },
-    [handleStreamError, queryClient]
-  );
-
-  const handleSystemContextChange = async (newPrompt: string) => {
-    setSystemContext(newPrompt);
-
-    if (chatState.sessionId) {
-      await mutations.updateSession.mutateAsync({
-        sessionId: chatState.sessionId,
-        update: {
-          system_context: newPrompt,
-        },
-      });
-    }
-  };
-
-  // Query for initial message when streaming from welcome page
-  const {
-    data: initialMessage,
-    isError,
-    error,
-  } = useQuery({
+  // Initial message query
+  const initialMessageQuery = useQuery({
     queryKey: ['message', chatState.sessionId, initialMessageId],
     queryFn: () => {
       if (!initialMessageId || !chatState.sessionId) return null;
@@ -205,35 +110,15 @@ export default function ChatPage() {
     enabled: Boolean(initialMessageId && chatState.sessionId),
   });
 
-  // Handle success separately
-  useEffect(() => {
-    if (initialMessage) {
-      // Create an async function inside useEffect
-      const streamMessage = async () => {
-        try {
-          await handleMessageStream(chatState.sessionId, initialMessage);
-          clearInitialMessageId();
-        } catch (error) {
-          console.error('Error streaming initial message:', error);
-          toast.error('Failed to stream initial message');
-          clearInitialMessageId();
-        }
-      };
+  // Session details query
+  const sessionQuery = useQuery({
+    queryKey: ['session', params.session_id],
+    queryFn: () => getChatSession(params.session_id as string),
+    enabled: !!params.session_id,
+  });
 
-      // Call the async function
-      streamMessage();
-    }
-  }, [initialMessage, chatState.sessionId, handleMessageStream, clearInitialMessageId]);
-  // Handle error separately
-  useEffect(() => {
-    if (isError) {
-      clearInitialMessageId();
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch initial message');
-    }
-  }, [isError, error, clearInitialMessageId]);
-
+  // Message handlers
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
-    // Prevent empty messages
     const trimmedContent = content.trim();
     if (!trimmedContent) return;
 
@@ -242,15 +127,6 @@ export default function ChatPage() {
       try {
         const messageIndex = chatState.messages.findIndex((msg) => msg.id === editingMessageId);
         const messagesToDelete = chatState.messages.slice(messageIndex + 1);
-
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages
-            .slice(0, messageIndex + 1)
-            .map((msg) =>
-              msg.id === editingMessageId ? { ...msg, content: trimmedContent, status: 'processing' } : msg
-            ),
-        }));
 
         const updatedMessage = await mutations.updateMessage.mutateAsync({
           sessionId: chatState.sessionId,
@@ -270,22 +146,25 @@ export default function ChatPage() {
           )
         );
 
-        setChatState((prev) => ({
-          ...prev,
-          messages: [...prev.messages.slice(0, messageIndex), updatedMessage],
-        }));
-
         handleCancelEdit();
-        await handleMessageStream(chatState.sessionId, updatedMessage, settings, true);
+
+        // Pass edit mode and index to streamMessage
+        await streamMessage(
+          chatState.sessionId,
+          updatedMessage,
+          {
+            max_tokens: settings.maxTokens,
+            temperature: settings.temperature,
+            top_p: settings.topP,
+          },
+          true, // skipUserMessage
+          true, // editMode
+          messageIndex // editIndex
+        );
         return;
       } catch (error) {
         console.error('Failed to edit message:', error);
         toast.error('Failed to edit message');
-
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
-        }));
         return;
       }
     }
@@ -309,44 +188,28 @@ export default function ChatPage() {
           })
         ).id;
 
-      // If session exists and system prompt changed, update it
-      if (chatState.sessionId && systemContext) {
-        await mutations.updateSession.mutateAsync({
-          sessionId: chatState.sessionId,
-          update: { system_context: systemContext },
-        });
-      }
-
       // Create user message
       const userMessage = await mutations.createMessage.mutateAsync({
         sessionId: currentSessionId,
-        messageData: { content, role: 'user', status: 'completed' },
+        messageData: { content: trimmedContent, role: 'user', status: 'completed' },
       });
 
-      // Start streaming with model parameters
-      await handleMessageStream(currentSessionId, userMessage, {
-        max_tokens: settings.maxTokens,
-        temperature: settings.temperature,
-        top_p: settings.topP,
-      });
+      // Start streaming
+      await streamMessage(
+        currentSessionId,
+        userMessage,
+        {
+          max_tokens: settings.maxTokens,
+          temperature: settings.temperature,
+          top_p: settings.topP,
+        },
+        false // skipUserMessage
+      );
     } catch (error) {
       console.error('Message sending error:', error);
       toast.error('Failed to send message');
     }
   };
-
-  // Scroll handler
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      const target = event.currentTarget;
-      const isNearTop = target.scrollTop < 100;
-
-      if (isNearTop && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
-        messagesQuery.fetchNextPage();
-      }
-    },
-    [messagesQuery]
-  );
 
   // Message grouping
   const messageGroups = useMemo(() => {
@@ -364,13 +227,22 @@ export default function ChatPage() {
   // Effects
   useEffect(() => {
     if (messagesQuery.data) {
-      const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
-      setChatState((prev) => ({
-        ...prev,
-        messages: prev.streamingMessageId ? prev.messages : flattenedMessages,
-      }));
+      updateMessagesFromQuery(messagesQuery.data);
     }
-  }, [messagesQuery.data]);
+  }, [messagesQuery.data, updateMessagesFromQuery]);
+
+  useEffect(() => {
+    if (initialMessageQuery.data) {
+      streamMessage(chatState.sessionId, initialMessageQuery.data);
+      clearInitialMessageId();
+    }
+  }, [initialMessageQuery.data, chatState.sessionId, streamMessage, clearInitialMessageId]);
+
+  useEffect(() => {
+    if (sessionQuery.data?.system_context) {
+      setSystemContext(sessionQuery.data.system_context);
+    }
+  }, [sessionQuery.data]);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -384,41 +256,48 @@ export default function ChatPage() {
     }
   }, [chatState.messages, chatState.streamingMessageId]);
 
-  const {
-    data: sessionDetails,
-    isError: isSessionError,
-    error: sessionError,
-  } = useQuery({
-    queryKey: ['session', params.session_id],
-    queryFn: () => getChatSession(params.session_id as string),
-    enabled: !!params.session_id,
-  });
+  // UI handlers
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const target = event.currentTarget;
+      const isNearTop = target.scrollTop < 100;
 
-  useEffect(() => {
-    if (sessionDetails?.system_context) {
-      setSystemContext(sessionDetails.system_context);
-    }
-  }, [sessionDetails]);
+      if (isNearTop && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+        messagesQuery.fetchNextPage();
+      }
+    },
+    [messagesQuery]
+  );
 
-  useEffect(() => {
-    if (isSessionError) {
-      toast.error(sessionError instanceof Error ? sessionError.message : 'Failed to fetch session details');
-    }
-  }, [isSessionError, sessionError]);
+  const handleEditStart = useCallback(
+    (messageId: string) => {
+      const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
+      if (messageToEdit) {
+        setEditingMessageId(messageId);
+        setEditingMessage(messageToEdit.content);
+      }
+    },
+    [chatState.messages]
+  );
 
-  const handleEditStart = (messageId: string) => {
-    const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
-    if (messageToEdit) {
-      setEditingMessageId(messageId);
-      setEditingMessage(messageToEdit.content);
-    }
-  };
-
-  // Handle cancel edit
   const handleCancelEdit = useCallback(() => {
     setEditingMessageId(null);
     setEditingMessage('');
   }, []);
+
+  const handleSystemContextChange = useCallback(
+    async (newPrompt: string) => {
+      setSystemContext(newPrompt);
+
+      if (chatState.sessionId) {
+        await mutations.updateSession.mutateAsync({
+          sessionId: chatState.sessionId,
+          update: { system_context: newPrompt },
+        });
+      }
+    },
+    [chatState.sessionId, mutations.updateSession]
+  );
 
   return (
     <ChatSplitView>
@@ -454,11 +333,7 @@ export default function ChatPage() {
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}
-            placeholder={getInputPlaceholder(
-              selectedProvider ? { id: selectedProvider.id } : null,
-              selectedModel ? { id: selectedModel.id } : null,
-              chatState.streamingMessageId
-            )}
+            placeholder={getInputPlaceholder(selectedProvider, selectedModel, chatState.streamingMessageId)}
             settings={chatSettings}
             onSettingsChange={setChatSettings}
             systemContext={systemContext}
@@ -474,8 +349,8 @@ export default function ChatPage() {
 }
 
 function getInputPlaceholder(
-  selectedProvider: { id: string } | null,
-  selectedModel: { id: string } | null,
+  selectedProvider: { id: string; name: string } | undefined,
+  selectedModel: { id: string; name: string } | undefined,
   streamingMessageId: string | null
 ): string {
   if (!selectedProvider || !selectedModel) return 'Select a provider and model to start...';

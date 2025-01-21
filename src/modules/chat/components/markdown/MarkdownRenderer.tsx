@@ -1,4 +1,4 @@
-import CodeBlock from '@/components/CodeBlock';
+import CodeBlock from '@/modules/chat/components/markdown/CodeBlock';
 import { MarkdownRendererProps } from '@/types/chat';
 import Image from 'next/image';
 import type { Components } from 'react-markdown';

@@ -1,14 +1,14 @@
 'use client';
 
-import { ChatInput } from '@/components/ChatInput';
-import { ChatMessage } from '@/components/ChatMessage';
-import { ChatSplitView } from '@/components/ChatSplitView';
+import { ChatMessage } from '@/modules/chat/components/message/ChatMessage';
+import { ChatSplitView } from '@/modules/chat/layout/ChatSplitView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { streamCompletion } from '@/lib/api/chat';
 import { createChatSession, getChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, deleteMessage, getMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';

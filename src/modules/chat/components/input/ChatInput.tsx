@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { FileIcon, Globe, Pencil, SendHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { AdvancedSettings } from '@/components/AdvancedSettings';
+import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { defaultChatSettings } from '@/lib/defaults';
 import { ChatInputProps } from '@/types/chat';
 

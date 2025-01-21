@@ -1,10 +1,10 @@
-import { AppSidebar } from '@/components/AppSidebar';
-import ProviderModelSelect from '@/components/ProviderModelSelect';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { WelcomeContent } from '@/components/Welcome';
+import { WelcomeContent } from '@/modules/chat/components/Welcome';
 import { listChatSessions } from '@/lib/api/chatSessions';
 import { listProviders } from '@/lib/api/providers';
+import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
+import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 
 export default async function Page() {

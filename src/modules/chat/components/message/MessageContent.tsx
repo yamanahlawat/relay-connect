@@ -1,5 +1,5 @@
 import { CopyButton } from '@/components/CopyButton';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { MessageContentProps } from '@/types/chat';

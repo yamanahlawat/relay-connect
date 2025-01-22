@@ -1,10 +1,5 @@
 'use client';
 
-import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
-import { ChatSearch } from '@/modules/chat/components/sidebar/ChatSearch';
-import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
-import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
-import { NoResults } from '@/modules/chat/components/sidebar/NoResults';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -20,6 +15,11 @@ import {
 } from '@/components/ui/sidebar';
 import { deleteChatSession, listChatSessions, updateChatSession } from '@/lib/api/chatSessions';
 import { cn } from '@/lib/utils';
+import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
+import { ChatSearch } from '@/modules/chat/components/sidebar/ChatSearch';
+import { NoResults } from '@/modules/chat/components/sidebar/NoResults';
+import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
+import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Loader, MessageSquarePlus, Sparkles } from 'lucide-react';
@@ -135,7 +135,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           ) : (
             groups.map((group, groupIndex) => (
               <SidebarGroup key={group.label}>
-                <SidebarGroupLabel className="sticky top-0 z-10 bg-background/95 px-2 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                <SidebarGroupLabel className="sticky top-0 z-10 bg-background/95 px-2 py-1.5 text-xs font-bold text-muted-foreground backdrop-blur-sm">
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>

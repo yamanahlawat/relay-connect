@@ -1,182 +1,59 @@
 'use client';
 
-import { ChatMessage } from '@/modules/chat/components/message/ChatMessage';
-import { ChatSplitView } from '@/modules/chat/layout/ChatSplitView';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { streamCompletion } from '@/lib/api/chat';
-import { createChatSession, getChatSession, updateChatSession } from '@/lib/api/chatSessions';
-import { createMessage, deleteMessage, getMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
+import { ChatMessageList } from '@/modules/chat/components/message/ChatMessageList';
+import { useChat } from '@/modules/chat/hooks/useChat';
+import { useInitialMessage } from '@/modules/chat/hooks/useInitialMessage';
+import { useMessageQueries } from '@/modules/chat/hooks/useMessageQueries';
+import { useSession } from '@/modules/chat/hooks/useSession';
+import { ChatSplitView } from '@/modules/chat/layout/ChatSplitView';
+import { getInputPlaceholder } from '@/modules/chat/utils/placeholder';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
-import { ChatSettings, ChatState, StreamParams } from '@/types/chat';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { ChatSettings } from '@/types/chat';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Types
 type MessageRead = components['schemas']['MessageRead'];
-type MessageCreate = components['schemas']['MessageCreate'];
-type SessionCreate = components['schemas']['SessionCreate'];
-type SessionUpdate = components['schemas']['SessionUpdate'];
 
 export default function ChatPage() {
   const params = useParams();
-  const { selectedProvider, selectedModel } = useProviderModel();
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editingMessage, setEditingMessage] = useState<string>('');
+  const sessionId = params.session_id as string;
 
-  const queryClient = useQueryClient();
+  // Stores
+  const { selectedProvider, selectedModel } = useProviderModel();
   const { initialMessageId, clearInitialMessageId } = useMessageStreamingStore();
+  const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
+
+  // hooks
+  const {
+    chatState,
+    setChatState,
+    editingMessageId,
+    editingMessage,
+    handleMessageStream,
+    handleEditStart,
+    handleCancelEdit,
+  } = useChat(sessionId);
+
+  const { messagesQuery, mutations } = useMessageQueries({
+    sessionId,
+    initialMessageId,
+    editingMessageId,
+    setChatState,
+  });
 
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Chat state
-  const [chatState, setChatState] = useState<ChatState>({
-    sessionId: params.session_id as string,
-    messages: [],
-    streamingMessageId: null,
-  });
-
-  const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
-
+  // States
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
-
-  // Message fetching query
-  const messagesQuery = useInfiniteQuery({
-    queryKey: ['messages', chatState.sessionId],
-    queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {
-      const response = await listSessionMessages(chatState.sessionId, pageParam.limit, pageParam.offset);
-      return {
-        messages: response.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-        nextOffset: pageParam.offset + response.length,
-        hasMore: response.length === pageParam.limit,
-      };
-    },
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? { limit: 20, offset: lastPage.nextOffset } : undefined),
-    initialPageParam: { limit: 20, offset: 0 },
-    enabled: !!chatState.sessionId && !initialMessageId && !editingMessageId,
-  });
-
-  // Mutations
-  const mutations = {
-    createSession: useMutation({
-      mutationFn: (data: SessionCreate) => createChatSession(data),
-      onSuccess: (data) => setChatState((prev) => ({ ...prev, sessionId: data.id })),
-      onError: () => toast.error('Failed to create session'),
-    }),
-
-    updateSession: useMutation({
-      mutationFn: ({ sessionId, update }: { sessionId: string; update: SessionUpdate }) =>
-        updateChatSession(sessionId, update),
-      onError: () => toast.error('Failed to update session'),
-    }),
-
-    createMessage: useMutation({
-      mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
-        createMessage(sessionId, messageData),
-      onError: () => toast.error('Failed to send message'),
-    }),
-
-    updateMessage: useMutation({
-      mutationFn: ({
-        sessionId,
-        messageId,
-        messageData,
-      }: {
-        sessionId: string;
-        messageId: string;
-        messageData: components['schemas']['MessageUpdate'];
-      }) => updateMessage(sessionId, messageId, messageData),
-      onError: () => toast.error('Failed to update message'),
-    }),
-
-    deleteMessage: useMutation({
-      mutationFn: ({ sessionId, messageId }: { sessionId: string; messageId: string }) =>
-        deleteMessage(sessionId, messageId),
-      onError: () => toast.error('Failed to delete message'),
-    }),
-  };
-
-  // Error handler
-  const handleStreamError = useCallback((placeholderId: string, errorMessage: string) => {
-    setChatState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === placeholderId ? { ...msg, status: 'failed', error_message: errorMessage } : msg
-      ),
-      streamingMessageId: null,
-    }));
-    toast.error(errorMessage);
-  }, []);
-
-  // Message streaming handler
-  const handleMessageStream = useCallback(
-    async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
-      const placeholderId = `placeholder-${Date.now()}`;
-      const assistantPlaceholder: MessageRead = {
-        id: placeholderId,
-        content: '',
-        role: 'assistant',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        session_id: sessionId,
-        error_message: null,
-        error_code: null,
-        usage: null,
-        parent_id: null,
-        extra_data: {},
-      };
-
-      setChatState((prev) => ({
-        ...prev,
-        messages: skipUserMessage
-          ? [...prev.messages, assistantPlaceholder]
-          : [...prev.messages, userMessage, assistantPlaceholder],
-        streamingMessageId: placeholderId,
-      }));
-
-      try {
-        const reader = await streamCompletion(sessionId, userMessage.id, params);
-        const decoder = new TextDecoder();
-        let streamContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          streamContent += decoder.decode(value, { stream: true });
-          setChatState((prev) => ({
-            ...prev,
-            messages: prev.messages.map((msg) =>
-              msg.id === placeholderId ? { ...msg, content: streamContent, status: 'processing' } : msg
-            ),
-          }));
-        }
-
-        // Mark message as completed
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) => (msg.id === placeholderId ? { ...msg, status: 'completed' } : msg)),
-          streamingMessageId: null,
-        }));
-
-        // Invalidate and refetch messages to get updated token/cost info
-        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-        handleStreamError(placeholderId, errorMessage);
-      }
-    },
-    [handleStreamError, queryClient]
-  );
 
   const handleSystemContextChange = async (newPrompt: string) => {
     setSystemContext(newPrompt);
@@ -190,47 +67,6 @@ export default function ChatPage() {
       });
     }
   };
-
-  // Query for initial message when streaming from welcome page
-  const {
-    data: initialMessage,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ['message', chatState.sessionId, initialMessageId],
-    queryFn: () => {
-      if (!initialMessageId || !chatState.sessionId) return null;
-      return getMessage(chatState.sessionId, initialMessageId);
-    },
-    enabled: Boolean(initialMessageId && chatState.sessionId),
-  });
-
-  // Handle success separately
-  useEffect(() => {
-    if (initialMessage) {
-      // Create an async function inside useEffect
-      const streamMessage = async () => {
-        try {
-          await handleMessageStream(chatState.sessionId, initialMessage);
-          clearInitialMessageId();
-        } catch (error) {
-          console.error('Error streaming initial message:', error);
-          toast.error('Failed to stream initial message');
-          clearInitialMessageId();
-        }
-      };
-
-      // Call the async function
-      streamMessage();
-    }
-  }, [initialMessage, chatState.sessionId, handleMessageStream, clearInitialMessageId]);
-  // Handle error separately
-  useEffect(() => {
-    if (isError) {
-      clearInitialMessageId();
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch initial message');
-    }
-  }, [isError, error, clearInitialMessageId]);
 
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
     // Prevent empty messages
@@ -335,6 +171,13 @@ export default function ChatPage() {
     }
   };
 
+  useInitialMessage({
+    sessionId: chatState.sessionId,
+    initialMessageId,
+    handleMessageStream,
+    clearInitialMessageId,
+  });
+
   // Scroll handler
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -370,7 +213,7 @@ export default function ChatPage() {
         messages: prev.streamingMessageId ? prev.messages : flattenedMessages,
       }));
     }
-  }, [messagesQuery.data]);
+  }, [messagesQuery.data, setChatState]);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -384,15 +227,7 @@ export default function ChatPage() {
     }
   }, [chatState.messages, chatState.streamingMessageId]);
 
-  const {
-    data: sessionDetails,
-    isError: isSessionError,
-    error: sessionError,
-  } = useQuery({
-    queryKey: ['session', params.session_id],
-    queryFn: () => getChatSession(params.session_id as string),
-    enabled: !!params.session_id,
-  });
+  const { sessionDetails } = useSession(sessionId);
 
   useEffect(() => {
     if (sessionDetails?.system_context) {
@@ -400,55 +235,19 @@ export default function ChatPage() {
     }
   }, [sessionDetails]);
 
-  useEffect(() => {
-    if (isSessionError) {
-      toast.error(sessionError instanceof Error ? sessionError.message : 'Failed to fetch session details');
-    }
-  }, [isSessionError, sessionError]);
-
-  const handleEditStart = (messageId: string) => {
-    const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
-    if (messageToEdit) {
-      setEditingMessageId(messageId);
-      setEditingMessage(messageToEdit.content);
-    }
-  };
-
-  // Handle cancel edit
-  const handleCancelEdit = useCallback(() => {
-    setEditingMessageId(null);
-    setEditingMessage('');
-  }, []);
-
   return (
     <ChatSplitView>
       <div className="flex h-full flex-col">
-        <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={handleScroll}>
-          <div className="mx-auto max-w-5xl space-y-4">
-            {messagesQuery.isFetchingNextPage && (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-
-            {messageGroups.length === 0 ? (
-              <EmptyStatePlaceholder />
-            ) : (
-              messageGroups.map((group) => (
-                <ChatMessage
-                  key={group[0]?.id}
-                  messages={group}
-                  role={group[0]?.role}
-                  isStreaming={group.some((msg) => msg.id === chatState.streamingMessageId)}
-                  onEditClick={group[0]?.role === 'user' ? handleEditStart : undefined}
-                  editingMessageId={editingMessageId}
-                />
-              ))
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+        <ChatMessageList
+          messageGroups={messageGroups}
+          streamingMessageId={chatState.streamingMessageId}
+          onEditClick={handleEditStart}
+          editingMessageId={editingMessageId}
+          onScroll={handleScroll}
+          isFetchingNextPage={messagesQuery.isFetchingNextPage}
+          messagesEndRef={messagesEndRef}
+          scrollAreaRef={scrollAreaRef}
+        />
 
         <div className="w-full border-t border-border/40">
           <ChatInput
@@ -470,26 +269,5 @@ export default function ChatPage() {
         </div>
       </div>
     </ChatSplitView>
-  );
-}
-
-function getInputPlaceholder(
-  selectedProvider: { id: string } | null,
-  selectedModel: { id: string } | null,
-  streamingMessageId: string | null
-): string {
-  if (!selectedProvider || !selectedModel) return 'Select a provider and model to start...';
-  if (streamingMessageId) return 'Please wait for the response...';
-  return 'Type your message...';
-}
-
-function EmptyStatePlaceholder() {
-  return (
-    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-      <div className="text-center">
-        <p className="mb-2 text-lg font-medium">No messages yet</p>
-        <p className="text-sm">Start a conversation by typing a message below</p>
-      </div>
-    </div>
   );
 }

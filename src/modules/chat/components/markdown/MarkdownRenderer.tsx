@@ -9,7 +9,19 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
 const components: Partial<Components> = {
-  code: CodeBlock,
+  code: ({ className, children }) => {
+    // Check if it's a one-line code snippet without language
+    const content = String(children).trim();
+    if (content.split('\n').length === 1 && !className) {
+      return <code className="rounded bg-muted px-1 py-0.5 font-mono text-sm">{content}</code>;
+    }
+
+    return (
+      <CodeBlock inline={false} className={className}>
+        {children}
+      </CodeBlock>
+    );
+  },
 
   a: ({ children, href }) => (
     <a

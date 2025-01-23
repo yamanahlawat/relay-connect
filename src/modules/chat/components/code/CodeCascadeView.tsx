@@ -74,7 +74,7 @@ export function CodeCascadeView() {
         </div>
 
         <div className="flex items-center gap-1">
-          <CopyButton text={activeCode} className="h-7 w-7" />
+          <CopyButton text={activeCode} className="h-7 w-7 opacity-100" />
           <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={clearCode}>
             <X className="h-3.5 w-3.5" />
           </Button>

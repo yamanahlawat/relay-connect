@@ -1,4 +1,4 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { CustomScrollArea as ScrollArea } from '@/components/custom/ScrollArea';
 import type { components } from '@/lib/api/schema';
 import { ChatMessage } from '@/modules/chat/components/message/ChatMessage';
 import { Loader2 } from 'lucide-react';

@@ -14,8 +14,9 @@ import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings } from '@/types/chat';
+import { debounce } from 'lodash';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Types
@@ -52,9 +53,12 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // States
+  // State for system context
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
+  // Update system context
   const handleSystemContextChange = async (newPrompt: string) => {
     setSystemContext(newPrompt);
 
@@ -68,6 +72,7 @@ export default function ChatPage() {
     }
   };
 
+  // Handle message sending
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
     // Prevent empty messages
     const trimmedContent = content.trim();
@@ -178,20 +183,31 @@ export default function ChatPage() {
     clearInitialMessageId,
   });
 
-  // Scroll handler
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      const target = event.currentTarget;
-      const isNearTop = target.scrollTop < 100;
+  // Debounced scroll handler
+  const handleScroll = useMemo(
+    () =>
+      debounce(() => {
+        const scrollArea = scrollAreaRef.current;
+        if (!scrollArea) return;
 
-      if (isNearTop && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
-        messagesQuery.fetchNextPage();
-      }
-    },
+        const nearBottom = Math.abs(scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight) < 10;
+        setIsAtBottom(nearBottom);
+
+        const isNearTop = scrollArea.scrollTop <= 100; // Adjusted condition for near top
+        if (isNearTop && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+          messagesQuery.fetchNextPage(); // Trigger only when near top
+        }
+      }, 200),
     [messagesQuery]
   );
 
-  // Message grouping
+  useEffect(() => {
+    return () => {
+      handleScroll.cancel(); // Cleanup the debounced function on unmount
+    };
+  }, [handleScroll]);
+
+  // Message grouping for display
   const messageGroups = useMemo(() => {
     return chatState.messages.reduce((groups: MessageRead[][], message) => {
       const lastGroup = groups[groups.length - 1];
@@ -205,28 +221,87 @@ export default function ChatPage() {
   }, [chatState.messages]);
 
   // Effects
+  // Handle API data and deduplication
   useEffect(() => {
     if (messagesQuery.data) {
-      const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
-      setChatState((prev) => ({
-        ...prev,
-        messages: prev.streamingMessageId ? prev.messages : flattenedMessages,
-      }));
+      setChatState((prev) => {
+        // Skip updates during streaming
+        if (prev.streamingMessageId) {
+          return prev;
+        }
+
+        const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
+
+        // Sort by creation date
+        flattenedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+        // Create a map of the most recent version of each message
+        const messageMap = new Map<string, MessageRead>();
+        [...flattenedMessages].forEach((msg) => {
+          // Remove any assistant- prefix from ID for comparison
+          const baseId = msg.id.replace('assistant-', '');
+          const existingMsg = messageMap.get(baseId);
+
+          if (!existingMsg || new Date(msg.created_at) > new Date(existingMsg.created_at)) {
+            messageMap.set(baseId, msg);
+          }
+        });
+
+        return {
+          ...prev,
+          messages: Array.from(messageMap.values()),
+        };
+      });
     }
   }, [messagesQuery.data, setChatState]);
+
+  // Scroll to the latest message on initial load or session change
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea || !shouldScrollToBottom || !chatState.messages.length) return;
+
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      setShouldScrollToBottom(false);
+    });
+  }, [chatState.messages, shouldScrollToBottom]);
+
+  // Maintain scroll position when older messages are loaded
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea || !messagesQuery.data || !messagesQuery.isFetchingNextPage) return;
+
+    const previousScrollHeight = scrollArea.scrollHeight;
+
+    requestAnimationFrame(() => {
+      const newScrollHeight = scrollArea.scrollHeight;
+      const scrollDiff = newScrollHeight - previousScrollHeight;
+
+      // Adjust scroll position to maintain view
+      scrollArea.scrollTop += scrollDiff;
+    });
+  }, [messagesQuery.data, messagesQuery.isFetchingNextPage]);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea) return;
 
-    const { scrollHeight, scrollTop, clientHeight } = scrollArea;
-    const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+    scrollArea.addEventListener('scroll', handleScroll);
 
-    if (chatState.streamingMessageId || isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [chatState.messages, chatState.streamingMessageId]);
+    return () => {
+      scrollArea.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
 
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea || !isAtBottom || !chatState.streamingMessageId) return;
+
+    // Auto-scroll to the streaming message only if the user is at the bottom
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatState.messages, chatState.streamingMessageId, isAtBottom]);
+
+  // Update system context on session change
   const { sessionDetails } = useSession(sessionId);
 
   useEffect(() => {
@@ -234,6 +309,27 @@ export default function ChatPage() {
       setSystemContext(sessionDetails.system_context);
     }
   }, [sessionDetails]);
+
+  useEffect(() => {
+    // Reset scroll flag on session change
+    setShouldScrollToBottom(true);
+
+    // Optional: Cleanup streaming state
+    return () => {
+      if (chatState.streamingMessageId) {
+        setChatState((prev) => ({
+          ...prev,
+          streamingMessageId: null,
+        }));
+      }
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    return () => {
+      handleScroll.cancel();
+    };
+  }, [handleScroll]);
 
   return (
     <ChatSplitView>

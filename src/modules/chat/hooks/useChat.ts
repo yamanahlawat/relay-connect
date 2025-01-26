@@ -35,30 +35,49 @@ export function useChat(sessionId: string) {
   // Message streaming handler
   const handleMessageStream = useCallback(
     async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
-      const placeholderId = `placeholder-${Date.now()}`;
-      const assistantPlaceholder: MessageRead = {
-        id: placeholderId,
-        content: '',
-        role: 'assistant',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        session_id: sessionId,
-        error_message: null,
-        error_code: null,
-        usage: null,
-        parent_id: null,
-        extra_data: {},
-      };
+      const assistantMessageId = `assistant-${userMessage.id}`;
 
-      setChatState((prev) => ({
-        ...prev,
-        messages: skipUserMessage
-          ? [...prev.messages, assistantPlaceholder]
-          : [...prev.messages, userMessage, assistantPlaceholder],
-        streamingMessageId: placeholderId,
-      }));
+      setChatState((prev) => {
+        // If this message is already being streamed, don't add it again
+        if (prev.streamingMessageId === assistantMessageId) {
+          return prev;
+        }
+
+        const newMessages = [...prev.messages];
+
+        // Add user message if not skipping and not already present
+        if (!skipUserMessage && !newMessages.some((msg) => msg.id === userMessage.id)) {
+          newMessages.push(userMessage);
+        }
+
+        // Add assistant message placeholder
+        const assistantMessage: MessageRead = {
+          id: assistantMessageId,
+          content: '',
+          role: 'assistant',
+          status: 'pending',
+          created_at: userMessage.created_at,
+          session_id: sessionId,
+          error_message: null,
+          error_code: null,
+          usage: null,
+          parent_id: userMessage.id,
+          extra_data: {},
+        };
+
+        newMessages.push(assistantMessage);
+
+        return {
+          ...prev,
+          messages: newMessages,
+          streamingMessageId: assistantMessageId,
+        };
+      });
 
       try {
+        // Prevent query updates during streaming
+        await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
+
         const reader = await streamCompletion(sessionId, userMessage.id, params);
         const decoder = new TextDecoder();
         let streamContent = '';
@@ -71,23 +90,22 @@ export function useChat(sessionId: string) {
           setChatState((prev) => ({
             ...prev,
             messages: prev.messages.map((msg) =>
-              msg.id === placeholderId ? { ...msg, content: streamContent, status: 'processing' } : msg
+              msg.id === assistantMessageId ? { ...msg, content: streamContent, status: 'processing' } : msg
             ),
           }));
         }
 
-        // Mark message as completed
         setChatState((prev) => ({
           ...prev,
-          messages: prev.messages.map((msg) => (msg.id === placeholderId ? { ...msg, status: 'completed' } : msg)),
+          messages: prev.messages.map((msg) => (msg.id === assistantMessageId ? { ...msg, status: 'completed' } : msg)),
           streamingMessageId: null,
         }));
 
-        // Invalidate and refetch messages to get updated token/cost info
-        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+        // Now that streaming is complete, refetch messages
+        await queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-        handleStreamError(placeholderId, errorMessage);
+        handleStreamError(assistantMessageId, errorMessage);
       }
     },
     [handleStreamError, queryClient]

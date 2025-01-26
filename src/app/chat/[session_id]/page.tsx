@@ -55,7 +55,7 @@ export default function ChatPage() {
 
   // State for system context
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
-
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   // Update system context
@@ -224,27 +224,47 @@ export default function ChatPage() {
   // Handle API data and deduplication
   useEffect(() => {
     if (messagesQuery.data) {
-      const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
-
       setChatState((prev) => {
-        const existingMessageIds = new Set(prev.messages.map((msg) => msg.id));
-        const deduplicatedMessages = flattenedMessages.filter((msg) => !existingMessageIds.has(msg.id));
+        // Skip updates during streaming
+        if (prev.streamingMessageId) {
+          return prev;
+        }
+
+        const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
+
+        // Sort by creation date
+        flattenedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+        // Create a map of the most recent version of each message
+        const messageMap = new Map<string, MessageRead>();
+        [...flattenedMessages].forEach((msg) => {
+          // Remove any assistant- prefix from ID for comparison
+          const baseId = msg.id.replace('assistant-', '');
+          const existingMsg = messageMap.get(baseId);
+
+          if (!existingMsg || new Date(msg.created_at) > new Date(existingMsg.created_at)) {
+            messageMap.set(baseId, msg);
+          }
+        });
 
         return {
           ...prev,
-          messages: [...deduplicatedMessages, ...prev.messages], // Prepend older messages
+          messages: Array.from(messageMap.values()),
         };
       });
     }
   }, [messagesQuery.data, setChatState]);
 
-  // Scroll to the latest message on initial load
+  // Scroll to the latest message on initial load or session change
   useEffect(() => {
-    const isInitialLoad = messagesQuery.data?.pages.length === 1; // First page check
-    if (isInitialLoad && chatState.messages.length > 0 && !messagesQuery.isFetchingNextPage) {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea || !shouldScrollToBottom || !chatState.messages.length) return;
+
+    requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [messagesQuery.data, chatState.messages.length, messagesQuery.isFetchingNextPage]);
+      setShouldScrollToBottom(false);
+    });
+  }, [chatState.messages, shouldScrollToBottom]);
 
   // Maintain scroll position when older messages are loaded
   useEffect(() => {
@@ -289,6 +309,21 @@ export default function ChatPage() {
       setSystemContext(sessionDetails.system_context);
     }
   }, [sessionDetails]);
+
+  useEffect(() => {
+    // Reset scroll flag on session change
+    setShouldScrollToBottom(true);
+
+    // Optional: Cleanup streaming state
+    return () => {
+      if (chatState.streamingMessageId) {
+        setChatState((prev) => ({
+          ...prev,
+          streamingMessageId: null,
+        }));
+      }
+    };
+  }, [sessionId]);
 
   useEffect(() => {
     return () => {

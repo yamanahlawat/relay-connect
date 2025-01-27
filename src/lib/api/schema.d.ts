@@ -999,6 +999,10 @@ export interface components {
       status?: components['schemas']['SessionStatus'] | null;
       /** System Context */
       system_context?: string | null;
+      /** Provider Id */
+      provider_id?: string | null;
+      /** Llm Model Id */
+      llm_model_id?: string | null;
       /** Extra Data */
       extra_data?: Record<string, never> | null;
     };
@@ -1550,6 +1554,7 @@ export interface operations {
       query?: {
         offset?: number;
         limit?: number;
+        title?: string | null;
       };
       header?: never;
       path?: never;

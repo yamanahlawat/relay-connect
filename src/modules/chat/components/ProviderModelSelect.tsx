@@ -2,14 +2,29 @@
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateChatSession } from '@/lib/api/chatSessions';
 import { listModels } from '@/lib/api/models';
 import { listProviders } from '@/lib/api/providers';
+import type { components } from '@/lib/api/schema';
 import { useProviderModel } from '@/stores/providerModel';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
+type SessionUpdate = components['schemas']['SessionUpdate'];
+
+interface PreviousState {
+  providerId: string | undefined;
+  modelId: string | undefined;
+}
+
 export default function ProviderModelSelect() {
+  const params = useParams();
+  const sessionId = params.session_id as string;
+  const queryClient = useQueryClient();
+  const previousState = useRef<PreviousState>({ providerId: undefined, modelId: undefined });
+
   const { selectedProvider, selectedModel, setSelectedProvider, setSelectedModel, setLoading } = useProviderModel();
 
   // Fetch providers
@@ -47,33 +62,89 @@ export default function ProviderModelSelect() {
         setLoading(false);
       }
     },
-    enabled: Boolean(selectedProvider?.id),
+    enabled: !!selectedProvider?.id,
   });
 
-  // Handle errors
-  useEffect(() => {
-    if (isProvidersError) {
-      toast.error(`Failed to load providers: ${providersError.message}`);
-    }
-  }, [isProvidersError, providersError]);
+  // Session update mutation
+  const updateSessionMutation = useMutation({
+    mutationFn: ({ update }: { update: SessionUpdate }) => updateChatSession(sessionId, update),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      previousState.current = {
+        providerId: selectedProvider?.id,
+        modelId: selectedModel?.id,
+      };
+    },
+    onError: () => {
+      toast.error('Failed to update session settings');
+      // Rollback to previous state on error
+      const previousProvider = providers.find((p) => p.id === previousState.current.providerId);
+      const previousModel = models.find((m) => m.id === previousState.current.modelId);
 
+      if (previousProvider) setSelectedProvider(previousProvider);
+      if (previousModel) setSelectedModel(previousModel);
+    },
+  });
+
+  // Handle provider change
+  const handleProviderChange = useCallback(
+    (providerId: string) => {
+      const provider = providers.find((p) => p.id === providerId);
+      if (!provider) {
+        toast.error('Invalid provider selected');
+        return;
+      }
+
+      setSelectedProvider(provider);
+      setSelectedModel(undefined);
+    },
+    [providers, setSelectedProvider, setSelectedModel]
+  );
+
+  // Handle model change
+  const handleModelChange = useCallback(
+    (modelId: string) => {
+      if (!selectedProvider) return;
+
+      const model = models.find((m) => m.id === modelId);
+      if (!model) {
+        toast.error('Invalid model selected');
+        return;
+      }
+
+      setSelectedModel(model);
+
+      // Only update session if it exists and we have both provider and model
+      if (sessionId && selectedProvider) {
+        updateSessionMutation.mutate({
+          update: {
+            provider_id: selectedProvider.id,
+            llm_model_id: modelId,
+          },
+        });
+      }
+    },
+    [sessionId, selectedProvider, models, setSelectedModel, updateSessionMutation]
+  );
+
+  // Combined error handling
   useEffect(() => {
-    if (isModelsError) {
-      toast.error(`Failed to load models: ${modelsError.message}`);
+    if (isProvidersError || isModelsError) {
+      const error = isProvidersError ? providersError : modelsError;
+      const message = isProvidersError ? 'Failed to load providers' : 'Failed to load models';
+      toast.error(error instanceof Error ? error.message : message);
     }
-  }, [isModelsError, modelsError]);
+  }, [isProvidersError, isModelsError, providersError, modelsError]);
+
+  const isUpdating = sessionId ? updateSessionMutation.isPending : false;
 
   return (
     <div className="flex w-full items-center justify-between px-4">
       <div className="flex items-center gap-4">
         <Select
           value={selectedProvider?.id}
-          onValueChange={(id) => {
-            const provider = providers.find((p) => p.id === id);
-            setSelectedProvider(provider);
-            setSelectedModel(undefined); // Clear model when provider changes
-          }}
-          disabled={isLoadingProviders || isProvidersError}
+          onValueChange={handleProviderChange}
+          disabled={isLoadingProviders || isProvidersError || isUpdating}
         >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder={isProvidersError ? 'Error loading' : 'Select Provider'} />
@@ -89,14 +160,15 @@ export default function ProviderModelSelect() {
 
         <Select
           value={selectedModel?.id}
-          onValueChange={(id) => {
-            const model = models.find((m) => m.id === id);
-            setSelectedModel(model);
-          }}
-          disabled={!selectedProvider || isLoadingModels || isModelsError}
+          onValueChange={handleModelChange}
+          disabled={!selectedProvider || isLoadingModels || isModelsError || isUpdating}
         >
           <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder={isModelsError ? 'Error loading' : 'Select Model'} />
+            <SelectValue
+              placeholder={
+                !selectedProvider ? 'Select provider first' : isModelsError ? 'Error loading' : 'Select Model'
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {models.map((model) => (

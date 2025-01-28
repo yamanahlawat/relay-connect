@@ -1,6 +1,8 @@
+import { cn } from '@/lib/utils';
 import CodeBlock from '@/modules/chat/components/markdown/CodeBlock';
-import { MarkdownRendererProps } from '@/types/chat';
+import ThinkBlock from '@/modules/chat/components/markdown/ThinkBlock';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -8,14 +10,87 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
-const components: Partial<Components> = {
+interface ProcessedContent {
+  type: 'regular' | 'think';
+  thinkContent: string;
+  regularContent: string;
+  isComplete: boolean;
+}
+
+interface MarkdownNode {
+  type: string;
+  tagName?: string;
+  children?: MarkdownNode[];
+}
+
+export interface MarkdownRendererProps {
+  /**
+   * The markdown content to render
+   */
+  content: string;
+  /**
+   * Whether the content is currently being streamed
+   */
+  isStreaming?: boolean;
+}
+
+/**
+ * Processes streaming content to separate think blocks from regular content
+ */
+const processStreamingContent = (content: string): ProcessedContent | { type: 'regular'; content: string } => {
+  let isInThinkBlock = false;
+  let thinkContent = '';
+  let regularContent = '';
+
+  // Check for think block tags
+  const hasOpeningTag = content.includes('<think>');
+  const hasClosingTag = content.includes('</think>');
+
+  // Handle content without think blocks
+  if (!hasOpeningTag && !hasClosingTag) {
+    return {
+      type: 'regular',
+      content,
+    };
+  }
+
+  // Process opening tag
+  if (hasOpeningTag) {
+    const parts = content.split('<think>');
+    if (parts.length > 1) {
+      regularContent = parts[0];
+      thinkContent = parts[1];
+      isInThinkBlock = true;
+    }
+  }
+
+  // Process closing tag
+  if (hasClosingTag && isInThinkBlock) {
+    const parts = thinkContent.split('</think>');
+    if (parts.length > 1) {
+      thinkContent = parts[0];
+      regularContent += parts[1];
+      isInThinkBlock = false;
+    }
+  }
+
+  return {
+    type: isInThinkBlock ? 'think' : 'regular',
+    thinkContent: thinkContent.trim(),
+    regularContent: regularContent.trim(),
+    isComplete: hasOpeningTag && hasClosingTag,
+  };
+};
+
+/**
+ * Markdown component configuration
+ */
+const markdownComponents: Partial<Components> = {
   code: ({ className, children }) => {
-    // Check if it's a one-line code snippet without language
     const content = String(children).trim();
     if (content.split('\n').length === 1 && !className) {
       return <code className="rounded bg-muted px-1 py-0.5 font-mono text-sm">{content}</code>;
     }
-
     return (
       <CodeBlock inline={false} className={className}>
         {children}
@@ -62,9 +137,8 @@ const components: Partial<Components> = {
   pre: ({ children }) => children,
 
   p: ({ children, node }) => {
-    const hasCodeBlock = node?.children?.some(
-      (child: { type: string; tagName: string }) =>
-        child.type === 'element' && (child.tagName === 'code' || child.tagName === 'pre')
+    const hasCodeBlock = (node as MarkdownNode)?.children?.some(
+      (child) => child.type === 'element' && (child.tagName === 'code' || child.tagName === 'pre')
     );
 
     if (hasCodeBlock) {
@@ -73,31 +147,67 @@ const components: Partial<Components> = {
 
     return <p className="leading-7 [&:not(:first-child)]:mt-4">{children}</p>;
   },
-
-  h1: ({ children }) => <h1 className="scroll-m-20 text-3xl font-bold tracking-tight">{children}</h1>,
-
-  h2: ({ children }) => <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight">{children}</h2>,
-
-  h3: ({ children }) => <h3 className="scroll-m-20 text-xl font-semibold tracking-tight">{children}</h3>,
-
-  h4: ({ children }) => <h4 className="scroll-m-20 text-lg font-semibold tracking-tight">{children}</h4>,
-
-  blockquote: ({ children }) => <blockquote className="mt-4 border-l-2 pl-6 italic">{children}</blockquote>,
-
-  hr: () => <hr className="my-4 border-muted-foreground/20" />,
 };
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+/**
+ * MarkdownRenderer component
+ * Renders markdown content with support for think blocks and streaming
+ */
+export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRendererProps) {
+  const [processedContent, setProcessedContent] = useState<ProcessedContent>({
+    type: 'regular',
+    thinkContent: '',
+    regularContent: '',
+    isComplete: false,
+  });
+
+  // Process content when it changes
+  useEffect(() => {
+    const processed = processStreamingContent(content);
+    if ('content' in processed) {
+      setProcessedContent({
+        type: 'regular',
+        thinkContent: '',
+        regularContent: processed.content,
+        isComplete: true,
+      });
+    } else {
+      setProcessedContent(processed);
+    }
+  }, [content]);
+
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeRaw]}
-        components={components}
-        className="space-y-3 leading-normal"
-      >
-        {content}
-      </ReactMarkdown>
+    <div
+      className={cn(
+        'prose prose-sm dark:prose-invert max-w-none break-words',
+        isStreaming && 'duration-75 animate-in fade-in-0'
+      )}
+    >
+      {/* Think Block Content - Rendered First */}
+      {(processedContent.type === 'think' || processedContent.thinkContent) && (
+        <ThinkBlock isStreaming={isStreaming}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            components={markdownComponents}
+          >
+            {processedContent.thinkContent}
+          </ReactMarkdown>
+        </ThinkBlock>
+      )}
+
+      {/* Regular Content - Rendered Second */}
+      {processedContent.regularContent && (
+        <div className={cn('mt-4', isStreaming && 'opacity-90')}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            components={markdownComponents}
+          >
+            {processedContent.regularContent}
+          </ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       initialPageParam: { limit: 20, offset: 0 },
     }),
   ]);
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-screen">

@@ -1,10 +1,10 @@
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { WelcomeContent } from '@/modules/chat/components/Welcome';
 import { listChatSessions } from '@/lib/api/chatSessions';
 import { listProviders } from '@/lib/api/providers';
 import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
 import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
+import { WelcomeContent } from '@/modules/chat/components/Welcome';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 
 export default async function Page() {
@@ -14,15 +14,13 @@ export default async function Page() {
     queryClient.prefetchQuery({
       queryKey: ['providers'],
       queryFn: async () => {
-        const response = await listProviders();
-        return response;
+        return await listProviders();
       },
     }),
     queryClient.prefetchInfiniteQuery({
       queryKey: ['chat-sessions'],
       queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {
-        const response = await listChatSessions(pageParam.limit, pageParam.offset);
-        return response;
+        return await listChatSessions(pageParam.limit, pageParam.offset);
       },
       initialPageParam: { limit: 20, offset: 0 },
     }),

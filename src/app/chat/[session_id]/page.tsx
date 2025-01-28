@@ -323,7 +323,7 @@ export default function ChatPage() {
         }));
       }
     };
-  }, [sessionId]);
+  }, [chatState.streamingMessageId, sessionId, setChatState]);
 
   useEffect(() => {
     return () => {

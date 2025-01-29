@@ -9,18 +9,15 @@ interface ThinkBlockProps {
 }
 
 export default function ThinkBlock({ children, isStreaming }: ThinkBlockProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  // Set initial state based on streaming status
+  const [isOpen, setIsOpen] = useState(isStreaming ?? false);
 
-  // Auto collapse when streaming ends
+  // Update open state when streaming changes
   useEffect(() => {
     if (isStreaming) {
       setIsOpen(true);
     } else {
-      // Add a small delay before collapsing to ensure content is visible
-      const timeout = setTimeout(() => {
-        setIsOpen(false);
-      }, 500);
-      return () => clearTimeout(timeout);
+      setIsOpen(false);
     }
   }, [isStreaming]);
 

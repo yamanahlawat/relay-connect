@@ -35,7 +35,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
           <div className="whitespace-pre-wrap">{message.content}</div>
         ) : (
           // For AI messages, use markdown renderer
-          <MarkdownRenderer content={message.content} />
+          <MarkdownRenderer content={message.content} isStreaming={isStreaming} />
         )}
       </div>
 

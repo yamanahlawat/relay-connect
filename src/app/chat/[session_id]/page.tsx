@@ -305,8 +305,8 @@ export default function ChatPage() {
   const { sessionDetails } = useSession(sessionId);
 
   useEffect(() => {
-    if (sessionDetails?.system_context) {
-      setSystemContext(sessionDetails.system_context);
+    if (sessionDetails) {
+      setSystemContext(sessionDetails.system_context || '');
     }
   }, [sessionDetails]);
 

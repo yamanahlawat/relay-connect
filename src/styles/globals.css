@@ -79,36 +79,10 @@
   * {
     @apply border-border;
   }
-
-  body {
-    @apply bg-background font-inter text-foreground antialiased;
-    font-feature-settings:
-      'rlig' 1,
-      'calt' 1;
-  }
 }
 
 @layer utilities {
   /* Message status indicators */
-  .status-success {
-    @apply text-[hsl(var(--success))];
-  }
-
-  /* Border utilities */
-  .border-light {
-    @apply border border-black/[0.06] dark:border-white/[0.06];
-  }
-
-  /* Background utilities */
-  .bg-subtle {
-    @apply bg-black/[0.02] dark:bg-white/[0.02];
-  }
-
-  /* Hover effects */
-  .hover-subtle {
-    @apply transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03];
-  }
-
   @keyframes fade {
     0%,
     100% {

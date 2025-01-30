@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -27,6 +28,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { NavUser } from './NavUser';
 
 export function AppSidebar({ className, ...props }: ComponentProps<typeof Sidebar>) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,6 +183,9 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           )}
         </ScrollArea>
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={{ name: 'Yaman Ahlawat', email: 'yaman@outlook.com' }} />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

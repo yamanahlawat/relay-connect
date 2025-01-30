@@ -94,11 +94,11 @@ export const ChatItem = React.memo(function ChatItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={onStartEdit}>
+            <DropdownMenuItem onClick={onStartEdit} className="cursor-pointer">
               <PencilLine className="mr-2 h-4 w-4" />
               <span>Rename</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete}>
+            <DropdownMenuItem onClick={onDelete} className="cursor-pointer">
               <Trash className="mr-2 h-4 w-4" />
               <span>Delete</span>
             </DropdownMenuItem>

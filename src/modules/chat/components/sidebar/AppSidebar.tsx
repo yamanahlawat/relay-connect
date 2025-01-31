@@ -18,6 +18,7 @@ import { deleteChatSession, listChatSessions, updateChatSession } from '@/lib/ap
 import { cn } from '@/lib/utils';
 import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
 import { ChatSearch } from '@/modules/chat/components/sidebar/ChatSearch';
+import { NavUser } from '@/modules/chat/components/sidebar/NavUser';
 import { NoResults } from '@/modules/chat/components/sidebar/NoResults';
 import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
@@ -28,7 +29,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { NavUser } from './NavUser';
 
 export function AppSidebar({ className, ...props }: ComponentProps<typeof Sidebar>) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,9 +137,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           ) : (
             groups.map((group, groupIndex) => (
               <SidebarGroup key={group.label}>
-                <SidebarGroupLabel className="sticky top-0 z-10 bg-background/95 px-2 py-1.5 text-xs font-bold text-muted-foreground backdrop-blur-sm">
-                  {group.label}
-                </SidebarGroupLabel>
+                <SidebarGroupLabel className="text-xs font-bold text-muted-foreground">{group.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-0.5">
                     {group.chats.map((chat, chatIndex) => (
@@ -151,7 +149,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
                             : undefined
                         }
                         className={cn(
-                          'relative px-0 py-0.5 [&:hover_.action-menu]:opacity-100 [&:hover_.chat-item]:bg-accent/50',
+                          'relative px-0 py-0 [&:hover_.action-menu]:opacity-100 [&:hover_.chat-item]:bg-accent/50',
                           '[&>.chat-item]:transition-colors'
                         )}
                       >

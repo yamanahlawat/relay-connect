@@ -1,30 +1,12 @@
+import { SettingLabel } from '@/components/SettingsLabel';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChatSettings } from '@/stores/chatSettings';
 import { AdvancedSettingsProps, ChatSettings } from '@/types/chat';
-import { HelpCircle, RotateCcw, Settings2 } from 'lucide-react';
-
-function SettingLabel({ label, tooltip }: { label: string; tooltip: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span>{label}</span>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs text-sm">{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  );
-}
+import { RotateCcw, Settings2 } from 'lucide-react';
 
 function SliderSetting({
   value,
@@ -118,7 +100,7 @@ export function AdvancedSettings({
               <div className="flex items-center justify-between">
                 <Label>
                   <SettingLabel
-                    label="Response Length"
+                    label="Max Tokens"
                     tooltip="Maximum number of words in the response. Higher values allow for longer responses."
                   />
                 </Label>
@@ -148,7 +130,7 @@ export function AdvancedSettings({
             <div className="space-y-2">
               <Label>
                 <SettingLabel
-                  label="Creativity"
+                  label="Temperature"
                   tooltip="Higher values make responses more creative and varied, lower values make them more focused and deterministic."
                 />
               </Label>
@@ -167,7 +149,7 @@ export function AdvancedSettings({
             <div className="space-y-2">
               <Label>
                 <SettingLabel
-                  label="Answer Variety"
+                  label="Top P"
                   tooltip="Controls how diverse the responses can be. Lower values make responses more focused on the most likely options."
                 />
               </Label>

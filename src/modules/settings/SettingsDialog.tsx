@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { GeneralSettings } from '@/modules/settings/GeneralSettings';
+import { ModelSettings } from '@/modules/settings/Models/ModelSettings';
+import { ProviderSettings } from '@/modules/settings/Providers/ProviderSettings';
 import { Bot, Cloud, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -39,7 +41,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTitle></DialogTitle>
-      <DialogContent className="flex h-[600px] w-[900px] max-w-4xl gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-[700px] w-[1000px] max-w-4xl gap-0 overflow-hidden p-0">
         {/* Left Navigation */}
         <div className="flex w-52 flex-col border-r bg-muted/40">
           <div className="flex h-14 items-center justify-between border-b px-4 py-3">
@@ -64,31 +66,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-1 flex-col">
-          <div className="flex items-start border-b p-4">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">{settingsNav.find((item) => item.id === activePage)?.label}</h2>
-              <p className="text-sm text-muted-foreground">
-                {settingsNav.find((item) => item.id === activePage)?.description}
-              </p>
-            </div>
-          </div>
-          <div className="flex-1 space-y-6 overflow-y-auto p-6">
-            {activePage === 'general' && <GeneralSettings />}
-            {activePage === 'providers' && <ProviderSettings />}
-            {activePage === 'models' && <ModelSettings />}
-          </div>
+        <div className="flex-1 overflow-y-auto">
+          {activePage === 'general' && <GeneralSettings />}
+          {activePage === 'providers' && <ProviderSettings />}
+          {activePage === 'models' && <ModelSettings />}
         </div>
       </DialogContent>
     </Dialog>
   );
-}
-
-// Placeholder components for other settings pages
-function ProviderSettings() {
-  return <div>Provider Settings Content</div>;
-}
-
-function ModelSettings() {
-  return <div>Model Settings Content</div>;
 }

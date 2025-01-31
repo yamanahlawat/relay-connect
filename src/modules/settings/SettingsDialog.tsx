@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { GeneralSettings } from '@/modules/settings/GeneralSettings';
 import { Bot, Cloud, Settings2 } from 'lucide-react';
 import { useState } from 'react';
-import { GeneralSettings } from './GeneralSettings';
 
 // Settings Navigation Items
 const settingsNav = [

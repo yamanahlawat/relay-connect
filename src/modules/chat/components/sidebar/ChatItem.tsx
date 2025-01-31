@@ -67,9 +67,9 @@ export const ChatItem = React.memo(function ChatItem({
       <Link
         href={`/chat/${chat.id}`}
         className={cn(
-          'flex flex-1 items-center px-2 py-1.5 text-sm',
-          isActive && 'rounded-md bg-accent/50 font-medium text-accent-foreground',
-          !isActive && 'text-foreground/80'
+          'flex flex-1 items-center px-2 py-2 text-sm transition-colors',
+          isActive && 'rounded-md bg-accent font-medium text-accent-foreground',
+          !isActive && 'text-foreground/90'
         )}
         onClick={(e) => {
           clearCode();
@@ -79,8 +79,7 @@ export const ChatItem = React.memo(function ChatItem({
           }
         }}
       >
-        {isActive && <div className="absolute left-0 top-1/2 h-full w-0.5 -translate-y-1/2 bg-primary" />}
-        <span className={cn('line-clamp-1 pr-4', isActive && 'pl-0.5')} title={chat.title}>
+        <span className="line-clamp-1 pr-4" title={chat.title}>
           {chat.title}
         </span>
       </Link>

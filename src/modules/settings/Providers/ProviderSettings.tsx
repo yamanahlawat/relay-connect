@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { createProvider, deleteProvider, listProviders, updateProvider } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
+import { ProviderGroup } from '@/modules/settings/Providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
@@ -24,7 +25,6 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import { ProviderGroup } from './ProviderGroup';
 
 type Provider = components['schemas']['ProviderRead'];
 type ProviderCreate = components['schemas']['ProviderCreate'];
@@ -246,7 +246,7 @@ export function ProviderSettings() {
                   {Object.entries(groupedProviders).map(([type, providers]) => (
                     <ProviderGroup
                       key={type}
-                      title={`${type.charAt(0).toUpperCase()}${type.slice(1)} Providers`}
+                      title={`${type.charAt(0).toUpperCase()}${type.slice(1)}`}
                       providers={providers}
                       onEdit={handleEditProvider}
                       onDelete={handleDeleteClick}

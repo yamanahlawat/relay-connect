@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { components } from '@/lib/api/schema';
 import { cn } from '@/lib/utils';
-import { Bot, Code2, Cpu, Pencil, Trash } from 'lucide-react';
+import { Bot, Code2, Cpu, Settings2, Trash } from 'lucide-react';
 
 type Model = components['schemas']['ModelRead'];
 
@@ -59,7 +59,7 @@ export function ModelCard({ model, onEdit, onDelete }: ModelCardProps) {
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
           onClick={() => onEdit(model)}
         >
-          <Pencil className="h-4 w-4" />
+          <Settings2 className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"

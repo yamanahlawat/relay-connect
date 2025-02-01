@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { components } from '@/lib/api/schema';
 import { cn } from '@/lib/utils';
-import { Bot, Cloud, Globe, Pencil, Terminal, Trash } from 'lucide-react';
+import { Bot, Cloud, Globe, Settings2, Terminal, Trash } from 'lucide-react';
 
 type Provider = components['schemas']['ProviderRead'];
 
@@ -55,7 +55,7 @@ export function ProviderCard({ provider, onEdit, onDelete }: ProviderCardProps) 
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
           onClick={() => onEdit(provider)}
         >
-          <Pencil className="h-4 w-4" />
+          <Settings2 className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"

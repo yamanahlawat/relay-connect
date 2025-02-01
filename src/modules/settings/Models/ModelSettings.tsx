@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { createModel, deleteModel, listModels, updateModel } from '@/lib/api/models';
 import { listProviders } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
+import { ModelGroup } from '@/modules/settings/Models/ModelGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
@@ -27,7 +28,6 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import { ModelGroup } from './ModelGroup';
 
 type Model = components['schemas']['ModelRead'];
 type ModelCreate = components['schemas']['ModelCreate'];

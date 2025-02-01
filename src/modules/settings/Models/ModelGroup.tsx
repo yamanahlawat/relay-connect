@@ -1,5 +1,5 @@
 import { components } from '@/lib/api/schema';
-import { ModelCard } from './ModelCard';
+import { ModelCard } from '@/modules/settings/Models/ModelCard';
 
 type Model = components['schemas']['ModelRead'];
 

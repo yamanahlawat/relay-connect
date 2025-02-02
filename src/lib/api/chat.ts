@@ -65,3 +65,17 @@ export async function streamCompletion(
 
   return reader;
 }
+
+export async function stopChatCompletion(sessionId: string): Promise<void> {
+  const { error } = await client.POST('/api/v1/chat/complete/{session_id}/stop', {
+    params: {
+      path: {
+        session_id: sessionId,
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to stop chat completion: ${error.detail}`);
+  }
+}

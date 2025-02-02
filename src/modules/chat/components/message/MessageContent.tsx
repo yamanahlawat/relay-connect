@@ -1,5 +1,5 @@
 import { CopyButton } from '@/components/CopyButton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
 import { MessageContentProps } from '@/types/chat';
@@ -94,31 +94,38 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
           {isStreaming && <StatusIndicator />}
 
           {message.status === 'failed' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-destructive/90 transition-colors hover:text-destructive">
-                  <AlertCircle className="h-2.5 w-2.5" />
-                  <span className="font-medium">Error</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="text-xs text-destructive">
-                {message.error_message}
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-destructive/90 transition-colors hover:text-destructive">
+                    <AlertCircle className="h-2.5 w-2.5" />
+                    <span className="font-medium">Error</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">{message.error_message}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             {/* Edit button */}
             {role === 'user' && onEditClick && !isStreaming && (
-              <button
-                onClick={() => onEditClick(message.id)}
-                className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                disabled={isEditing}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                <span className="sr-only">Edit message</span>
-              </button>
+              <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onEditClick(message.id)}
+                      className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                      disabled={isEditing}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="sr-only">Edit message</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Edit message</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {/* Copy button */}
             {!isStreaming && (

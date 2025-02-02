@@ -240,6 +240,37 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/chat/complete/{session_id}/stop': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stop Completion
+     * @description ## Stop Chat Completion Stream
+     *
+     *     Stops an ongoing streaming completion for the specified session.
+     *
+     *     ### Parameters
+     *     - **session_id**: UUID of the chat session to stop streaming
+     *
+     *     ### Returns
+     *     No content on successful stop
+     *
+     *     ### Raises
+     *     - **404**: Session not found
+     */
+    post: operations['stop_completion_api_v1_chat_complete__session_id__stop_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/chat/complete/{session_id}': {
     parameters: {
       query?: never;
@@ -1483,6 +1514,44 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+    };
+  };
+  stop_completion_api_v1_chat_complete__session_id__stop_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

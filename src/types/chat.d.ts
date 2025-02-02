@@ -36,6 +36,8 @@ export interface ChatInputProps {
   isEditing?: boolean;
   editMessage?: string;
   onCancelEdit?: () => void;
+  isStreaming?: boolean;
+  onStop?: () => void;
 }
 
 interface ChatMessageProps {

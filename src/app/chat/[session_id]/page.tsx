@@ -16,7 +16,7 @@ import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings } from '@/types/chat';
 import { debounce } from 'lodash';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Types
@@ -71,6 +71,30 @@ export default function ChatPage() {
       });
     }
   };
+
+  // Handle stop generation
+  const handleStopGeneration = useCallback(() => {
+    if (chatState.sessionId && chatState.streamingMessageId) {
+      mutations.stopMessage.mutate();
+    }
+  }, [chatState.sessionId, chatState.streamingMessageId, mutations.stopMessage]);
+
+  // Add global event listener for Escape key
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && chatState.streamingMessageId) {
+        handleStopGeneration();
+      }
+    };
+
+    // Attach event listener for the Escape key
+    document.addEventListener('keydown', handleEscapeKey);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [chatState.streamingMessageId, handleStopGeneration]);
 
   // Handle message sending
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
@@ -361,6 +385,8 @@ export default function ChatPage() {
             isEditing={!!editingMessageId}
             editMessage={editingMessage}
             onCancelEdit={handleCancelEdit}
+            isStreaming={!!chatState.streamingMessageId}
+            onStop={handleStopGeneration}
           />
         </div>
       </div>

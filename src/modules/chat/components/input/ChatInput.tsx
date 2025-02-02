@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { FileIcon, Globe, Pencil, SendHorizontal, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
-import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { defaultChatSettings } from '@/lib/defaults';
+import { cn } from '@/lib/utils';
+import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { ChatInputProps } from '@/types/chat';
+import { FileIcon, Globe, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function ChatInput({
   value,
@@ -21,6 +21,8 @@ export function ChatInput({
   isEditing,
   editMessage = '',
   onCancelEdit,
+  isStreaming,
+  onStop,
 }: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
@@ -87,8 +89,10 @@ export function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle Enter key press to submit message
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // Handle Shift + Enter for new line
       handleSubmit(e as unknown as React.FormEvent);
     }
   };
@@ -133,26 +137,55 @@ export function ChatInput({
                 disabled && 'opacity-50',
                 isEditing && 'border-t border-orange-200 dark:border-orange-900'
               )}
-              disabled={disabled}
+              disabled={disabled || isStreaming}
               rows={1}
             />
 
             <div
               className={cn(
                 'absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-200',
-                hasContent ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-4 opacity-0'
+                'flex items-center gap-2'
               )}
             >
-              <Button
-                type="submit"
-                size="icon"
-                disabled={disabled || !hasContent}
-                variant="default"
-                className="h-8 w-8 rounded-full"
-              >
-                <SendHorizontal className="h-4 w-4" />
-                <span className="sr-only">Send message</span>
-              </Button>
+              {isStreaming ? (
+                <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={onStop}
+                        variant="default"
+                        className="h-8 w-8 rounded-full"
+                      >
+                        <StopCircle className="h-4 w-4" />
+                        <span className="sr-only">Stop response</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">Stop response</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                hasContent && (
+                  <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="submit"
+                          size="icon"
+                          disabled={disabled || !hasContent}
+                          variant="default"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <SendHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Send message</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">Send message</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )
+              )}
             </div>
           </div>
         </div>

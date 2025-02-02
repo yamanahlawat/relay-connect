@@ -1,3 +1,4 @@
+import { stopChatCompletion } from '@/lib/api/chat';
 import { createChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, deleteMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
@@ -97,6 +98,23 @@ export function useMessageQueries({
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
       },
       onError: () => toast.error('Failed to delete message'),
+    }),
+    stopMessage: useMutation({
+      mutationFn: () => stopChatCompletion(sessionId),
+      onSuccess: () => {
+        // Update chat state to mark message as completed
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg.id === prev.streamingMessageId ? { ...msg, status: 'completed' } : msg
+          ),
+          streamingMessageId: null,
+        }));
+
+        // Invalidate messages cache for this session
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+      },
+      onError: () => toast.error('Failed to stop generation'),
     }),
   };
 

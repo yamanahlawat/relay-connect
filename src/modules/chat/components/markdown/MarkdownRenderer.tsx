@@ -188,7 +188,7 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         <ThinkBlock isStreaming={isStreaming}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            rehypePlugins={[rehypeRaw, rehypeKatex]}
             components={markdownComponents}
           >
             {processedContent.thinkContent}
@@ -201,7 +201,7 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         <div className={cn('mt-4', isStreaming && 'opacity-90')}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            rehypePlugins={[rehypeRaw, rehypeKatex]}
             components={markdownComponents}
           >
             {processedContent.regularContent}

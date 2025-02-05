@@ -43,7 +43,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
       <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-xs">
         {/* Left side metadata */}
         <div className="flex items-center gap-2">
-          <Tooltip delayDuration={100}>
+          <Tooltip delayDuration={200}>
             <TooltipTrigger asChild>
               <time
                 dateTime={message.created_at}
@@ -61,7 +61,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
           {role === 'assistant' && message.usage && (
             <>
               <span className="inline-block h-0.5 w-0.5 rounded-full bg-current opacity-40" />
-              <Tooltip delayDuration={100}>
+              <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <span className="tabular-nums text-muted-foreground transition-colors hover:text-foreground">
                     {message.usage.input_tokens + message.usage.output_tokens} tokens
@@ -74,7 +74,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
               </Tooltip>
 
               <span className="inline-block h-0.5 w-0.5 rounded-full bg-current opacity-40" />
-              <Tooltip delayDuration={100}>
+              <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground">
                     <Coins className="h-2.5 w-2.5" />

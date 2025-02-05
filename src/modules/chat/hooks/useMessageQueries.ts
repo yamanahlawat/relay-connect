@@ -7,7 +7,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
-type MessageCreate = components['schemas']['MessageCreate'];
+type MessageCreate = components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
 type SessionUpdate = components['schemas']['SessionUpdate'];
 
 interface UseMessageQueriesProps {

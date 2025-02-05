@@ -3,10 +3,28 @@ import { cn } from '@/lib/utils';
 import { MessageContent } from '@/modules/chat/components/message/MessageContent';
 import { ChatMessageProps } from '@/types/chat';
 import { Bot, User2 } from 'lucide-react';
+import { MessageAttachments } from './MessageAttachments';
 
 export function ChatMessage({ messages, role, isStreaming, onEditClick, editingMessageId }: ChatMessageProps) {
+  // Combine attachments from all messages in the group (for user messages)
+  const attachments =
+    role === 'user'
+      ? messages.reduce<NonNullable<(typeof messages)[number]['attachments']>>((acc, msg) => {
+          if (msg.attachments && msg.attachments.length > 0) {
+            return [...acc, ...msg.attachments];
+          }
+          return acc;
+        }, [])
+      : [];
+
   return (
     <div className="group relative w-full transition-all duration-300">
+      {/* If there are any attachments, render them above the chat bubble */}
+      {role === 'user' && attachments.length > 0 && (
+        <div className="mx-auto max-w-2xl px-3 pb-2">
+          <MessageAttachments attachments={attachments} />
+        </div>
+      )}
       <div
         className={cn(
           'mx-auto flex w-full max-w-2xl gap-3 rounded-lg px-3 py-2.5 transition-colors duration-300',

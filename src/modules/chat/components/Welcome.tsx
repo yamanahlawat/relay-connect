@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
-import type { components } from '@/lib/api/schema';
+import type { components, paths } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { useChatSettings } from '@/stores/chatSettings';
@@ -19,8 +19,9 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-type MessageCreate = components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
 type SessionCreate = components['schemas']['SessionCreate'];
+type CreateMessageRequest =
+  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
 
 const ALL_SUGGESTIONS = [
   { icon: FileText, text: 'Summarize text', color: 'text-blue-500' },
@@ -51,8 +52,13 @@ export function WelcomeContent() {
     }),
 
     createMessage: useMutation({
-      mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
-        createMessage(sessionId, messageData),
+      mutationFn: ({
+        sessionId,
+        messageData,
+      }: {
+        sessionId: string;
+        messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>;
+      }) => createMessage(sessionId, messageData),
       onError: (error) => toast.error(`Failed to send message\n ${error.message}`),
     }),
   };
@@ -66,7 +72,7 @@ export function WelcomeContent() {
       return;
     }
 
-    if (!content.trim()) return;
+    if (!content.trim() && selectedFiles.length === 0) return;
 
     try {
       clearCode();

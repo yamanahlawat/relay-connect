@@ -110,7 +110,7 @@ export default function ChatPage() {
   const handleSendMessage = async (content: string, settings: ChatSettings) => {
     // Prevent empty messages
     const trimmedContent = content.trim();
-    if (!trimmedContent) return;
+    if (!trimmedContent && selectedFiles.length === 0) return;
 
     // Handle edit mode
     if (editingMessageId) {
@@ -195,7 +195,12 @@ export default function ChatPage() {
       // Create user message
       const userMessage = await mutations.createMessage.mutateAsync({
         sessionId: currentSessionId,
-        messageData: { content, role: 'user', status: 'completed', attachments: selectedFiles },
+        messageData: {
+          content,
+          role: 'user',
+          status: 'completed',
+          attachments: selectedFiles,
+        },
       });
 
       // Start streaming with model parameters
@@ -364,8 +369,6 @@ export default function ChatPage() {
       handleScroll.cancel();
     };
   }, [handleScroll]);
-
-  console.log(selectedFiles);
 
   return (
     <ChatSplitView>

@@ -3,11 +3,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
+import { FilePreview } from '@/modules/chat/components/input/FilePreview';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { ChatInputProps } from '@/types/chat';
-import { Globe, Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
+import { Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { FilePreview } from './FilePreview';
 
 export function ChatInput({
   value,
@@ -84,6 +84,8 @@ export function ChatInput({
     if (currentValue.trim() && onSend) {
       onSend(currentValue.trim(), settings || defaultChatSettings);
       handleChange('');
+      // Clear selected files after sending
+      setSelectedFiles([]);
 
       // Reset textarea height after sending
       if (textareaRef.current) {
@@ -111,7 +113,7 @@ export function ChatInput({
     setSelectedFiles((prev) => [...prev, ...imageFiles]);
   };
 
-  const hasContent = currentValue.trim().length > 0;
+  const hasContent = currentValue.trim().length > 0 || selectedFiles.length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="w-full border-t border-border">
@@ -216,6 +218,8 @@ export function ChatInput({
                     size="icon"
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
+                    // Prevent focus issues
+                    onMouseDown={(e) => e.preventDefault()}
                     className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     disabled={disabled}
                   >
@@ -226,16 +230,6 @@ export function ChatInput({
                 <TooltipContent side="top">Attach files</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              disabled={disabled}
-            >
-              <Globe className="h-4 w-4" />
-              <span className="sr-only">Search web</span>
-            </Button>
             <AdvancedSettings
               settings={settings}
               onSettingsChange={onSettingsChange || (() => {})}

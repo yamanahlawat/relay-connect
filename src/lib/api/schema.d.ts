@@ -448,23 +448,28 @@ export interface paths {
     put?: never;
     /**
      * Create Message
-     * @description ## Create a New Chat Message
-     *     Creates a new message in the specified chat session.
+     * @description Create a new message in the specified chat session with support for file attachments.
      *
      *     ### Parameters
      *     - **session_id**: UUID of the chat session
-     *     - **content**: Message content
-     *     - **role**: Message role (user/assistant/system)
-     *     - **parent_id**: Optional parent message ID for threading
-     *     - **extra_data**: Optional additional data
+     *     - **Form Data**:
+     *         - **content**: Message content (required)
+     *         - **role**: Message role (user/assistant/system)
+     *         - **status**: Message status
+     *         - **parent_id**: Optional parent message ID for threading
+     *         - **usage**: JSON string of usage statistics
+     *         - **attachments**: List of file attachments
+     *         - **extra_data**: JSON string of additional metadata
      *
      *     ### Returns
-     *     The created message
+     *     The created message with complete details
      *
      *     ### Raises
      *     - **404**: Session not found
      *     - **404**: Parent message not found (if parent_id provided)
      *     - **400**: Invalid role for message
+     *     - **400**: Invalid form data format
+     *     - **413**: File too large
      */
     post: operations['create_message_api_v1_messages__session_id___post'];
     delete?: never;
@@ -537,10 +542,80 @@ export interface paths {
     patch: operations['update_message_api_v1_messages__session_id___message_id___patch'];
     trace?: never;
   };
+  '/api/v1/attachments/{folder}/{filename}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Serve Attachment
+     * @description Serves an attachment file.
+     *     The folder should represent the storage folder (e.g. 'session_id/message_id'),
+     *     and filename is the stored file name (including the UUID prefix).
+     */
+    get: operations['serve_attachment_api_v1_attachments__folder___filename__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AttachmentRead
+     * @description Schema for reading an Attachment.
+     *     Includes all base fields plus the id and timestamps.
+     */
+    AttachmentRead: {
+      /** File Name */
+      file_name: string;
+      /** File Size */
+      file_size: number;
+      /** Mime Type */
+      mime_type: string;
+      type: components['schemas']['AttachmentType'];
+      /** Storage Path */
+      storage_path: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Message Id
+       * Format: uuid
+       */
+      message_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Absolute Url
+       * @description Constructs the absolute URL for this attachment.
+       *     If using local storage, it builds the URL from settings.BASE_URL, settings.API_URL, and the stored path.
+       */
+      readonly absolute_url: string;
+    };
+    /**
+     * AttachmentType
+     * @description Enum for attachment types
+     * @enum {string}
+     */
+    AttachmentType: 'image' | 'video' | 'document' | 'audio';
     /** Body_create_message_api_v1_messages__session_id___post */
     Body_create_message_api_v1_messages__session_id___post: {
       /** Content */
@@ -700,6 +775,8 @@ export interface components {
        */
       created_at: string;
       usage?: components['schemas']['ChatUsage'] | null;
+      /** Attachments */
+      attachments?: components['schemas']['AttachmentRead'][];
       /** Error Code */
       error_code?: string | null;
       /** Error Message */
@@ -1918,6 +1995,36 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MessageRead'];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  serve_attachment_api_v1_attachments__folder___filename__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        folder: string;
+        filename: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

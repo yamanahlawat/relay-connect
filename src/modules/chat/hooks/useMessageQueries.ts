@@ -1,14 +1,15 @@
 import { stopChatCompletion } from '@/lib/api/chat';
 import { createChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, deleteMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
-import type { components } from '@/lib/api/schema';
+import type { components, paths } from '@/lib/api/schema';
 import { ChatState } from '@/types/chat';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
-type MessageCreate = components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
 type SessionUpdate = components['schemas']['SessionUpdate'];
+type CreateMessageRequest =
+  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
 
 interface UseMessageQueriesProps {
   sessionId: string;
@@ -64,8 +65,13 @@ export function useMessageQueries({
     }),
 
     createMessage: useMutation({
-      mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
-        createMessage(sessionId, messageData),
+      mutationFn: ({
+        sessionId,
+        messageData,
+      }: {
+        sessionId: string;
+        messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>;
+      }) => createMessage(sessionId, messageData),
       onSuccess: () => {
         // Invalidate messages cache for this session
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });

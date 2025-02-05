@@ -67,7 +67,7 @@ export const ChatItem = React.memo(function ChatItem({
       <Link
         href={`/chat/${chat.id}`}
         className={cn(
-          'flex flex-1 items-center px-2 py-2 text-sm transition-colors',
+          'flex flex-1 items-center truncate px-2 py-2 text-sm transition-colors',
           isActive && 'rounded-md bg-accent font-medium text-accent-foreground',
           !isActive && 'text-foreground/90'
         )}
@@ -79,12 +79,14 @@ export const ChatItem = React.memo(function ChatItem({
           }
         }}
       >
-        <span className="line-clamp-1 pr-4" title={chat.title}>
+        {/* Add max-width and truncate */}
+        <span className="block max-w-[180px] truncate" title={chat.title}>
           {chat.title}
         </span>
       </Link>
 
-      <div className={cn('action-menu absolute right-0.5 opacity-0 transition-opacity', isOpen && 'opacity-100')}>
+      {/* Position action menu absolutely */}
+      <div className={cn('action-menu absolute right-0.5 z-10 opacity-0 transition-opacity', isOpen && 'opacity-100')}>
         <DropdownMenu onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent">

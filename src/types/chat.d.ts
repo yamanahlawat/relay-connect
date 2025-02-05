@@ -38,6 +38,8 @@ export interface ChatInputProps {
   onCancelEdit?: () => void;
   isStreaming?: boolean;
   onStop?: () => void;
+  selectedFiles?: File[];
+  setSelectedFiles?: (files: File[]) => void;
 }
 
 interface ChatMessageProps {

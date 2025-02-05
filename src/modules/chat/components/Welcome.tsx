@@ -12,12 +12,14 @@ import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
+import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
 import { FileText, MessageSquare, NotebookPen, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-type MessageCreate = components['schemas']['MessageCreate'];
+type MessageCreate = components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
 type SessionCreate = components['schemas']['SessionCreate'];
 
 const ALL_SUGGESTIONS = [
@@ -30,6 +32,12 @@ const ALL_SUGGESTIONS = [
 export function WelcomeContent() {
   const router = useRouter();
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const { isDragging } = useFileDrag({
+    onDrop: (files) => setSelectedFiles(files),
+    // Only allow images here
+    fileTypes: ['image/'],
+  });
   const { selectedProvider, selectedModel } = useProviderModel();
   const [message, setMessage] = useState('');
   const { clearCode } = useCodeCascade();
@@ -78,6 +86,7 @@ export function WelcomeContent() {
           content,
           role: 'user',
           status: 'completed',
+          attachments: selectedFiles,
         },
       });
 
@@ -90,6 +99,7 @@ export function WelcomeContent() {
 
   return (
     <main className="flex flex-1 flex-col">
+      {isDragging && <FileDropOverlay isOver={isDragging} />}
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6">
           <h1 className="text-center text-2xl font-medium text-foreground/90">What can I help you with?</h1>
@@ -148,6 +158,8 @@ export function WelcomeContent() {
           onSettingsChange={setChatSettings}
           systemContext={systemContext}
           onSystemContextChange={setSystemContext}
+          selectedFiles={selectedFiles}
+          setSelectedFiles={setSelectedFiles}
         />
       </div>
     </main>

@@ -4,7 +4,7 @@ import type { paths } from '@/lib/api/schema';
 type ListMessagesResponse =
   paths['/api/v1/messages/{session_id}/']['get']['responses']['200']['content']['application/json'];
 type CreateMessageRequest =
-  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['application/json'];
+  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
 type CreateMessageResponse =
   paths['/api/v1/messages/{session_id}/']['post']['responses']['201']['content']['application/json'];
 type GetMessageResponse =
@@ -33,16 +33,31 @@ export async function listSessionMessages(sessionId: string, limit = 10, offset 
 /**
  * Create a new message in a chat session
  */
-export async function createMessage(sessionId: string, message: CreateMessageRequest): Promise<CreateMessageResponse> {
+export async function createMessage(
+  sessionId: string,
+  messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>
+): Promise<CreateMessageResponse> {
+  const requestBody: CreateMessageRequest = {
+    content: messageData.content,
+    role: messageData.role || 'user',
+    status: messageData.status || 'pending',
+    usage: messageData.usage || '{}',
+    attachments: messageData.attachments || [],
+    extra_data: messageData.extra_data || '{}',
+    parent_id: messageData.parent_id || null,
+  };
+
   const { data, error } = await client.POST('/api/v1/messages/{session_id}/', {
     params: {
       path: { session_id: sessionId },
     },
-    body: message,
+    body: requestBody,
   });
+
   if (error) {
     throw new Error(`Error creating message: ${error.detail}`);
   }
+
   return data;
 }
 

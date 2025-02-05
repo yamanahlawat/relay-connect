@@ -3,8 +3,10 @@
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
+import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
 import { ChatMessageList } from '@/modules/chat/components/message/ChatMessageList';
 import { useChat } from '@/modules/chat/hooks/useChat';
+import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
 import { useInitialMessage } from '@/modules/chat/hooks/useInitialMessage';
 import { useMessageQueries } from '@/modules/chat/hooks/useMessageQueries';
 import { useSession } from '@/modules/chat/hooks/useSession';
@@ -52,11 +54,19 @@ export default function ChatPage() {
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // State for system context
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const { isDragging } = useFileDrag({
+    onDrop: (files) => setSelectedFiles(files),
+    // Accept images
+    fileTypes: ['image/'],
+  });
 
   // Update system context
   const handleSystemContextChange = async (newPrompt: string) => {
@@ -185,7 +195,7 @@ export default function ChatPage() {
       // Create user message
       const userMessage = await mutations.createMessage.mutateAsync({
         sessionId: currentSessionId,
-        messageData: { content, role: 'user', status: 'completed' },
+        messageData: { content, role: 'user', status: 'completed', attachments: selectedFiles },
       });
 
       // Start streaming with model parameters
@@ -355,9 +365,12 @@ export default function ChatPage() {
     };
   }, [handleScroll]);
 
+  console.log(selectedFiles);
+
   return (
     <ChatSplitView>
-      <div className="flex h-full flex-col">
+      <div ref={chatContainerRef} className="flex h-full flex-col">
+        {isDragging && <FileDropOverlay isOver={isDragging} />}
         <ChatMessageList
           messageGroups={messageGroups}
           streamingMessageId={chatState.streamingMessageId}
@@ -387,6 +400,8 @@ export default function ChatPage() {
             onCancelEdit={handleCancelEdit}
             isStreaming={!!chatState.streamingMessageId}
             onStop={handleStopGeneration}
+            selectedFiles={selectedFiles}
+            setSelectedFiles={setSelectedFiles}
           />
         </div>
       </div>

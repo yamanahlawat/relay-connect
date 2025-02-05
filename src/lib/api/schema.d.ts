@@ -254,6 +254,7 @@ export interface paths {
      * @description ## Stop Chat Completion Stream
      *
      *     Stops an ongoing streaming completion for the specified session.
+     *     Also cancels any ongoing API calls to the provider.
      *
      *     ### Parameters
      *     - **session_id**: UUID of the chat session to stop streaming
@@ -540,6 +541,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** Body_create_message_api_v1_messages__session_id___post */
+    Body_create_message_api_v1_messages__session_id___post: {
+      /** Content */
+      content: string;
+      /** @default user */
+      role: components['schemas']['MessageRole'];
+      /** @default pending */
+      status: components['schemas']['MessageStatus'];
+      /** Parent Id */
+      parent_id?: string | null;
+      /**
+       * Usage
+       * @default {}
+       */
+      usage: string;
+      /**
+       * Attachments
+       * @default []
+       */
+      attachments: string[];
+      /**
+       * Extra Data
+       * @default {}
+       */
+      extra_data: string;
+    };
     /**
      * ChatUsage
      * @description Schema for token usage and costs
@@ -647,23 +674,6 @@ export interface components {
       detail?: components['schemas']['ValidationError'][];
     };
     /**
-     * MessageCreate
-     * @description Schema for creating a new message
-     */
-    MessageCreate: {
-      /** Content */
-      content: string;
-      /** @default user */
-      role: components['schemas']['MessageRole'];
-      /** @default pending */
-      status: components['schemas']['MessageStatus'];
-      /** Parent Id */
-      parent_id?: string | null;
-      usage?: components['schemas']['MessageUsage'];
-      /** Extra Data */
-      extra_data?: Record<string, never>;
-    };
-    /**
      * MessageRead
      * @description Schema for reading a message
      */
@@ -719,32 +729,6 @@ export interface components {
       status?: components['schemas']['MessageStatus'] | null;
       /** Extra Data */
       extra_data?: Record<string, never> | null;
-    };
-    /**
-     * MessageUsage
-     * @description Schema for message usage metrics
-     */
-    MessageUsage: {
-      /**
-       * Input Tokens
-       * @default 0
-       */
-      input_tokens: number;
-      /**
-       * Output Tokens
-       * @default 0
-       */
-      output_tokens: number;
-      /**
-       * Input Cost
-       * @default 0
-       */
-      input_cost: number;
-      /**
-       * Output Cost
-       * @default 0
-       */
-      output_cost: number;
     };
     /**
      * ModelCreate
@@ -1824,7 +1808,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['MessageCreate'];
+        'multipart/form-data': components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
       };
     };
     responses: {

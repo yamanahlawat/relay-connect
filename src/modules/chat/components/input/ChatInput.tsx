@@ -5,8 +5,9 @@ import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { ChatInputProps } from '@/types/chat';
-import { FileIcon, Globe, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
+import { Globe, Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { FilePreview } from './FilePreview';
 
 export function ChatInput({
   value,
@@ -23,10 +24,14 @@ export function ChatInput({
   onCancelEdit,
   isStreaming,
   onStop,
+  selectedFiles,
+  setSelectedFiles,
 }: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine if we're in controlled or uncontrolled mode
   const isControlled = value !== undefined && onChange !== undefined;
@@ -97,12 +102,22 @@ export function ChatInput({
     }
   };
 
+  const handleRemoveFile = (file: File) => {
+    setSelectedFiles((prev) => prev.filter((f) => f !== file));
+  };
+
+  const handleFiles = (files: FileList | File[]) => {
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+    setSelectedFiles((prev) => [...prev, ...imageFiles]);
+  };
+
   const hasContent = currentValue.trim().length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="w-full border-t border-border">
       <div className="mx-auto p-4">
         <div className="relative rounded-lg border border-input bg-background">
+          {selectedFiles.length > 0 && <FilePreview files={selectedFiles} onRemove={handleRemoveFile} />}
           {isEditing && (
             <div className="flex items-center justify-between bg-orange-100 px-4 py-1.5 dark:bg-orange-950/50">
               <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
@@ -193,16 +208,24 @@ export function ChatInput({
         {/* Bottom buttons */}
         <div className="mt-2 flex items-center justify-between px-1">
           <div className="flex items-center gap-0.5">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              disabled={disabled}
-            >
-              <FileIcon className="h-4 w-4" />
-              <span className="sr-only">Attach file</span>
-            </Button>
+            <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    disabled={disabled}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    <span className="sr-only">Attach files</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Attach files</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               type="button"
               size="icon"
@@ -235,6 +258,14 @@ export function ChatInput({
             </div>
           )}
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        />
       </div>
     </form>
   );

@@ -30,6 +30,7 @@ export function MessageAttachments({ attachments, className }: MessageAttachment
       <div className={cn('flex gap-2', className)}>
         {visibleAttachments.map((attachment, index) => (
           <button
+            aria-label={`View ${attachment.file_name}`}
             key={attachment.id}
             onClick={() => {
               setSelectedIndex(index);
@@ -37,7 +38,13 @@ export function MessageAttachments({ attachments, className }: MessageAttachment
             }}
             className="relative h-24 w-32 overflow-hidden rounded-lg bg-muted/30 transition-transform hover:scale-[1.02]"
           >
-            <Image src={attachment.absolute_url} alt={attachment.file_name} fill className="object-cover" />
+            <Image
+              src={attachment.absolute_url}
+              alt={attachment.file_name}
+              fill
+              className="object-cover"
+              loading="lazy"
+            />
 
             <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 transition-opacity hover:opacity-100">
               <p className="w-full break-words p-2 text-xs font-medium text-white">{attachment.file_name}</p>
@@ -55,12 +62,20 @@ export function MessageAttachments({ attachments, className }: MessageAttachment
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogTitle></DialogTitle>
         <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted/30">
+          <div
+            className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted/30"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') handleNext();
+              if (e.key === 'ArrowLeft') handlePrev();
+              if (e.key === 'Escape') setPreviewOpen(false);
+            }}
+          >
             <Image
               src={attachments[selectedIndex].absolute_url}
               alt={attachments[selectedIndex].file_name}
               fill
               className="object-contain"
+              loading="lazy"
             />
 
             {attachments.length > 1 && (

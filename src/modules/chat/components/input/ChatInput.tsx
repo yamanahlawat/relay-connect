@@ -1,13 +1,13 @@
+import { FilePreview } from '@/components/FilePreview';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
-import { FilePreview } from '@/modules/chat/components/input/FilePreview';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { ChatInputProps } from '@/types/chat';
 import { Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function ChatInput({
   value,
@@ -70,38 +70,24 @@ export function ChatInput({
     }
   }, [currentValue]);
 
-  // Handle paste event to support image pasting
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  const handleFiles = useCallback(
+    (files: FileList | File[]) => {
+      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
 
-    const handlePaste = (event: ClipboardEvent) => {
-      const items = event.clipboardData?.items;
-      if (items) {
-        const imageFiles: File[] = [];
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          // Check if the clipboard item is an image
-          if (item.type.indexOf('image') !== -1) {
-            const file = item.getAsFile();
-            if (file) {
-              imageFiles.push(file);
-            }
-          }
-        }
-        if (imageFiles.length > 0) {
-          // Prevent the default paste behavior (which might insert the image into the textarea)
-          event.preventDefault();
-          setSelectedFiles((prev) => [...prev, ...imageFiles]);
-        }
-      }
-    };
+      // Filter out duplicates based on name, size, and last modified date
+      const newFiles = imageFiles.filter((newFile) => {
+        return !selectedFiles.some(
+          (existingFile) =>
+            existingFile.name === newFile.name &&
+            existingFile.size === newFile.size &&
+            existingFile.lastModified === newFile.lastModified
+        );
+      });
 
-    textarea.addEventListener('paste', handlePaste);
-    return () => {
-      textarea.removeEventListener('paste', handlePaste);
-    };
-  }, [setSelectedFiles]);
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    },
+    [selectedFiles, setSelectedFiles]
+  );
 
   const handleChange = (newValue: string) => {
     if (isControlled) {
@@ -137,12 +123,8 @@ export function ChatInput({
   };
 
   const handleRemoveFile = (file: File) => {
+    if (!file) return;
     setSelectedFiles((prev) => prev.filter((f) => f !== file));
-  };
-
-  const handleFiles = (files: FileList | File[]) => {
-    const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-    setSelectedFiles((prev) => [...prev, ...imageFiles]);
   };
 
   const hasContent = currentValue.trim().length > 0 || selectedFiles.length > 0;
@@ -151,7 +133,10 @@ export function ChatInput({
     <form onSubmit={handleSubmit} className="w-full border-t border-border">
       <div className="mx-auto p-4">
         <div className="relative rounded-lg border border-input bg-background">
-          {selectedFiles.length > 0 && <FilePreview files={selectedFiles} onRemove={handleRemoveFile} />}
+          {/* FilePreview integration */}
+          {selectedFiles.length > 0 && (
+            <FilePreview files={selectedFiles} onRemove={handleRemoveFile} showPreview imageSize="sm" />
+          )}
           {isEditing && (
             <div className="flex items-center justify-between bg-orange-100 px-4 py-1.5 dark:bg-orange-950/50">
               <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">

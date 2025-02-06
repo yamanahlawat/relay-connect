@@ -30,7 +30,6 @@ export function ChatInput({
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine if we're in controlled or uncontrolled mode
@@ -70,6 +69,39 @@ export function ChatInput({
       textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
     }
   }, [currentValue]);
+
+  // Handle paste event to support image pasting
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (items) {
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          // Check if the clipboard item is an image
+          if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            if (file) {
+              imageFiles.push(file);
+            }
+          }
+        }
+        if (imageFiles.length > 0) {
+          // Prevent the default paste behavior (which might insert the image into the textarea)
+          event.preventDefault();
+          setSelectedFiles((prev) => [...prev, ...imageFiles]);
+        }
+      }
+    };
+
+    textarea.addEventListener('paste', handlePaste);
+    return () => {
+      textarea.removeEventListener('paste', handlePaste);
+    };
+  }, [setSelectedFiles]);
 
   const handleChange = (newValue: string) => {
     if (isControlled) {

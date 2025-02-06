@@ -1,6 +1,6 @@
 import { CopyButton } from '@/components/CopyButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn, parseBackendUTCDate } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
 import { MessageContentProps } from '@/types/chat';
 import { format } from 'date-fns';
@@ -26,6 +26,7 @@ function StatusIndicator() {
 }
 
 export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
+  const messageCreateDate = parseBackendUTCDate(message.created_at);
   return (
     <div className="space-y-1.5">
       {/* Message content */}
@@ -49,11 +50,11 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
                 dateTime={message.created_at}
                 className="tabular-nums text-muted-foreground transition-colors hover:text-foreground"
               >
-                {format(new Date(message.created_at), 'h:mm a')}
+                {format(messageCreateDate, 'h:mm a')}
               </time>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              {format(new Date(message.created_at), 'MMMM d, yyyy h:mm a')}
+              {format(messageCreateDate, 'MMMM d, yyyy h:mm a')}
             </TooltipContent>
           </Tooltip>
 

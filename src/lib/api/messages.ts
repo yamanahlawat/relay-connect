@@ -1,12 +1,11 @@
 import client from '@/lib/api/client';
 import type { paths } from '@/lib/api/schema';
+import { MessageRead } from '@/types/chat';
 
 type ListMessagesResponse =
   paths['/api/v1/messages/{session_id}/']['get']['responses']['200']['content']['application/json'];
 type CreateMessageRequest =
   paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
-type CreateMessageResponse =
-  paths['/api/v1/messages/{session_id}/']['post']['responses']['201']['content']['application/json'];
 type GetMessageResponse =
   paths['/api/v1/messages/{session_id}/{message_id}/']['get']['responses']['200']['content']['application/json'];
 type UpdateMessageRequest =
@@ -36,22 +35,35 @@ export async function listSessionMessages(sessionId: string, limit = 10, offset 
 export async function createMessage(
   sessionId: string,
   messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>
-): Promise<CreateMessageResponse> {
-  const requestBody: CreateMessageRequest = {
-    content: messageData.content,
-    role: messageData.role || 'user',
-    status: messageData.status || 'pending',
-    usage: messageData.usage || '{}',
-    attachments: messageData.attachments || [],
-    extra_data: messageData.extra_data || '{}',
-    parent_id: messageData.parent_id || null,
-  };
+): Promise<MessageRead> {
+  const formData = new FormData();
+
+  // Required field
+  formData.append('content', messageData.content);
+
+  // Optional fields with defaults as per schema
+  formData.append('role', messageData.role || 'user');
+  formData.append('status', messageData.status || 'pending');
+  formData.append('usage', messageData.usage || '{}');
+  formData.append('extra_data', messageData.extra_data || '{}');
+
+  // Optional fields without defaults
+  if (messageData.parent_id) {
+    formData.append('parent_id', messageData.parent_id);
+  }
+
+  // Handle file attachments
+  if (messageData.attachments?.length) {
+    messageData.attachments.forEach((file) => {
+      formData.append('attachments', file);
+    });
+  }
 
   const { data, error } = await client.POST('/api/v1/messages/{session_id}/', {
     params: {
       path: { session_id: sessionId },
     },
-    body: requestBody,
+    body: formData,
   });
 
   if (error) {

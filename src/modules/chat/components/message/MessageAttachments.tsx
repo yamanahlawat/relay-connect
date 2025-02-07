@@ -1,4 +1,4 @@
-import { FilePreview } from '@/components/FilePreview';
+import FilePreview from '@/components/FilePreview/FilePreview';
 import type { components } from '@/lib/api/schema';
 
 type AttachmentRead = components['schemas']['AttachmentRead'];

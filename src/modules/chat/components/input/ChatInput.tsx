@@ -1,4 +1,4 @@
-import { FilePreview } from '@/components/FilePreview';
+import FilePreview from '@/components/FilePreview/FilePreview';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -97,12 +97,39 @@ export function ChatInput({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    // Use the ClipboardEvent's clipboardData property
+    const clipboardItems = e.clipboardData.items;
+    const imageFiles: File[] = [];
+
+    for (let i = 0; i < clipboardItems.length; i++) {
+      const item = clipboardItems[i];
+      // Check if the clipboard item is an image
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    // If there are image files, prevent the default paste behavior and process them.
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      // Use your existing handleFiles function to add these images.
+      handleFiles(imageFiles);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentValue.trim() && onSend) {
-      onSend(currentValue.trim(), settings || defaultChatSettings);
+    // Check if there is either text or attached images
+    if ((currentValue.trim().length > 0 || selectedFiles.length > 0) && onSend) {
+      // Call onSend with both text and files.
+      onSend(currentValue.trim(), selectedFiles, settings || defaultChatSettings);
+
+      // Clear the text input and attached files after sending
       handleChange('');
-      // Clear selected files after sending
       setSelectedFiles([]);
 
       // Reset textarea height after sending
@@ -161,6 +188,7 @@ export function ChatInput({
               onChange={(e) => handleChange(e.target.value)}
               placeholder={placeholder}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               className={cn(
                 'min-h-[56px] w-full resize-none px-4 py-4',
                 'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',

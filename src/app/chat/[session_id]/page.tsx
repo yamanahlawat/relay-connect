@@ -63,7 +63,7 @@ export default function ChatPage() {
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { isDragging } = useFileDrag({
-    onDrop: (files) => setSelectedFiles(files),
+    onDrop: (files) => setSelectedFiles([...selectedFiles, ...files]),
     // Accept images
     fileTypes: ['image/'],
   });

@@ -35,7 +35,7 @@ export function WelcomeContent() {
   const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { isDragging } = useFileDrag({
-    onDrop: (files) => setSelectedFiles(files),
+    onDrop: (files) => setSelectedFiles([...selectedFiles, ...files]),
     // Only allow images here
     fileTypes: ['image/'],
   });

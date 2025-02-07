@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
 import type { components, paths } from '@/lib/api/schema';
-import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
@@ -32,7 +32,7 @@ const ALL_SUGGESTIONS = [
 
 export function WelcomeContent() {
   const router = useRouter();
-  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
+  const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { isDragging } = useFileDrag({
     onDrop: (files) => setSelectedFiles(files),

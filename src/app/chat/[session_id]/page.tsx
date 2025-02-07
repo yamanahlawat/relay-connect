@@ -1,7 +1,7 @@
 'use client';
 
 import type { components } from '@/lib/api/schema';
-import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
+import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
 import { ChatMessageList } from '@/modules/chat/components/message/ChatMessageList';
@@ -57,7 +57,7 @@ export default function ChatPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // State for system context
-  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
+  const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -137,12 +137,14 @@ export default function ChatPage() {
         });
 
         await Promise.all(
-          messagesToDelete.map((msg) =>
-            mutations.deleteMessage.mutateAsync({
-              sessionId: chatState.sessionId,
-              messageId: msg.id,
-            })
-          )
+          messagesToDelete
+            .filter((msg) => !msg.id.startsWith('assistant-'))
+            .map((msg) =>
+              mutations.deleteMessage.mutateAsync({
+                sessionId: chatState.sessionId,
+                messageId: msg.id,
+              })
+            )
         );
 
         setChatState((prev) => ({

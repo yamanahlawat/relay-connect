@@ -619,7 +619,7 @@ export interface components {
     /** Body_create_message_api_v1_messages__session_id___post */
     Body_create_message_api_v1_messages__session_id___post: {
       /** Content */
-      content: string;
+      content?: string | null;
       /** @default user */
       role: components['schemas']['MessageRole'];
       /** @default pending */
@@ -1883,7 +1883,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
+    requestBody?: {
       content: {
         'multipart/form-data': components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
       };

@@ -26,7 +26,7 @@ interface AdvancedSettingsProps {
 export interface ChatInputProps {
   value?: string;
   onChange?: (value: string) => void;
-  onSend?: (message: string, settings: ChatSettings) => void;
+  onSend: (message: string, files: File[], settings: ChatSettings) => void;
   disabled?: boolean;
   placeholder?: string;
   settings?: ChatSettings;

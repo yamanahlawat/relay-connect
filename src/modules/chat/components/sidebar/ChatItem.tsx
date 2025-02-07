@@ -80,7 +80,7 @@ export const ChatItem = React.memo(function ChatItem({
         }}
       >
         {/* Add max-width and truncate */}
-        <span className="block max-w-[180px] truncate" title={chat.title}>
+        <span className="block max-w-[190px] truncate" title={chat.title}>
           {chat.title}
         </span>
       </Link>

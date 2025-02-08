@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { MessageContent } from '@/modules/chat/components/message/MessageContent';
-import { ChatMessageProps } from '@/types/chat';
+import { ChatMessageProps } from '@/types/message';
 import { Bot, User2 } from 'lucide-react';
 import { MessageAttachments } from './MessageAttachments';
 

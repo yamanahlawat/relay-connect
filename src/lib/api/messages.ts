@@ -1,22 +1,10 @@
 import client from '@/lib/api/client';
-import type { paths } from '@/lib/api/schema';
-import { MessageRead } from '@/types/chat';
-
-type ListMessagesResponse =
-  paths['/api/v1/messages/{session_id}/']['get']['responses']['200']['content']['application/json'];
-type CreateMessageRequest =
-  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
-type GetMessageResponse =
-  paths['/api/v1/messages/{session_id}/{message_id}/']['get']['responses']['200']['content']['application/json'];
-type UpdateMessageRequest =
-  paths['/api/v1/messages/{session_id}/{message_id}/']['patch']['requestBody']['content']['application/json'];
-type UpdateMessageResponse =
-  paths['/api/v1/messages/{session_id}/{message_id}/']['patch']['responses']['200']['content']['application/json'];
+import { MessageCreate, MessageRead, MessageUpdate } from '@/types/message';
 
 /**
  * List all messages in a chat session
  */
-export async function listSessionMessages(sessionId: string, limit = 10, offset = 0): Promise<ListMessagesResponse> {
+export async function listSessionMessages(sessionId: string, limit = 10, offset = 0): Promise<MessageRead[]> {
   const { data, error } = await client.GET('/api/v1/messages/{session_id}/', {
     params: {
       path: { session_id: sessionId },
@@ -32,10 +20,7 @@ export async function listSessionMessages(sessionId: string, limit = 10, offset 
 /**
  * Create a new message in a chat session
  */
-export async function createMessage(
-  sessionId: string,
-  messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>
-): Promise<MessageRead> {
+export async function createMessage(sessionId: string, messageData: MessageCreate): Promise<MessageRead> {
   const formData = new FormData();
 
   // Required field
@@ -76,7 +61,7 @@ export async function createMessage(
 /**
  * Get a specific message by ID
  */
-export async function getMessage(sessionId: string, messageId: string): Promise<GetMessageResponse> {
+export async function getMessage(sessionId: string, messageId: string): Promise<MessageRead> {
   const { data, error } = await client.GET('/api/v1/messages/{session_id}/{message_id}/', {
     params: {
       path: {
@@ -94,11 +79,7 @@ export async function getMessage(sessionId: string, messageId: string): Promise<
 /**
  * Update a specific message
  */
-export async function updateMessage(
-  sessionId: string,
-  messageId: string,
-  update: UpdateMessageRequest
-): Promise<UpdateMessageResponse> {
+export async function updateMessage(sessionId: string, messageId: string, update: MessageUpdate): Promise<MessageRead> {
   const { data, error } = await client.PATCH('/api/v1/messages/{session_id}/{message_id}/', {
     params: {
       path: {

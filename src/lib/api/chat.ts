@@ -1,11 +1,5 @@
 import client from '@/lib/api/client';
-import type { paths } from '@/lib/api/schema';
-import { StreamParams } from '@/types/chat';
-
-type CompletionRequest =
-  paths['/api/v1/chat/complete/{session_id}']['post']['requestBody']['content']['application/json'];
-type CompletionResponse =
-  paths['/api/v1/chat/complete/{session_id}']['post']['responses']['200']['content']['application/json'];
+import { CompletionRequest, CompletionResponse, StreamParams } from '@/types/chat';
 
 /**
  * Creates a one-time chat completion

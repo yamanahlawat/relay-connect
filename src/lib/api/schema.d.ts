@@ -471,7 +471,7 @@ export interface paths {
      *     - **400**: Invalid form data format
      *     - **413**: File too large
      */
-    post: operations['create_message_api_v1_messages__session_id___post'];
+    post: operations['MessageCreate'];
     delete?: never;
     options?: never;
     head?: never;
@@ -616,8 +616,8 @@ export interface components {
      * @enum {string}
      */
     AttachmentType: 'image' | 'video' | 'document' | 'audio';
-    /** Body_create_message_api_v1_messages__session_id___post */
-    Body_create_message_api_v1_messages__session_id___post: {
+    /** Body_MessageCreate */
+    Body_MessageCreate: {
       /** Content */
       content?: string | null;
       /** @default user */
@@ -765,7 +765,7 @@ export interface components {
       session_id: string;
       role: components['schemas']['MessageRole'];
       /** Content */
-      content: string;
+      content?: string | null;
       status: components['schemas']['MessageStatus'];
       /** Parent Id */
       parent_id?: string | null;
@@ -1874,7 +1874,7 @@ export interface operations {
       };
     };
   };
-  create_message_api_v1_messages__session_id___post: {
+  MessageCreate: {
     parameters: {
       query?: never;
       header?: never;
@@ -1885,7 +1885,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        'multipart/form-data': components['schemas']['Body_create_message_api_v1_messages__session_id___post'];
+        'multipart/form-data': components['schemas']['Body_MessageCreate'];
       };
     };
     responses: {

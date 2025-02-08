@@ -1,11 +1,9 @@
 import { streamCompletion } from '@/lib/api/chat';
-import type { components } from '@/lib/api/schema';
 import { ChatState, StreamParams } from '@/types/chat';
+import { MessageRead } from '@/types/message';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-
-type MessageRead = components['schemas']['MessageRead'];
 
 export function useChat(sessionId: string) {
   // Chat state

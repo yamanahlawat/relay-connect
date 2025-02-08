@@ -1,10 +1,8 @@
 import { CustomScrollArea as ScrollArea } from '@/components/custom/ScrollArea';
-import type { components } from '@/lib/api/schema';
 import { ChatMessage } from '@/modules/chat/components/message/ChatMessage';
+import { MessageRead } from '@/types/message';
 import { Loader2 } from 'lucide-react';
 import { memo } from 'react';
-
-type MessageRead = components['schemas']['MessageRead'];
 
 interface ChatMessageListProps {
   messageGroups: MessageRead[][];

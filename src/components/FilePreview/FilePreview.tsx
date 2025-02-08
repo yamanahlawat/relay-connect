@@ -60,7 +60,8 @@ const FilePreview: React.FC<FilePreviewProps> = React.memo(function FilePreview(
   };
 
   // For the dialog preview, get the current file’s URL using the custom hook.
-  const currentFile = files[selectedIndex];
+  const currentFile = files[selectedIndex]!;
+
   const currentUrl = useFileUrl(currentFile);
   const currentFileName = getFileName(currentFile);
 
@@ -92,7 +93,7 @@ const FilePreview: React.FC<FilePreviewProps> = React.memo(function FilePreview(
         {showOverlayThumbnail && (
           <div className="group relative">
             <FilePreviewItem
-              file={files[4]}
+              file={files[4]!}
               onRemove={onRemove}
               imageSize={imageSize}
               onClick={() => handlePreviewOpen(4)}

@@ -1,21 +1,7 @@
 import client from '@/lib/api/client';
-import type { paths } from '@/lib/api/schema';
+import { SessionCreate, SessionRead, SessionUpdate } from '@/types/session';
 
-type ChatSessionsListResponse = paths['/api/v1/sessions/']['get']['responses']['200']['content']['application/json'];
-type CreateSessionRequest = paths['/api/v1/sessions/']['post']['requestBody']['content']['application/json'];
-type CreateSessionResponse = paths['/api/v1/sessions/']['post']['responses']['201']['content']['application/json'];
-type GetSessionResponse =
-  paths['/api/v1/sessions/{session_id}/']['get']['responses']['200']['content']['application/json'];
-type UpdateSessionRequest =
-  paths['/api/v1/sessions/{session_id}/']['patch']['requestBody']['content']['application/json'];
-type UpdateSessionResponse =
-  paths['/api/v1/sessions/{session_id}/']['patch']['responses']['200']['content']['application/json'];
-
-export async function listChatSessions(
-  limit: number = 50,
-  offset: number = 0,
-  title?: string
-): Promise<ChatSessionsListResponse> {
+export async function listChatSessions(limit: number = 50, offset: number = 0, title?: string): Promise<SessionRead[]> {
   const { data, error } = await client.GET('/api/v1/sessions/', {
     params: {
       query: { limit, offset, ...(title ? { title } : {}) },
@@ -27,7 +13,7 @@ export async function listChatSessions(
   return data;
 }
 
-export async function createChatSession(session: CreateSessionRequest): Promise<CreateSessionResponse> {
+export async function createChatSession(session: SessionCreate): Promise<SessionRead> {
   const { data, error } = await client.POST('/api/v1/sessions/', {
     body: session,
   });
@@ -37,7 +23,7 @@ export async function createChatSession(session: CreateSessionRequest): Promise<
   return data;
 }
 
-export async function getChatSession(sessionId: string): Promise<GetSessionResponse> {
+export async function getChatSession(sessionId: string): Promise<SessionRead> {
   const { data, error } = await client.GET('/api/v1/sessions/{session_id}/', {
     params: {
       path: { session_id: sessionId },
@@ -49,10 +35,7 @@ export async function getChatSession(sessionId: string): Promise<GetSessionRespo
   return data;
 }
 
-export async function updateChatSession(
-  sessionId: string,
-  update: UpdateSessionRequest
-): Promise<UpdateSessionResponse> {
+export async function updateChatSession(sessionId: string, update: SessionUpdate): Promise<SessionRead> {
   const { data, error } = await client.PATCH('/api/v1/sessions/{session_id}/', {
     params: {
       path: { session_id: sessionId },

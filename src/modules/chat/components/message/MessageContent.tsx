@@ -2,7 +2,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, parseBackendUTCDate } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
-import { MessageContentProps } from '@/types/chat';
+import { MessageContentProps } from '@/types/message';
 import { format } from 'date-fns';
 import { AlertCircle, Coins, Pencil } from 'lucide-react';
 

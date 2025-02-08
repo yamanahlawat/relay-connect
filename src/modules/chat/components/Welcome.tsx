@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
-import type { components, paths } from '@/lib/api/schema';
-import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
+import type { components } from '@/lib/api/schema';
+import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
@@ -20,8 +20,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
-type CreateMessageRequest =
-  paths['/api/v1/messages/{session_id}/']['post']['requestBody']['content']['multipart/form-data'];
+type MessageCreate = components['schemas']['Body_MessageCreate'];
 
 const ALL_SUGGESTIONS = [
   { icon: FileText, text: 'Summarize text', color: 'text-blue-500' },
@@ -32,7 +31,7 @@ const ALL_SUGGESTIONS = [
 
 export function WelcomeContent() {
   const router = useRouter();
-  const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
+  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { isDragging } = useFileDrag({
     onDrop: (files) => setSelectedFiles([...selectedFiles, ...files]),
@@ -52,13 +51,8 @@ export function WelcomeContent() {
     }),
 
     createMessage: useMutation({
-      mutationFn: ({
-        sessionId,
-        messageData,
-      }: {
-        sessionId: string;
-        messageData: Partial<CreateMessageRequest> & Pick<CreateMessageRequest, 'content'>;
-      }) => createMessage(sessionId, messageData),
+      mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
+        createMessage(sessionId, messageData),
       onError: (error) => toast.error(`Failed to send message\n ${error.message}`),
     }),
   };
@@ -92,7 +86,7 @@ export function WelcomeContent() {
           content,
           role: 'user',
           status: 'completed',
-          attachments: selectedFiles,
+          attachments: selectedFiles.map((file) => file.name),
         },
       });
 

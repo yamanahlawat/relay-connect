@@ -1,15 +1,7 @@
 import client from '@/lib/api/client';
-import type { paths } from '@/lib/api/schema';
+import { ModelCreate, ModelRead, ModelUpdate } from '@/types/model';
 
-type ModelsListResponse = paths['/api/v1/models/']['get']['responses']['200']['content']['application/json'];
-type ModelCreateRequest = paths['/api/v1/models/']['post']['requestBody']['content']['application/json'];
-type ModelCreateResponse = paths['/api/v1/models/']['post']['responses']['201']['content']['application/json'];
-type ModelUpdateRequest =
-  paths['/api/v1/models/{llm_model_id}/']['patch']['requestBody']['content']['application/json'];
-type ModelUpdateResponse =
-  paths['/api/v1/models/{llm_model_id}/']['patch']['responses']['200']['content']['application/json'];
-
-export const listModels = async (providerId: string): Promise<ModelsListResponse> => {
+export const listModels = async (providerId: string): Promise<ModelRead[]> => {
   const { data, error } = await client.GET('/api/v1/models/', {
     params: {
       query: {
@@ -23,7 +15,7 @@ export const listModels = async (providerId: string): Promise<ModelsListResponse
   return data;
 };
 
-export const createModel = async (model: ModelCreateRequest): Promise<ModelCreateResponse> => {
+export const createModel = async (model: ModelCreate): Promise<ModelRead> => {
   const { data, error } = await client.POST('/api/v1/models/', {
     body: model,
   });
@@ -33,7 +25,7 @@ export const createModel = async (model: ModelCreateRequest): Promise<ModelCreat
   return data;
 };
 
-export const updateModel = async (modelId: string, update: ModelUpdateRequest): Promise<ModelUpdateResponse> => {
+export const updateModel = async (modelId: string, update: ModelUpdate): Promise<ModelRead> => {
   const { data, error } = await client.PATCH('/api/v1/models/{llm_model_id}/', {
     params: {
       path: { llm_model_id: modelId },

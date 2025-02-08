@@ -1,7 +1,8 @@
-import type { components } from '@/lib/api/schema';
+import { components } from '@/lib/api/schema';
+import { MessageRead } from './message';
 
-type MessageRead = components['schemas']['MessageRead'];
-type MessageRole = components['schemas']['MessageRole'];
+type CompletionRequest = components['schemas']['CompletionRequest'];
+type CompletionResponse = components['schemas']['CompletionResponse'];
 
 export interface ChatState {
   sessionId: string;
@@ -26,7 +27,7 @@ interface AdvancedSettingsProps {
 export interface ChatInputProps {
   value?: string;
   onChange?: (value: string) => void;
-  onSend: (message: string, files: File[], settings: ChatSettings) => void;
+  onSend: (content: string, settings: ChatSettings) => Promise<void>;
   disabled?: boolean;
   placeholder?: string;
   settings?: ChatSettings;
@@ -42,14 +43,6 @@ export interface ChatInputProps {
   setSelectedFiles?: (files: File[]) => void;
 }
 
-interface ChatMessageProps {
-  messages: MessageRead[];
-  role: MessageRole;
-  isStreaming?: boolean;
-  onEditClick?: (messageId: string) => void;
-  editingMessageId?: string | null;
-}
-
 interface CodeBlockProps {
   inline: boolean;
   className?: string;
@@ -60,14 +53,6 @@ interface CodeBlockProps {
 export interface MarkdownRendererProps {
   content: string;
   isStreaming?: boolean;
-}
-
-export interface MessageContentProps {
-  message: MessageRead;
-  isStreaming?: boolean;
-  role: MessageRole;
-  isEditing?: boolean;
-  onEditClick?: (messageId: string) => void;
 }
 
 export interface StreamParams {

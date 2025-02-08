@@ -1,6 +1,5 @@
 'use client';
 
-import type { components } from '@/lib/api/schema';
 import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
@@ -16,13 +15,11 @@ import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings } from '@/types/chat';
+import { MessageRead } from '@/types/message';
 import { debounce } from 'lodash';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-// Types
-type MessageRead = components['schemas']['MessageRead'];
 
 export default function ChatPage() {
   const params = useParams();

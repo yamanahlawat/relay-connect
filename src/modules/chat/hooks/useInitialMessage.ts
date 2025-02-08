@@ -1,10 +1,8 @@
 import { getMessage } from '@/lib/api/messages';
-import type { components } from '@/lib/api/schema';
+import { MessageRead } from '@/types/message';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-
-type MessageRead = components['schemas']['MessageRead'];
 
 interface UseInitialMessageProps {
   sessionId: string;

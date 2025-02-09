@@ -3,12 +3,10 @@ import { createChatSession, updateChatSession } from '@/lib/api/chatSessions';
 import { createMessage, deleteMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { ChatState } from '@/types/chat';
+import { MessageCreate } from '@/types/message';
+import { SessionCreate, SessionUpdate } from '@/types/session';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-
-type SessionCreate = components['schemas']['SessionCreate'];
-type SessionUpdate = components['schemas']['SessionUpdate'];
-type MessageCreate = components['schemas']['MessageCreate'];
 
 interface UseMessageQueriesProps {
   sessionId: string;

@@ -1,26 +1,26 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
+import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
+import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
-import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
 import { FileText, MessageSquare, NotebookPen, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
-type MessageCreate = components['schemas']['Body_MessageCreate'];
+type MessageCreate = components['schemas']['MessageCreate'];
 
 const ALL_SUGGESTIONS = [
   { icon: FileText, text: 'Summarize text', color: 'text-blue-500' },
@@ -32,17 +32,29 @@ const ALL_SUGGESTIONS = [
 export function WelcomeContent() {
   const router = useRouter();
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const { isDragging } = useFileDrag({
-    onDrop: (files) => setSelectedFiles([...selectedFiles, ...files]),
-    // Only allow images here
-    fileTypes: ['image/'],
-  });
-  const { selectedProvider, selectedModel } = useProviderModel();
   const [message, setMessage] = useState('');
+  const { selectedProvider, selectedModel } = useProviderModel();
   const { clearCode } = useCodeCascade();
   const queryClient = useQueryClient();
   const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
+  const setInitialMessageId = useMessageStreamingStore((state) => state.setInitialMessageId);
+
+  // Initialize fileUpload hook
+  const fileUpload = useFileUpload('temp', {
+    onError: () => {
+      toast.error('Failed to upload file');
+    },
+  });
+
+  // File drag and drop handling
+  const { isDragging } = useFileDrag({
+    onDrop: (files) => {
+      if (files.length > 0) {
+        fileUpload.uploadFiles(files);
+      }
+    },
+    fileTypes: ['image/'],
+  });
 
   const mutations = {
     createSession: useMutation({
@@ -58,15 +70,14 @@ export function WelcomeContent() {
   };
 
   const isSubmitting = mutations.createSession.isPending || mutations.createMessage.isPending;
-  const setInitialMessageId = useMessageStreamingStore((state) => state.setInitialMessageId);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, attachmentIds: string[]) => {
     if (!selectedProvider || !selectedModel) {
       toast.error('Please select a provider and model first');
       return;
     }
 
-    if (!content.trim() && selectedFiles.length === 0) return;
+    if (!content.trim() && attachmentIds.length === 0) return;
 
     try {
       clearCode();
@@ -86,7 +97,7 @@ export function WelcomeContent() {
           content,
           role: 'user',
           status: 'completed',
-          attachments: selectedFiles.map((file) => file.name),
+          attachment_ids: attachmentIds,
         },
       });
 
@@ -119,7 +130,7 @@ export function WelcomeContent() {
             ))}
           </div>
 
-          {/* Model Selection Status - More distinct states */}
+          {/* Model Selection Status */}
           {!selectedProvider || !selectedModel ? (
             <div className="flex items-center justify-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 text-sm">
               <span className="relative flex h-2 w-2">
@@ -158,8 +169,7 @@ export function WelcomeContent() {
           onSettingsChange={setChatSettings}
           systemContext={systemContext}
           onSystemContextChange={setSystemContext}
-          selectedFiles={selectedFiles}
-          setSelectedFiles={setSelectedFiles}
+          fileUpload={fileUpload}
         />
       </div>
     </main>

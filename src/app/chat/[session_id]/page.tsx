@@ -1,5 +1,6 @@
 'use client';
 
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
@@ -58,10 +59,18 @@ export default function ChatPage() {
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileUpload = useFileUpload(sessionId, {
+    onError: () => {
+      toast.error('Failed to upload file');
+    },
+  });
+
   const { isDragging } = useFileDrag({
-    onDrop: (files) => setSelectedFiles([...selectedFiles, ...files]),
-    // Accept images
+    onDrop: (files) => {
+      if (files.length > 0) {
+        fileUpload.uploadFiles(files);
+      }
+    },
     fileTypes: ['image/'],
   });
 
@@ -104,10 +113,10 @@ export default function ChatPage() {
   }, [chatState.streamingMessageId, handleStopGeneration]);
 
   // Handle message sending
-  const handleSendMessage = async (content: string, settings: ChatSettings) => {
+  const handleSendMessage = async (content: string, attachmentIds: string[], settings: ChatSettings) => {
     // Prevent empty messages
     const trimmedContent = content.trim();
-    if (!trimmedContent && selectedFiles.length === 0) return;
+    if (!trimmedContent && fileUpload.files.length === 0) return;
 
     // Handle edit mode
     if (editingMessageId) {
@@ -198,7 +207,7 @@ export default function ChatPage() {
           content,
           role: 'user',
           status: 'completed',
-          attachments: selectedFiles,
+          attachment_ids: attachmentIds,
         },
       });
 
@@ -402,8 +411,7 @@ export default function ChatPage() {
             onCancelEdit={handleCancelEdit}
             isStreaming={!!chatState.streamingMessageId}
             onStop={handleStopGeneration}
-            selectedFiles={selectedFiles}
-            setSelectedFiles={setSelectedFiles}
+            fileUpload={fileUpload}
           />
         </div>
       </div>

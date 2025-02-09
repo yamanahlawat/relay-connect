@@ -8,62 +8,58 @@ interface UseFileDragProps {
 export function useFileDrag({ onDrop, fileTypes = ['image/'] }: UseFileDragProps) {
   const [isDragging, setIsDragging] = useState(false);
 
-  // Handles when a file is dragged into the window
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   }, []);
 
-  // Handles when a file is being dragged over a drop area
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'copy';
+    e.dataTransfer!.dropEffect = 'copy';
     setIsDragging(true);
   }, []);
 
-  // Handles when a file is dragged out of the window or drop area
   const handleDragLeave = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsDragging(false);
-    }
+    // Simply clear dragging state—this avoids issues with relatedTarget
+    setIsDragging(false);
   }, []);
 
-  // Handles when a file is dropped
   const handleDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      e.dataTransfer!.dropEffect = 'copy';
       setIsDragging(false);
 
-      // Filter allowed file types
-      const files = Array.from(e.dataTransfer.files).filter((file) =>
-        fileTypes.some((type) => file.type.startsWith(type))
-      );
+      const dt = e.dataTransfer;
+      if (!dt) return;
 
-      if (files.length > 0) {
-        onDrop(files);
+      // Filter files by allowed types
+      const droppedFiles = Array.from(dt.files).filter((file) => fileTypes.some((type) => file.type.startsWith(type)));
+
+      if (droppedFiles.length > 0) {
+        onDrop(droppedFiles);
       }
     },
     [onDrop, fileTypes]
   );
 
-  // Attach global listeners to track drag events across the entire app
   useEffect(() => {
-    document.addEventListener('dragenter', handleDragEnter);
-    document.addEventListener('dragover', handleDragOver);
-    document.addEventListener('dragleave', handleDragLeave);
-    document.addEventListener('drop', handleDrop);
+    // Use window instead of document to help ensure events fire reliably.
+    window.addEventListener('dragenter', handleDragEnter);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
 
     return () => {
-      document.removeEventListener('dragenter', handleDragEnter);
-      document.removeEventListener('dragover', handleDragOver);
-      document.removeEventListener('dragleave', handleDragLeave);
-      document.removeEventListener('drop', handleDrop);
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
     };
   }, [handleDragEnter, handleDragOver, handleDragLeave, handleDrop]);
 

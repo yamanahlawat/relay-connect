@@ -1,9 +1,9 @@
 import type { components } from '@/lib/api/schema';
 
 type MessageRead = components['schemas']['MessageRead'];
-type MessageUpdate = components['schemas']['Body_MessageUpdate'];
+type MessageUpdate = components['schemas']['MessageUpdate'];
 type MessageRole = components['schemas']['MessageRole'];
-type MessageCreate = components['schemas']['Body_MessageCreate'];
+type MessageCreate = components['schemas']['MessageCreate'];
 
 export interface MessageContentProps {
   message: MessageRead;

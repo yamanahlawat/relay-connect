@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
+import { FilePreviewData } from '@/types/attachment';
 import { ChatInputProps } from '@/types/chat';
 import { Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,19 +25,20 @@ export function ChatInput({
   onCancelEdit,
   isStreaming,
   onStop,
-  selectedFiles,
-  setSelectedFiles,
+  fileUpload,
 }: ChatInputProps) {
   // Local state for uncontrolled mode
   const [internalValue, setInternalValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Determine if we're in controlled or uncontrolled mode
+  // File upload handling
+  const { files, uploadFiles, removeFile, getAttachmentIds, clearFiles, isUploading } = fileUpload;
+
+  // Determine controlled vs. uncontrolled mode
   const isControlled = value !== undefined && onChange !== undefined;
   const currentValue = isControlled ? value : internalValue;
 
-  // Handle edit message initialization and changes
   useEffect(() => {
     if (editMessage) {
       if (isControlled) {
@@ -47,47 +49,15 @@ export function ChatInput({
     }
   }, [isEditing, editMessage, isControlled, onChange]);
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     if (isControlled) {
       onChange('');
     } else {
       setInternalValue('');
     }
+    clearFiles();
     onCancelEdit?.();
   };
-
-  // Auto-resize textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 200);
-      textarea.style.height = `${newHeight}px`;
-
-      // If content exceeds max height, enable scrolling
-      textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
-    }
-  }, [currentValue]);
-
-  const handleFiles = useCallback(
-    (files: FileList | File[]) => {
-      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-
-      // Filter out duplicates based on name, size, and last modified date
-      const newFiles = imageFiles.filter((newFile) => {
-        return !selectedFiles.some(
-          (existingFile) =>
-            existingFile.name === newFile.name &&
-            existingFile.size === newFile.size &&
-            existingFile.lastModified === newFile.lastModified
-        );
-      });
-
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
-    },
-    [selectedFiles, setSelectedFiles]
-  );
 
   const handleChange = (newValue: string) => {
     if (isControlled) {
@@ -97,42 +67,41 @@ export function ChatInput({
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    // Use the ClipboardEvent's clipboardData property
-    const clipboardItems = e.clipboardData.items;
-    const imageFiles: File[] = [];
+  const handleFiles = useCallback(
+    (files: FileList | File[]) => {
+      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        uploadFiles(imageFiles);
+      }
+    },
+    [uploadFiles]
+  );
 
-    for (let i = 0; i < clipboardItems.length; i++) {
-      const item = clipboardItems[i];
-      // Check if the clipboard item is an image
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          imageFiles.push(file);
-        }
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
       }
     }
-
-    // If there are image files, prevent the default paste behavior and process them.
     if (imageFiles.length > 0) {
       e.preventDefault();
-      // Use your existing handleFiles function to add these images.
       handleFiles(imageFiles);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Check if there is either text or attached images
-    if ((currentValue.trim().length > 0 || selectedFiles.length > 0) && onSend) {
-      // Call onSend with both text and files.
-      onSend(currentValue.trim(), selectedFiles, settings || defaultChatSettings);
+    const attachmentIds = getAttachmentIds();
+    const hasContent = currentValue.trim().length > 0 || attachmentIds.length > 0;
 
-      // Clear the text input and attached files after sending
+    if (hasContent && onSend && !isUploading) {
+      onSend(currentValue.trim(), attachmentIds, settings || defaultChatSettings);
       handleChange('');
-      setSelectedFiles([]);
+      clearFiles();
 
-      // Reset textarea height after sending
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
         textareaRef.current.style.overflowY = 'hidden';
@@ -141,29 +110,40 @@ export function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle Enter key press to submit message
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // Handle Shift + Enter for new line
       handleSubmit(e as unknown as React.FormEvent);
     }
   };
 
-  const handleRemoveFile = (file: File) => {
-    if (!file) return;
-    setSelectedFiles((prev) => prev.filter((f) => f !== file));
-  };
+  // Auto-resize the textarea as needed
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 200);
+      textarea.style.height = `${newHeight}px`;
+      textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
+    }
+  }, [currentValue]);
 
-  const hasContent = currentValue.trim().length > 0 || selectedFiles.length > 0;
+  // Transform the files from the upload hook into the common FilePreviewData shape.
+  const filePreviewData: FilePreviewData[] = files.map((file) => ({
+    id: file.id,
+    file_name: file.file.name,
+    absolute_url: file.absolute_url,
+    status: file.status,
+  }));
+
+  const hasContent = currentValue.trim().length > 0 || files.length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="w-full border-t border-border">
       <div className="mx-auto p-4">
         <div className="relative rounded-lg border border-input bg-background">
-          {/* FilePreview integration */}
-          {selectedFiles.length > 0 && (
-            <FilePreview files={selectedFiles} onRemove={handleRemoveFile} showPreview imageSize="sm" />
-          )}
+          {/* Display file previews if there are files */}
+          {files.length > 0 && <FilePreview files={filePreviewData} onRemove={removeFile} showPreview imageSize="sm" />}
+
           {isEditing && (
             <div className="flex items-center justify-between bg-orange-100 px-4 py-1.5 dark:bg-orange-950/50">
               <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
@@ -263,7 +243,6 @@ export function ChatInput({
                     size="icon"
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
-                    // Prevent focus issues
                     onMouseDown={(e) => e.preventDefault()}
                     className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     disabled={disabled}

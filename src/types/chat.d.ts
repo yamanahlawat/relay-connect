@@ -27,7 +27,7 @@ interface AdvancedSettingsProps {
 export interface ChatInputProps {
   value?: string;
   onChange?: (value: string) => void;
-  onSend: (content: string, settings: ChatSettings) => Promise<void>;
+  onSend?: (message: string, attachmentIds: string[], settings: ChatSettings) => void;
   disabled?: boolean;
   placeholder?: string;
   settings?: ChatSettings;
@@ -39,8 +39,7 @@ export interface ChatInputProps {
   onCancelEdit?: () => void;
   isStreaming?: boolean;
   onStop?: () => void;
-  selectedFiles?: File[];
-  setSelectedFiles?: (files: File[]) => void;
+  fileUpload: ReturnType<typeof useFileUpload>;
 }
 
 interface CodeBlockProps {

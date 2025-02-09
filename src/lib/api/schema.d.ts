@@ -471,7 +471,7 @@ export interface paths {
      *     - **400**: Invalid form data format
      *     - **413**: File too large
      */
-    post: operations['MessageCreate'];
+    post: operations['create_message_api_v1_messages__session_id___post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -542,7 +542,34 @@ export interface paths {
     patch: operations['update_message_api_v1_messages__session_id___message_id___patch'];
     trace?: never;
   };
-  '/api/v1/attachments/{folder}/{filename}': {
+  '/api/v1/attachments/{folder}/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upload Attachment
+     * @description Upload a single file attachment.
+     *     Args:
+     *         folder: Storage folder path (e.g. 'session_id/message_id')
+     *         file: File to upload
+     *     Returns:
+     *         Uploaded attachment details
+     *     Raises:
+     *         HTTPException: If file type not supported or upload fails
+     */
+    post: operations['upload_attachment_api_v1_attachments__folder___post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/attachments/{folder}/{filename}/': {
     parameters: {
       query?: never;
       header?: never;
@@ -555,7 +582,7 @@ export interface paths {
      *     The folder should represent the storage folder (e.g. 'session_id/message_id'),
      *     and filename is the stored file name (including the UUID prefix).
      */
-    get: operations['serve_attachment_api_v1_attachments__folder___filename__get'];
+    get: operations['serve_attachment_api_v1_attachments__folder___filename___get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -589,11 +616,6 @@ export interface components {
        */
       id: string;
       /**
-       * Message Id
-       * Format: uuid
-       */
-      message_id: string;
-      /**
        * Created At
        * Format: date-time
        */
@@ -616,31 +638,13 @@ export interface components {
      * @enum {string}
      */
     AttachmentType: 'image' | 'video' | 'document' | 'audio';
-    /** Body_MessageCreate */
-    Body_MessageCreate: {
-      /** Content */
-      content?: string | null;
-      /** @default user */
-      role: components['schemas']['MessageRole'];
-      /** @default pending */
-      status: components['schemas']['MessageStatus'];
-      /** Parent Id */
-      parent_id?: string | null;
+    /** Body_upload_attachment_api_v1_attachments__folder___post */
+    Body_upload_attachment_api_v1_attachments__folder___post: {
       /**
-       * Usage
-       * @default {}
+       * File
+       * Format: binary
        */
-      usage: string;
-      /**
-       * Attachments
-       * @default []
-       */
-      attachments: string[];
-      /**
-       * Extra Data
-       * @default {}
-       */
-      extra_data: string;
+      file: string;
     };
     /**
      * ChatUsage
@@ -749,6 +753,28 @@ export interface components {
       detail?: components['schemas']['ValidationError'][];
     };
     /**
+     * MessageCreate
+     * @description Schema for creating a new message
+     */
+    MessageCreate: {
+      /** Content */
+      content?: string | null;
+      /** @default user */
+      role: components['schemas']['MessageRole'];
+      /** @default pending */
+      status: components['schemas']['MessageStatus'];
+      /** Parent Id */
+      parent_id?: string | null;
+      usage?: components['schemas']['MessageUsage'];
+      /** Extra Data */
+      extra_data?: Record<string, never>;
+      /**
+       * Attachment Ids
+       * @description List of attachment IDs already uploaded
+       */
+      attachment_ids?: string[];
+    };
+    /**
      * MessageRead
      * @description Schema for reading a message
      */
@@ -806,6 +832,32 @@ export interface components {
       status?: components['schemas']['MessageStatus'] | null;
       /** Extra Data */
       extra_data?: Record<string, never> | null;
+    };
+    /**
+     * MessageUsage
+     * @description Schema for message usage metrics
+     */
+    MessageUsage: {
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Input Cost
+       * @default 0
+       */
+      input_cost: number;
+      /**
+       * Output Cost
+       * @default 0
+       */
+      output_cost: number;
     };
     /**
      * ModelCreate
@@ -1874,7 +1926,7 @@ export interface operations {
       };
     };
   };
-  MessageCreate: {
+  create_message_api_v1_messages__session_id___post: {
     parameters: {
       query?: never;
       header?: never;
@@ -1883,9 +1935,9 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: {
+    requestBody: {
       content: {
-        'multipart/form-data': components['schemas']['Body_MessageCreate'];
+        'application/json': components['schemas']['MessageCreate'];
       };
     };
     responses: {
@@ -2007,7 +2059,42 @@ export interface operations {
       };
     };
   };
-  serve_attachment_api_v1_attachments__folder___filename__get: {
+  upload_attachment_api_v1_attachments__folder___post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        folder: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_upload_attachment_api_v1_attachments__folder___post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttachmentRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  serve_attachment_api_v1_attachments__folder___filename___get: {
     parameters: {
       query?: never;
       header?: never;

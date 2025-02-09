@@ -1,17 +1,12 @@
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
+import type { FilePreviewData } from '@/types/attachment';
+import { Loader2, X } from 'lucide-react';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
-
-export interface FileOrUrl {
-  id: string;
-  url?: string;
-  name: string;
-}
+import React from 'react';
 
 export interface FilePreviewItemProps {
-  file: File | FileOrUrl;
-  onRemove?: (file: File | FileOrUrl) => void;
+  file: FilePreviewData;
+  onRemove?: (file: FilePreviewData) => void;
   imageSize: 'sm' | 'lg';
   onClick?: () => void;
 }
@@ -22,41 +17,40 @@ const SIZE_CONFIG = {
 };
 
 const FilePreviewItem: React.FC<FilePreviewItemProps> = ({ file, onRemove, imageSize, onClick }) => {
-  // Initialize as null instead of an empty string.
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const imageDimensions = SIZE_CONFIG[imageSize] || SIZE_CONFIG.sm;
-  const fileName = file instanceof File ? file.name : file.name;
-
-  useEffect(() => {
-    if (file instanceof File) {
-      const url = URL.createObjectURL(file);
-      setObjectUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setObjectUrl(file.url || null);
-    }
-  }, [file]);
+  const { file_name, absolute_url, status } = file;
 
   return (
     <div className="group relative">
-      {objectUrl && (
-        <Image
-          src={objectUrl}
-          alt={fileName}
-          width={imageDimensions.width}
-          height={imageDimensions.height}
-          className={cn(
-            'rounded-md border object-cover',
-            imageDimensions.className,
-            onClick && 'cursor-pointer hover:opacity-90'
+      {absolute_url && (
+        <div className="relative">
+          <Image
+            src={absolute_url}
+            alt={file_name}
+            width={imageDimensions.width}
+            height={imageDimensions.height}
+            className={cn(
+              'rounded-md border object-cover',
+              imageDimensions.className,
+              onClick && 'cursor-pointer hover:opacity-90',
+              status === 'uploading' && 'opacity-50'
+            )}
+            onClick={status !== 'uploading' ? onClick : undefined}
+            priority
+          />
+          {status === 'uploading' && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
           )}
-          onClick={onClick}
-          priority
-        />
+          {status === 'error' && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-md bg-destructive/10">
+              <span className="text-xs font-medium text-destructive">Upload failed</span>
+            </div>
+          )}
+        </div>
       )}
-      {onRemove && (
+      {onRemove && status !== 'uploading' && (
         <button
           type="button"
           onClick={() => onRemove(file)}

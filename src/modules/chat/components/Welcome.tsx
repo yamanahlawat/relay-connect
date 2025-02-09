@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
-type MessageCreate = components['schemas']['Body_MessageCreate'];
+type MessageCreate = components['schemas']['MessageCreate'];
 
 const ALL_SUGGESTIONS = [
   { icon: FileText, text: 'Summarize text', color: 'text-blue-500' },

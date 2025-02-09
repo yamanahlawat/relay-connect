@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 type SessionCreate = components['schemas']['SessionCreate'];
 type SessionUpdate = components['schemas']['SessionUpdate'];
-type MessageCreate = components['schemas']['Body_MessageCreate'];
+type MessageCreate = components['schemas']['MessageCreate'];
 
 interface UseMessageQueriesProps {
   sessionId: string;

@@ -1,5 +1,6 @@
 import FilePreview from '@/components/FilePreview/FilePreview';
 import type { components } from '@/lib/api/schema';
+import { FilePreviewData } from '@/types/attachment';
 
 type AttachmentRead = components['schemas']['AttachmentRead'];
 
@@ -10,12 +11,13 @@ interface MessageAttachmentsProps {
 export function MessageAttachments({ attachments }: MessageAttachmentsProps) {
   if (!attachments?.length) return null;
 
-  // Convert attachments to FileOrUrl format expected by FilePreview
-  const fileList = attachments.map((attachment) => ({
+  // Transform each AttachmentRead into the minimal FilePreviewData shape.
+  const filePreviewData: FilePreviewData[] = attachments.map((attachment) => ({
     id: attachment.id,
-    url: attachment.absolute_url,
-    name: attachment.file_name,
+    file_name: attachment.file_name,
+    absolute_url: attachment.absolute_url,
+    status: 'success', // since these attachments have been successfully uploaded
   }));
 
-  return <FilePreview files={fileList} showPreview={true} imageSize="lg" />;
+  return <FilePreview files={filePreviewData} showPreview imageSize="lg" />;
 }

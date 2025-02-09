@@ -19,36 +19,33 @@ export async function listSessionMessages(sessionId: string, limit = 10, offset 
 
 /**
  * Create a new message in a chat session
+ *
+ * @param sessionId - UUID of the chat session
+ * @param messageData - Message data to create
+ * @returns Created message with complete details
  */
-export async function createMessage(sessionId: string, messageData: MessageCreate): Promise<MessageRead> {
-  const formData = new FormData();
-
-  // Required field
-  formData.append('content', messageData.content);
-
-  // Optional fields with defaults as per schema
-  formData.append('role', messageData.role || 'user');
-  formData.append('status', messageData.status || 'pending');
-  formData.append('usage', messageData.usage || '{}');
-  formData.append('extra_data', messageData.extra_data || '{}');
-
-  // Optional fields without defaults
-  if (messageData.parent_id) {
-    formData.append('parent_id', messageData.parent_id);
-  }
-
-  // Handle file attachments
-  if (messageData.attachments?.length) {
-    messageData.attachments.forEach((file) => {
-      formData.append('attachments', file);
-    });
-  }
-
+export async function createMessage(
+  sessionId: string,
+  messageData: Partial<MessageCreate> & Pick<MessageCreate, 'content'>
+): Promise<MessageRead> {
   const { data, error } = await client.POST('/api/v1/messages/{session_id}/', {
     params: {
       path: { session_id: sessionId },
     },
-    body: formData,
+    body: {
+      content: messageData.content,
+      role: messageData.role || 'user',
+      status: messageData.status || 'pending',
+      parent_id: messageData.parent_id || null,
+      usage: messageData.usage || {
+        input_tokens: 0,
+        output_tokens: 0,
+        input_cost: 0,
+        output_cost: 0,
+      },
+      extra_data: messageData.extra_data || {},
+      attachment_ids: messageData.attachment_ids || [],
+    },
   });
 
   if (error) {

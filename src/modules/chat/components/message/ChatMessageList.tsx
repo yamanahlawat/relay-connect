@@ -13,6 +13,7 @@ interface ChatMessageListProps {
   isFetchingNextPage: boolean;
   messagesEndRef: React.Ref<HTMLDivElement>;
   scrollAreaRef: React.Ref<HTMLDivElement>;
+  setDisableAutoScroll: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function EmptyStatePlaceholder() {
@@ -35,13 +36,21 @@ export const ChatMessageList = memo(function ChatMessageList({
   isFetchingNextPage,
   messagesEndRef,
   scrollAreaRef,
+  setDisableAutoScroll,
 }: ChatMessageListProps) {
   if (messageGroups.length === 0) {
     return <EmptyStatePlaceholder />;
   }
 
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    // If the user scrolls up (deltaY negative), disable auto-scroll
+    if (event.deltaY < 0) {
+      setDisableAutoScroll(true);
+    }
+  };
+
   return (
-    <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={onScroll}>
+    <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={onScroll} onWheel={handleWheel}>
       <div className="mx-auto max-w-5xl space-y-4">
         {isFetchingNextPage && (
           <div className="flex justify-center py-4">

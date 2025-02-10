@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import debounce from 'lodash/debounce';
 import { Search, X } from 'lucide-react';
@@ -68,13 +69,15 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
         className="h-9 w-full pl-9 pr-9"
       />
       {searchValue && (
-        <button
+        <Button
           onClick={handleClearSearch}
-          className="absolute right-2 top-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-2 h-5 w-5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
           <span className="sr-only">Clear search</span>
-        </button>
+        </Button>
       )}
       {!searchValue && (
         <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -10,17 +11,17 @@ function ThemeItem({ theme, icon: Icon, label }: { theme: string; icon: LucideIc
   const isActive = currentTheme === theme;
 
   return (
-    <button
+    <Button
       onClick={() => setTheme(theme)}
+      variant={isActive ? 'default' : 'ghost'}
       className={cn(
         'inline-flex items-center justify-center rounded-md p-2 text-sm font-medium ring-offset-background transition-colors',
-        'hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        isActive && 'bg-accent text-accent-foreground'
+        'hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
     >
       <Icon className="h-5 w-5" />
       <span className="sr-only">{label}</span>
-    </button>
+    </Button>
   );
 }
 

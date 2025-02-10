@@ -1,5 +1,5 @@
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 import { GeneralSettings } from '@/modules/settings/GeneralSettings';
 import { ModelSettings } from '@/modules/settings/Models/ModelSettings';
 import { ProviderSettings } from '@/modules/settings/Providers/ProviderSettings';
@@ -49,18 +49,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
           <nav className="flex-1 space-y-1 p-2">
             {settingsNav.map((item) => (
-              <button
+              <Button
                 key={item.id}
                 onClick={() => setActivePage(item.id)}
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                  'hover:bg-accent/50 hover:text-accent-foreground',
-                  activePage === item.id ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
-                )}
+                variant={activePage === item.id ? 'default' : 'ghost'}
+                className="w-full justify-start gap-3"
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
-              </button>
+              </Button>
             ))}
           </nav>
         </div>

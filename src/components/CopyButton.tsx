@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from './ui/button';
 
 interface CopyButtonProps {
   text: string;
@@ -27,13 +28,13 @@ export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
     <TooltipProvider delayDuration={200} skipDelayDuration={0}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
             onClick={copyToClipboard}
+            variant="ghost"
+            size="icon"
             className={cn(
-              'rounded p-0.5 text-muted-foreground transition-all',
-              'hover:text-foreground',
-              'opacity-0 group-hover:opacity-100',
-              copied && 'text-green-500 hover:text-green-600',
+              'h-6 w-6 opacity-0 group-hover:opacity-100',
+              copied ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-foreground',
               className
             )}
           >
@@ -49,7 +50,7 @@ export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
               />
             </div>
             <span className="sr-only">{copied ? 'Copied!' : 'Copy message'}</span>
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="top">{copied ? 'Copied!' : 'Copy message'}</TooltipContent>
       </Tooltip>

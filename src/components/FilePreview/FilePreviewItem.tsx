@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FilePreviewData } from '@/types/attachment';
 import { Loader2, X } from 'lucide-react';
@@ -51,13 +52,14 @@ const FilePreviewItem: React.FC<FilePreviewItemProps> = ({ file, onRemove, image
         </div>
       )}
       {onRemove && status !== 'uploading' && (
-        <button
+        <Button
           type="button"
           onClick={() => onRemove(file)}
-          className="absolute -right-2 -top-2 rounded-full bg-background p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+          variant="ghost"
+          className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-background p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       )}
     </div>
   );

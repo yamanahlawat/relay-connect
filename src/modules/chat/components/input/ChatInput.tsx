@@ -145,19 +145,20 @@ export function ChatInput({
           {files.length > 0 && <FilePreview files={filePreviewData} onRemove={removeFile} showPreview imageSize="sm" />}
 
           {isEditing && (
-            <div className="flex items-center justify-between bg-orange-100 px-4 py-1.5 dark:bg-orange-950/50">
+            <div className="flex items-center justify-between bg-orange-100 px-4 py-1 dark:bg-orange-950/50">
               <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
                 <Pencil className="h-3.5 w-3.5" />
                 <span>Editing will remove all subsequent messages</span>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleCancelEdit}
-                className="text-orange-700/70 hover:text-orange-700 dark:text-orange-400/70 dark:hover:text-orange-400"
+                className="h-6 w-6 text-orange-700/70 hover:bg-orange-200/50 hover:text-orange-700 dark:text-orange-400/70 dark:hover:bg-orange-900/50 dark:hover:text-orange-400"
               >
                 <X className="h-3.5 w-3.5" />
                 <span className="sr-only">Cancel edit</span>
-              </button>
+              </Button>
             </div>
           )}
 

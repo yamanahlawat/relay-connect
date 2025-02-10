@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { FilePreviewProps } from '@/types/attachment';
 import { DialogTitle } from '@radix-ui/react-dialog';
@@ -97,24 +98,28 @@ const FilePreview = React.memo(function FilePreview({
 
                 {files.length > 1 && (
                   <div className="absolute inset-0 flex items-center justify-between p-4">
-                    <button
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePrev();
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+                      size="icon"
+                      variant="default"
+                      className="rounded-full"
                     >
                       <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleNext();
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+                      size="icon"
+                      variant="default"
+                      className="rounded-full"
                     >
                       <ChevronRight className="h-5 w-5" />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

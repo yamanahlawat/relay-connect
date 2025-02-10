@@ -1,4 +1,5 @@
 import { CopyButton } from '@/components/CopyButton';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, parseBackendUTCDate } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
@@ -115,14 +116,16 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
               <TooltipProvider delayDuration={200} skipDelayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <Button
                       onClick={() => onEditClick(message.id)}
-                      className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100"
                       disabled={isEditing}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-4 w-4" />
                       <span className="sr-only">Edit message</span>
-                    </button>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent side="top">Edit message</TooltipContent>
                 </Tooltip>
@@ -131,7 +134,7 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
             {/* Copy button */}
             {!isStreaming && (
               <CopyButton
-                text={message.content}
+                text={message.content ?? ''}
                 className={cn(
                   'p-1 text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100',
                   isEditing && 'pointer-events-none opacity-50'

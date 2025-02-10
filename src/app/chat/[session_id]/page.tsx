@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
@@ -18,6 +19,7 @@ import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings } from '@/types/chat';
 import { MessageRead } from '@/types/message';
 import { debounce } from 'lodash';
+import { ArrowDown } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -31,7 +33,7 @@ export default function ChatPage() {
   const { initialMessageId, clearInitialMessageId } = useMessageStreamingStore();
   const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
 
-  // hooks
+  // Hooks
   const {
     chatState,
     setChatState,
@@ -54,15 +56,14 @@ export default function ChatPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // State for system context
+  // State for system context, scrolling behavior, and scroll-to-bottom icon
+  const [disableAutoScroll, setDisableAutoScroll] = useState(false);
   const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const fileUpload = useFileUpload(sessionId, {
-    onError: () => {
-      toast.error('Failed to upload file');
-    },
+    onError: () => toast.error('Failed to upload file'),
   });
 
   const { isDragging } = useFileDrag({
@@ -77,13 +78,10 @@ export default function ChatPage() {
   // Update system context
   const handleSystemContextChange = async (newPrompt: string) => {
     setSystemContext(newPrompt);
-
     if (chatState.sessionId) {
       await mutations.updateSession.mutateAsync({
         sessionId: chatState.sessionId,
-        update: {
-          system_context: newPrompt,
-        },
+        update: { system_context: newPrompt },
       });
     }
   };
@@ -95,30 +93,22 @@ export default function ChatPage() {
     }
   }, [chatState.sessionId, chatState.streamingMessageId, mutations.stopMessage]);
 
-  // Add global event listener for Escape key
+  // Global Escape key event listener
   useEffect(() => {
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && chatState.streamingMessageId) {
         handleStopGeneration();
       }
     };
-
-    // Attach event listener for the Escape key
     document.addEventListener('keydown', handleEscapeKey);
-
-    // Cleanup event listener on component unmount
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
+    return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [chatState.streamingMessageId, handleStopGeneration]);
 
   // Handle message sending
   const handleSendMessage = async (content: string, attachmentIds: string[], settings: ChatSettings) => {
-    // Prevent empty messages
     const trimmedContent = content.trim();
     if (!trimmedContent && fileUpload.files.length === 0) return;
 
-    // Handle edit mode
     if (editingMessageId) {
       try {
         const messageIndex = chatState.messages.findIndex((msg) => msg.id === editingMessageId);
@@ -136,10 +126,7 @@ export default function ChatPage() {
         const updatedMessage = await mutations.updateMessage.mutateAsync({
           sessionId: chatState.sessionId,
           messageId: editingMessageId,
-          messageData: {
-            content: trimmedContent,
-            status: 'completed',
-          },
+          messageData: { content: trimmedContent, status: 'completed' },
         });
 
         await Promise.all(
@@ -164,7 +151,6 @@ export default function ChatPage() {
       } catch (error) {
         console.error('Failed to edit message:', error);
         toast.error('Failed to edit message');
-
         setChatState((prev) => ({
           ...prev,
           messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
@@ -173,14 +159,12 @@ export default function ChatPage() {
       }
     }
 
-    // Regular message sending logic
     if (!selectedProvider || !selectedModel) {
       toast.error('Please select a provider and model');
       return;
     }
 
     try {
-      // Create or use existing session
       const currentSessionId =
         chatState.sessionId ||
         (
@@ -192,7 +176,6 @@ export default function ChatPage() {
           })
         ).id;
 
-      // If session exists and system prompt changed, update it
       if (chatState.sessionId && systemContext) {
         await mutations.updateSession.mutateAsync({
           sessionId: chatState.sessionId,
@@ -200,7 +183,6 @@ export default function ChatPage() {
         });
       }
 
-      // Create user message
       const userMessage = await mutations.createMessage.mutateAsync({
         sessionId: currentSessionId,
         messageData: {
@@ -211,7 +193,6 @@ export default function ChatPage() {
         },
       });
 
-      // Start streaming with model parameters
       await handleMessageStream(currentSessionId, userMessage, {
         max_tokens: settings.maxTokens,
         temperature: settings.temperature,
@@ -230,31 +211,44 @@ export default function ChatPage() {
     clearInitialMessageId,
   });
 
-  // Debounced scroll handler
+  // Debounced scroll handler (also updates the scroll-to-bottom visibility)
   const handleScroll = useMemo(
     () =>
       debounce(() => {
         const scrollArea = scrollAreaRef.current;
         if (!scrollArea) return;
 
-        const nearBottom = Math.abs(scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight) < 10;
-        setIsAtBottom(nearBottom);
+        const distanceFromBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
+        // Show the scroll-to-bottom icon if the distance is greater than 50px
+        setShowScrollToBottom(distanceFromBottom > 50);
 
-        const isNearTop = scrollArea.scrollTop <= 100; // Adjusted condition for near top
-        if (isNearTop && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
-          messagesQuery.fetchNextPage(); // Trigger only when near top
+        // Trigger pagination when near the top
+        if (scrollArea.scrollTop <= 100 && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+          messagesQuery.fetchNextPage();
         }
       }, 200),
     [messagesQuery]
   );
 
+  // Combined auto-scroll effect during streaming
   useEffect(() => {
-    return () => {
-      handleScroll.cancel(); // Cleanup the debounced function on unmount
-    };
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea || !chatState.streamingMessageId) return;
+    // Use a stricter threshold (10px) when auto-scroll is disabled; otherwise 50px
+    const threshold = disableAutoScroll ? 10 : 50;
+    const nearBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight < threshold;
+    if (nearBottom) {
+      if (disableAutoScroll) setDisableAutoScroll(false);
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+  }, [chatState.messages, chatState.streamingMessageId, disableAutoScroll]);
+
+  // Cleanup the debounced scroll handler on unmount
+  useEffect(() => {
+    return () => handleScroll.cancel();
   }, [handleScroll]);
 
-  // Message grouping for display
+  // Group messages for display
   const messageGroups = useMemo(() => {
     return chatState.messages.reduce((groups: MessageRead[][], message) => {
       const lastGroup = groups[groups.length - 1];
@@ -267,120 +261,82 @@ export default function ChatPage() {
     }, []);
   }, [chatState.messages]);
 
-  // Effects
-  // Handle API data and deduplication
+  // Deduplicate and sort API messages
   useEffect(() => {
     if (messagesQuery.data) {
       setChatState((prev) => {
-        // Skip updates during streaming
-        if (prev.streamingMessageId) {
-          return prev;
-        }
-
+        if (prev.streamingMessageId) return prev;
         const flattenedMessages = messagesQuery.data.pages.flatMap((page) => page.messages);
-
-        // Sort by creation date
         flattenedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-        // Create a map of the most recent version of each message
         const messageMap = new Map<string, MessageRead>();
-        [...flattenedMessages].forEach((msg) => {
-          // Remove any assistant- prefix from ID for comparison
+        flattenedMessages.forEach((msg) => {
           const baseId = msg.id.replace('assistant-', '');
           const existingMsg = messageMap.get(baseId);
-
           if (!existingMsg || new Date(msg.created_at) > new Date(existingMsg.created_at)) {
             messageMap.set(baseId, msg);
           }
         });
-
-        return {
-          ...prev,
-          messages: Array.from(messageMap.values()),
-        };
+        return { ...prev, messages: Array.from(messageMap.values()) };
       });
     }
   }, [messagesQuery.data, setChatState]);
 
-  // Scroll to the latest message on initial load or session change
+  // Scroll to bottom on initial load or session change
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea || !shouldScrollToBottom || !chatState.messages.length) return;
-
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
       setShouldScrollToBottom(false);
     });
   }, [chatState.messages, shouldScrollToBottom]);
 
-  // Maintain scroll position when older messages are loaded
+  // Maintain scroll position when loading older messages
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea || !messagesQuery.data || !messagesQuery.isFetchingNextPage) return;
-
     const previousScrollHeight = scrollArea.scrollHeight;
-
     requestAnimationFrame(() => {
       const newScrollHeight = scrollArea.scrollHeight;
-      const scrollDiff = newScrollHeight - previousScrollHeight;
-
-      // Adjust scroll position to maintain view
-      scrollArea.scrollTop += scrollDiff;
+      scrollArea.scrollTop += newScrollHeight - previousScrollHeight;
     });
   }, [messagesQuery.data, messagesQuery.isFetchingNextPage]);
 
+  // Add scroll event listener
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea) return;
-
     scrollArea.addEventListener('scroll', handleScroll);
-
-    return () => {
-      scrollArea.removeEventListener('scroll', handleScroll);
-    };
+    return () => scrollArea.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-
-  useEffect(() => {
-    const scrollArea = scrollAreaRef.current;
-    if (!scrollArea || !isAtBottom || !chatState.streamingMessageId) return;
-
-    // Auto-scroll to the streaming message only if the user is at the bottom
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatState.messages, chatState.streamingMessageId, isAtBottom]);
 
   // Update system context on session change
   const { sessionDetails } = useSession(sessionId);
-
   useEffect(() => {
     if (sessionDetails) {
       setSystemContext(sessionDetails.system_context || '');
     }
   }, [sessionDetails]);
 
+  // Reset scroll flag on session change and cleanup streaming state
   useEffect(() => {
-    // Reset scroll flag on session change
     setShouldScrollToBottom(true);
-
-    // Optional: Cleanup streaming state
     return () => {
       if (chatState.streamingMessageId) {
-        setChatState((prev) => ({
-          ...prev,
-          streamingMessageId: null,
-        }));
+        setChatState((prev) => ({ ...prev, streamingMessageId: null }));
       }
     };
   }, [chatState.streamingMessageId, sessionId, setChatState]);
 
-  useEffect(() => {
-    return () => {
-      handleScroll.cancel();
-    };
-  }, [handleScroll]);
+  // Scroll-to-bottom handler triggered by the icon
+  const handleScrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setDisableAutoScroll(false);
+  };
 
   return (
     <ChatSplitView>
-      <div ref={chatContainerRef} className="flex h-full flex-col">
+      <div ref={chatContainerRef} className="relative flex h-full flex-col">
         {isDragging && <FileDropOverlay isOver={isDragging} />}
         <ChatMessageList
           messageGroups={messageGroups}
@@ -391,8 +347,19 @@ export default function ChatPage() {
           isFetchingNextPage={messagesQuery.isFetchingNextPage}
           messagesEndRef={messagesEndRef}
           scrollAreaRef={scrollAreaRef}
+          setDisableAutoScroll={setDisableAutoScroll}
         />
-
+        {/* Conditionally render the scroll-to-bottom icon */}
+        {showScrollToBottom && (
+          <Button
+            onClick={handleScrollToBottom}
+            variant="default"
+            size="icon"
+            className="absolute bottom-40 right-8 z-10 rounded-full shadow-lg"
+          >
+            <ArrowDown className="h-5 w-5" />
+          </Button>
+        )}
         <div className="w-full border-t border-border/40">
           <ChatInput
             onSend={handleSendMessage}

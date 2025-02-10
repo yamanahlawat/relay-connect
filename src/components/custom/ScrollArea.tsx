@@ -1,24 +1,33 @@
 import { cn } from '@/lib/utils';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import React from 'react';
+import React, { useImperativeHandle, useRef } from 'react';
 
 interface CustomScrollAreaProps extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
 }
 
 export const CustomScrollArea = React.forwardRef<HTMLDivElement, CustomScrollAreaProps>(
-  ({ className, children, onScroll, ...props }, ref) => (
-    <ScrollAreaPrimitive.Root ref={ref} className={cn('relative overflow-hidden', className)} {...props}>
-      <ScrollAreaPrimitive.Viewport
-        className="h-full w-full rounded-[inherit]"
-        onScroll={onScroll} // Attach `onScroll` directly to the `Viewport`
-      >
-        {children}
-      </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
-      <ScrollAreaPrimitive.Corner />
-    </ScrollAreaPrimitive.Root>
-  )
+  ({ className, children, onScroll, ...props }, forwardedRef) => {
+    // Create a ref for the viewport, which is the actual scrollable element.
+    const viewportRef = useRef<HTMLDivElement>(null);
+
+    // Expose the viewportRef to parent components via the forwardedRef.
+    useImperativeHandle(forwardedRef, () => viewportRef.current as HTMLDivElement);
+
+    return (
+      <ScrollAreaPrimitive.Root className={cn('relative overflow-hidden', className)} {...props}>
+        <ScrollAreaPrimitive.Viewport
+          ref={viewportRef}
+          className="h-full w-full rounded-[inherit]"
+          onScroll={onScroll} // Attach onScroll directly to the scrollable element.
+        >
+          {children}
+        </ScrollAreaPrimitive.Viewport>
+        <ScrollBar />
+        <ScrollAreaPrimitive.Corner />
+      </ScrollAreaPrimitive.Root>
+    );
+  }
 );
 
 CustomScrollArea.displayName = 'CustomScrollArea';

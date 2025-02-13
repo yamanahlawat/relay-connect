@@ -20,3 +20,8 @@ interface ChatMessageProps {
   onEditClick?: (messageId: string) => void;
   editingMessageId?: string | null;
 }
+
+interface AccumulatedContent {
+  text: string;
+  currentBlock: StreamBlock;
+}

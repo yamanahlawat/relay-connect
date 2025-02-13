@@ -147,6 +147,7 @@ const markdownComponents: Partial<Components> = {
 
     return <p className="leading-7 [&:not(:first-child)]:mt-4">{children}</p>;
   },
+  hr: () => <hr className="my-2" />,
 };
 
 /**

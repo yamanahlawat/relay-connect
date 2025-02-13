@@ -104,7 +104,7 @@ export function WelcomeContent() {
       setInitialMessageId(message.id);
       router.push(`/chat/${session.id}`);
     } catch (error) {
-      console.error('Error in handleSendMessage:', error);
+      toast.error(`Failed to send message: ${error}`);
     }
   };
 

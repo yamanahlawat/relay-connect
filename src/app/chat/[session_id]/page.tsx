@@ -149,8 +149,7 @@ export default function ChatPage() {
         await handleMessageStream(chatState.sessionId, updatedMessage, settings, true);
         return;
       } catch (error) {
-        console.error('Failed to edit message:', error);
-        toast.error('Failed to edit message');
+        toast.error(`Failed to edit message: ${error}`);
         setChatState((prev) => ({
           ...prev,
           messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
@@ -199,8 +198,7 @@ export default function ChatPage() {
         top_p: settings.topP,
       });
     } catch (error) {
-      console.error('Message sending error:', error);
-      toast.error('Failed to send message');
+      toast.error(`Failed to send message: ${error}`);
     }
   };
 
@@ -235,7 +233,7 @@ export default function ChatPage() {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea || !chatState.streamingMessageId) return;
     // Use a stricter threshold (10px) when auto-scroll is disabled; otherwise 50px
-    const threshold = disableAutoScroll ? 10 : 50;
+    const threshold = disableAutoScroll ? 15 : 50;
     const nearBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight < threshold;
     if (nearBottom) {
       if (disableAutoScroll) setDisableAutoScroll(false);

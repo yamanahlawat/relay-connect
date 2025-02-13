@@ -1,6 +1,8 @@
 import { streamCompletion } from '@/lib/api/chat';
+import { parseStream } from '@/modules/chat/utils/stream';
 import { ChatState, StreamParams } from '@/types/chat';
 import { MessageRead } from '@/types/message';
+import { StreamBlock } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -18,18 +20,6 @@ export function useChat(sessionId: string) {
 
   const queryClient = useQueryClient();
 
-  // Error handler
-  const handleStreamError = useCallback((placeholderId: string, errorMessage: string) => {
-    setChatState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === placeholderId ? { ...msg, status: 'failed', error_message: errorMessage } : msg
-      ),
-      streamingMessageId: null,
-    }));
-    toast.error(errorMessage);
-  }, []);
-
   // Message streaming handler
   const handleMessageStream = useCallback(
     async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
@@ -42,7 +32,6 @@ export function useChat(sessionId: string) {
         }
 
         const newMessages = [...prev.messages];
-
         // Add user message if not skipping and not already present
         if (!skipUserMessage && !newMessages.some((msg) => msg.id === userMessage.id)) {
           newMessages.push(userMessage);
@@ -51,7 +40,10 @@ export function useChat(sessionId: string) {
         // Add assistant message placeholder
         const assistantMessage: MessageRead = {
           id: assistantMessageId,
-          content: '',
+          content: JSON.stringify({
+            type: 'thinking',
+            content: 'Starting to process...',
+          }),
           role: 'assistant',
           status: 'pending',
           created_at: userMessage.created_at,
@@ -77,38 +69,95 @@ export function useChat(sessionId: string) {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
 
         const reader = await streamCompletion(sessionId, userMessage.id, params);
-        const decoder = new TextDecoder();
-        let streamContent = '';
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        let currentContent = '';
+        for await (const block of parseStream(reader)) {
+          if (block.type === 'content' && typeof block.content === 'string') {
+            // Append new content and stream it
+            currentContent += block.content;
+            const streamBlock: StreamBlock = {
+              type: 'content',
+              content: currentContent,
+            };
 
-          streamContent += decoder.decode(value, { stream: true });
-          setChatState((prev) => ({
-            ...prev,
-            messages: prev.messages.map((msg) =>
-              msg.id === assistantMessageId ? { ...msg, content: streamContent, status: 'processing' } : msg
-            ),
-          }));
+            setChatState((prev) => ({
+              ...prev,
+              messages: prev.messages.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: JSON.stringify(streamBlock),
+                      status: 'processing',
+                    }
+                  : msg
+              ),
+            }));
+          } else {
+            // For non-content blocks (thinking, tool calls, etc)
+            setChatState((prev) => ({
+              ...prev,
+              messages: prev.messages.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: JSON.stringify(block),
+                      status: 'processing',
+                    }
+                  : msg
+              ),
+            }));
+          }
+
+          if (block.type === 'done') {
+            setChatState((prev) => ({
+              ...prev,
+              messages: prev.messages.map((msg) =>
+                msg.id === assistantMessageId
+                  ? {
+                      ...msg,
+                      content: JSON.stringify({
+                        type: 'done',
+                        content: currentContent,
+                      }),
+                      status: 'completed',
+                    }
+                  : msg
+              ),
+              streamingMessageId: null,
+            }));
+          }
         }
 
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) => (msg.id === assistantMessageId ? { ...msg, status: 'completed' } : msg)),
-          streamingMessageId: null,
-        }));
-
-        // Now that streaming is complete, refetch messages
         await queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-        handleStreamError(assistantMessageId, errorMessage);
+
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  content: JSON.stringify({
+                    type: 'error',
+                    errorType: 'StreamError',
+                    errorDetail: errorMessage,
+                  }),
+                  status: 'failed',
+                  error_message: errorMessage,
+                }
+              : msg
+          ),
+          streamingMessageId: null,
+        }));
+
+        toast.error('Failed to stream response', {
+          description: errorMessage,
+        });
       }
     },
-    [handleStreamError, queryClient]
+    [queryClient]
   );
-
   // Handle edit start
   const handleEditStart = (messageId: string) => {
     const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);

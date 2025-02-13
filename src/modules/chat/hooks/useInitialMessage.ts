@@ -40,8 +40,7 @@ export function useInitialMessage({
           await handleMessageStream(sessionId, initialMessage);
           clearInitialMessageId();
         } catch (error) {
-          console.error('Error streaming initial message:', error);
-          toast.error('Failed to stream initial message');
+          toast.error(`Failed to stream initial message : ${error}`);
           clearInitialMessageId();
         }
       };

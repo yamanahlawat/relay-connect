@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from './ui/button';
 
 interface CopyButtonProps {
@@ -19,8 +20,8 @@ export function CopyButton({ text, onCopy, className }: CopyButtonProps) {
       setCopied(true);
       onCopy?.();
       setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error('Failed to copy text:', err);
+    } catch (error) {
+      toast.error(`Failed to copy text: ${error}`);
     }
   };
 

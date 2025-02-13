@@ -6,40 +6,37 @@ import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRen
 import { MessageContentProps } from '@/types/message';
 import { format } from 'date-fns';
 import { AlertCircle, Coins, Pencil } from 'lucide-react';
-
-function StatusIndicator() {
-  const dots = 3;
-
-  return (
-    <div className="flex h-2 items-center gap-[3px]" aria-label="Generating response">
-      {[...Array(dots)].map((_, i) => (
-        <div
-          key={i}
-          className="h-1 w-1 rounded-full bg-primary/60"
-          style={{
-            animation: 'fade 1.4s ease-in-out infinite',
-            animationDelay: `${i * 0.2}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+import { useMemo } from 'react';
+import StreamingIndicator from './StreamingIndicator';
 
 export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
   const messageCreateDate = parseBackendUTCDate(message.created_at);
+
+  const messageContent = useMemo(() => {
+    try {
+      const parsed = JSON.parse(message.content);
+      return parsed;
+    } catch {
+      return { type: 'content', content: message.content };
+    }
+  }, [message.content]);
+
   return (
     <div className="space-y-1.5">
+      {/* Handle thinking state */}
+      {messageContent.type === 'thinking' && <StreamingIndicator type="thinking" className="mb-2" />}
       {/* Message content */}
-      <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:my-0 max-w-none break-words">
-        {role === 'user' ? (
-          // For user messages, just render the content directly
-          <div className="whitespace-pre-wrap">{message.content}</div>
-        ) : (
-          // For AI messages, use markdown renderer
-          <MarkdownRenderer content={message.content} isStreaming={isStreaming} />
-        )}
-      </div>
+      {messageContent.type !== 'thinking' && (
+        <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:my-0 max-w-none break-words">
+          {role === 'user' ? (
+            // For user messages, just render the content directly
+            <div className="whitespace-pre-wrap">{messageContent.content}</div>
+          ) : (
+            // For AI messages, use markdown renderer
+            <MarkdownRenderer content={messageContent.content} isStreaming={isStreaming} />
+          )}
+        </div>
+      )}
 
       {/* Metadata */}
       <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-xs">
@@ -93,8 +90,6 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
 
         {/* Right side - Actions and Status */}
         <div className="flex items-center gap-3">
-          {isStreaming && <StatusIndicator />}
-
           {message.status === 'failed' && (
             <TooltipProvider delayDuration={200} skipDelayDuration={0}>
               <Tooltip>

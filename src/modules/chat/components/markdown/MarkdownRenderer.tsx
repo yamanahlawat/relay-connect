@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
@@ -33,54 +33,6 @@ export interface MarkdownRendererProps {
    */
   isStreaming?: boolean;
 }
-
-/**
- * Processes streaming content to separate think blocks from regular content
- */
-const processStreamingContent = (content: string): ProcessedContent | { type: 'regular'; content: string } => {
-  let isInThinkBlock = false;
-  let thinkContent = '';
-  let regularContent = '';
-
-  // Check for think block tags
-  const hasOpeningTag = content.includes('<think>');
-  const hasClosingTag = content.includes('</think>');
-
-  // Handle content without think blocks
-  if (!hasOpeningTag && !hasClosingTag) {
-    return {
-      type: 'regular',
-      content,
-    };
-  }
-
-  // Process opening tag
-  if (hasOpeningTag) {
-    const parts = content.split('<think>');
-    if (parts.length > 1) {
-      regularContent = parts[0];
-      thinkContent = parts[1];
-      isInThinkBlock = true;
-    }
-  }
-
-  // Process closing tag
-  if (hasClosingTag && isInThinkBlock) {
-    const parts = thinkContent.split('</think>');
-    if (parts.length > 1) {
-      thinkContent = parts[0];
-      regularContent += parts[1];
-      isInThinkBlock = false;
-    }
-  }
-
-  return {
-    type: isInThinkBlock ? 'think' : 'regular',
-    thinkContent: thinkContent.trim(),
-    regularContent: regularContent.trim(),
-    isComplete: hasOpeningTag && hasClosingTag,
-  };
-};
 
 /**
  * Markdown component configuration
@@ -162,19 +114,55 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
     isComplete: false,
   });
 
-  // Process content when it changes
   useEffect(() => {
-    const processed = processStreamingContent(content);
-    if ('content' in processed) {
+    // Only process think tags if content is a string
+    if (typeof content !== 'string') {
       setProcessedContent({
         type: 'regular',
         thinkContent: '',
-        regularContent: processed.content,
+        regularContent: String(content),
         isComplete: true,
       });
-    } else {
-      setProcessedContent(processed);
+      return;
     }
+
+    // Check for think block tags
+    const hasOpeningTag = content.includes('<think>');
+    const hasClosingTag = content.includes('</think>');
+
+    if (!hasOpeningTag && !hasClosingTag) {
+      setProcessedContent({
+        type: 'regular',
+        thinkContent: '',
+        regularContent: content,
+        isComplete: true,
+      });
+      return;
+    }
+
+    let thinkContent = '';
+    let regularContent = '';
+
+    if (hasOpeningTag) {
+      const [beforeThink, ...rest] = content.split('<think>');
+      regularContent = beforeThink;
+      const afterThink = rest.join('<think>');
+
+      if (hasClosingTag) {
+        const [think, ...remaining] = afterThink.split('</think>');
+        thinkContent = think;
+        regularContent += remaining.join('</think>');
+      } else {
+        thinkContent = afterThink;
+      }
+    }
+
+    setProcessedContent({
+      type: hasClosingTag ? 'regular' : 'think',
+      thinkContent: thinkContent.trim(),
+      regularContent: regularContent.trim(),
+      isComplete: hasOpeningTag && hasClosingTag,
+    });
   }, [content]);
 
   return (
@@ -184,12 +172,12 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         isStreaming && 'duration-75 animate-in fade-in-0'
       )}
     >
-      {/* Think Block Content - Rendered First */}
+      {/* Think Block Content */}
       {(processedContent.type === 'think' || processedContent.thinkContent) && (
         <ThinkBlock isStreaming={isStreaming}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeRaw, rehypeKatex]}
+            rehypePlugins={[rehypeSanitize, rehypeKatex]}
             components={markdownComponents}
           >
             {processedContent.thinkContent}
@@ -197,12 +185,12 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         </ThinkBlock>
       )}
 
-      {/* Regular Content - Rendered Second */}
+      {/* Regular Content */}
       {processedContent.regularContent && (
         <div className={cn('mt-4', isStreaming && 'opacity-90')}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeRaw, rehypeKatex]}
+            rehypePlugins={[rehypeSanitize, rehypeKatex]}
             components={markdownComponents}
           >
             {processedContent.regularContent}

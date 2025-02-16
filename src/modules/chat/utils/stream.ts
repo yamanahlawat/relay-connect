@@ -1,4 +1,4 @@
-import { RawStreamBlock, StreamBlock } from '@/types/stream';
+import type { RawStreamBlock, StreamBlock } from '@/types/stream';
 
 export function transformStreamBlock(block: RawStreamBlock): StreamBlock {
   return {
@@ -10,6 +10,7 @@ export function transformStreamBlock(block: RawStreamBlock): StreamBlock {
     toolStatus: block.tool_status ?? undefined,
     errorType: block.error_type ?? undefined,
     errorDetail: block.error_detail ?? undefined,
+    extraData: block.extra_data,
   };
 }
 
@@ -18,62 +19,45 @@ export async function* parseStream(
 ): AsyncGenerator<StreamBlock, void, unknown> {
   const decoder = new TextDecoder();
   let buffer = '';
-  let offset = 0; // index into buffer for next search
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      // Append new decoded chunk to buffer
+
+      // Append new chunk to buffer
       buffer += decoder.decode(value, { stream: true });
 
-      // Process as many complete JSON objects as possible
-      while (true) {
-        // Find the next opening brace starting at offset.
-        const start = buffer.indexOf('{', offset);
-        if (start === -1) {
-          // No JSON start marker found – discard old data.
-          buffer = '';
-          offset = 0;
-          break;
-        }
-        // Advance offset to the first '{' if there is extra garbage.
-        if (start > offset) offset = start;
+      // Split on newlines and process each line immediately
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep last incomplete chunk in buffer
 
-        // Look for a closing brace after the start.
-        const end = buffer.indexOf('}', offset);
-        if (end === -1) {
-          // Incomplete JSON object; wait for more data.
-          break;
-        }
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || trimmedLine === 'data: ') continue;
 
-        const jsonStr = buffer.slice(offset, end + 1);
         try {
+          // Remove 'data: ' prefix if present and parse
+          const jsonStr = trimmedLine.replace(/^data: /, '');
           const rawBlock = JSON.parse(jsonStr) as RawStreamBlock;
+
+          // Immediately yield the transformed block
           yield transformStreamBlock(rawBlock);
-          // Move offset past this object
-          offset = end + 1;
         } catch (error) {
-          console.warn('Error parsing chunk:', error);
-          // On parse error, skip one character after the opening brace
-          // so we don’t get stuck trying the same invalid snippet.
-          offset = start + 1;
+          console.warn('Error parsing stream block:', error, '\nLine:', trimmedLine);
+          continue;
         }
-      }
-      // Remove processed portion of the buffer to avoid unbounded growth.
-      if (offset > 0) {
-        buffer = buffer.slice(offset);
-        offset = 0;
       }
     }
 
-    // After the stream ends, attempt one final parse.
+    // Process any remaining data in buffer
     if (buffer.trim()) {
       try {
-        const rawBlock = JSON.parse(buffer) as RawStreamBlock;
+        const jsonStr = buffer.trim().replace(/^data: /, '');
+        const rawBlock = JSON.parse(jsonStr) as RawStreamBlock;
         yield transformStreamBlock(rawBlock);
       } catch (error) {
-        console.warn('Error parsing final chunk:', error);
+        console.warn('Error parsing final block:', error);
       }
     }
   } finally {

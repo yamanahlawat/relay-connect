@@ -2,43 +2,28 @@ import { CopyButton } from '@/components/CopyButton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, parseBackendUTCDate } from '@/lib/utils';
-import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
-import { MessageContentProps } from '@/types/message';
+import StreamBlockRenderer from '@/modules/chat/components/stream/StreamBlockRenderer';
+import type { MessageContentProps } from '@/types/message';
 import { format } from 'date-fns';
 import { AlertCircle, Coins, Pencil } from 'lucide-react';
-import { useMemo } from 'react';
-import StreamingIndicator from './StreamingIndicator';
 
 export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
   const messageCreateDate = parseBackendUTCDate(message.created_at);
 
-  const messageContent = useMemo(() => {
-    try {
-      const parsed = JSON.parse(message.content);
-      return parsed;
-    } catch {
-      return { type: 'content', content: message.content };
-    }
-  }, [message.content]);
-
   return (
     <div className="space-y-1.5">
-      {/* Handle thinking state */}
-      {messageContent.type === 'thinking' && <StreamingIndicator type="thinking" className="mb-2" />}
-      {/* Message content */}
-      {messageContent.type !== 'thinking' && (
+      {/* Content Section */}
+      {role === 'user' ? (
+        // User messages are always plain text
         <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:my-0 max-w-none break-words">
-          {role === 'user' ? (
-            // For user messages, just render the content directly
-            <div className="whitespace-pre-wrap">{messageContent.content}</div>
-          ) : (
-            // For AI messages, use markdown renderer
-            <MarkdownRenderer content={messageContent.content} isStreaming={isStreaming} />
-          )}
+          <div className="whitespace-pre-wrap">{message.content}</div>
         </div>
+      ) : (
+        // Assistant messages might contain stream blocks
+        <StreamBlockRenderer message={message} isStreaming={isStreaming} />
       )}
 
-      {/* Metadata */}
+      {/* Metadata Section */}
       <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-xs">
         {/* Left side metadata */}
         <div className="flex items-center gap-2">

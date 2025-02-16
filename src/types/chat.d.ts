@@ -1,5 +1,5 @@
 import { components } from '@/lib/api/schema';
-import { MessageRead } from './message';
+import type { MessageRead } from '@/types/message';
 
 type CompletionRequest = components['schemas']['CompletionRequest'];
 type CompletionResponse = components['schemas']['CompletionResponse'];

@@ -1,9 +1,9 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { MessageAttachments } from '@/modules/chat/components/message/MessageAttachments';
 import { MessageContent } from '@/modules/chat/components/message/MessageContent';
-import { ChatMessageProps } from '@/types/message';
+import type { ChatMessageProps } from '@/types/message';
 import { Bot, User2 } from 'lucide-react';
-import { MessageAttachments } from './MessageAttachments';
 
 export function ChatMessage({ messages, role, isStreaming, onEditClick, editingMessageId }: ChatMessageProps) {
   // Combine attachments from all messages in the group (for user messages)
@@ -19,7 +19,7 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
 
   return (
     <div className="group relative w-full transition-all duration-300">
-      {/* If there are any attachments, render them above the chat bubble */}
+      {/* Attachment Section */}
       {role === 'user' && attachments.length > 0 && (
         <div className="mx-auto max-w-2xl px-3 pb-2">
           <MessageAttachments attachments={attachments} />
@@ -55,7 +55,7 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
                 message={message}
                 isStreaming={isStreaming && message === messages[messages.length - 1]}
                 role={role}
-                onEditClick={() => onEditClick?.(message.id)}
+                onEditClick={onEditClick}
                 isEditing={editingMessageId === message.id}
               />
             ))}

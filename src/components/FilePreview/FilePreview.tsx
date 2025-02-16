@@ -1,3 +1,4 @@
+import FilePreviewItem from '@/components/FilePreview/FilePreviewItem';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { FilePreviewProps } from '@/types/attachment';
@@ -5,7 +6,6 @@ import { DialogTitle } from '@radix-ui/react-dialog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useState } from 'react';
-import FilePreviewItem from './FilePreviewItem';
 
 const FilePreview = React.memo(function FilePreview({
   files,

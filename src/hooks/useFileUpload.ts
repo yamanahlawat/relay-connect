@@ -38,7 +38,7 @@ interface InternalFileData extends FilePreviewData {
 
 // A helper to validate files
 const validateFile = (file: File): string | null => {
-  if (!FILE_CONFIG.ACCEPTED_TYPES.includes(file.type)) {
+  if (!FILE_CONFIG.ACCEPTED_TYPES.includes(file.type as (typeof FILE_CONFIG.ACCEPTED_TYPES)[number])) {
     return FILE_CONFIG.ERROR_MESSAGES.TYPE;
   }
   if (file.size > FILE_CONFIG.MAX_SIZE) {

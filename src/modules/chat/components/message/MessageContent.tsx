@@ -5,7 +5,7 @@ import { cn, parseBackendUTCDate } from '@/lib/utils';
 import StreamBlockRenderer from '@/modules/chat/components/stream/StreamBlockRenderer';
 import type { MessageContentProps } from '@/types/message';
 import { format } from 'date-fns';
-import { AlertCircle, Coins, Pencil } from 'lucide-react';
+import { Coins, Pencil } from 'lucide-react';
 
 export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
   const messageCreateDate = parseBackendUTCDate(message.created_at);
@@ -75,20 +75,6 @@ export function MessageContent({ message, isStreaming, role, onEditClick, isEdit
 
         {/* Right side - Actions and Status */}
         <div className="flex items-center gap-3">
-          {message.status === 'failed' && (
-            <TooltipProvider delayDuration={200} skipDelayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-destructive/90 transition-colors hover:text-destructive">
-                    <AlertCircle className="h-2.5 w-2.5" />
-                    <span className="font-medium">Error</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="left">{message.error_message}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             {/* Edit button */}

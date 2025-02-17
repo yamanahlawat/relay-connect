@@ -1,5 +1,5 @@
 import { MessageRead } from '@/types/message';
-import { StreamBlock, ToolExecution } from '@/types/stream';
+import { StreamBlock, StreamBlockType, ToolExecution } from '@/types/stream';
 import { useMemo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 import StreamingIndicator from '../message/StreamingIndicator';
@@ -11,7 +11,7 @@ interface StreamBlockRendererProps {
 }
 
 interface ParsedContent {
-  type: 'thinking' | 'content' | 'error';
+  type: StreamBlockType;
   content?: string;
   toolName?: string;
   toolArgs?: Record<string, unknown>;
@@ -19,7 +19,7 @@ interface ParsedContent {
   activeTool: {
     id: string;
     name: string;
-    status: 'starting' | 'calling' | 'processing';
+    status: 'tool_start' | 'tool_call';
     arguments?: Record<string, unknown>;
   } | null;
   thinkingText?: string;
@@ -34,7 +34,7 @@ export default function StreamBlockRenderer({ message, isStreaming }: StreamBloc
     // Handle completed messages with tool executions
     if (!isStreaming && message.extra_data?.tool_executions) {
       return {
-        type: 'content',
+        type: 'content' as StreamBlockType,
         content: message.content,
         completedTools: message.extra_data.tool_executions,
         activeTool: null,
@@ -48,12 +48,17 @@ export default function StreamBlockRenderer({ message, isStreaming }: StreamBloc
       const isProcessing = typeof parsed.content === 'string' && parsed.content.includes('Processing');
 
       return {
-        type: parsed.type as ParsedContent['type'],
+        type: parsed.type,
         content: parsed.content,
         toolName: parsed.toolName,
         toolArgs: parsed.toolArgs,
         completedTools: parsed.extraData?.completedTools || [],
-        activeTool: parsed.extraData?.activeTool || null,
+        activeTool: parsed.extraData?.activeTool
+          ? {
+              ...parsed.extraData.activeTool,
+              status: parsed.extraData.activeTool.status === 'starting' ? 'tool_start' : 'tool_call',
+            }
+          : null,
         thinkingText: isThinking || isProcessing ? (parsed.content as string) : undefined,
         error:
           parsed.type === 'error'
@@ -83,13 +88,13 @@ export default function StreamBlockRenderer({ message, isStreaming }: StreamBloc
         {message.extra_data.tool_executions.map((tool: ToolExecution) => (
           <div key={tool.id} className="duration-300">
             <ToolBlock
-              type="call"
+              type="tool_call"
               toolName={tool.name}
               args={typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments}
             />
             {tool.result && (
               <ToolBlock
-                type="result"
+                type="tool_result"
                 toolName={tool.name}
                 result={tool.result}
                 isError={!!tool.error}
@@ -120,7 +125,7 @@ export default function StreamBlockRenderer({ message, isStreaming }: StreamBloc
       {state.activeTool && (
         <div className="duration-300 animate-in slide-in-from-bottom-2">
           <ToolBlock
-            type={state.activeTool.status === 'starting' ? 'process' : 'call'}
+            type={state.activeTool.status}
             toolName={state.activeTool.name}
             args={state.activeTool.arguments}
             isStreaming={true}
@@ -132,13 +137,13 @@ export default function StreamBlockRenderer({ message, isStreaming }: StreamBloc
       {state.completedTools.map((tool: ToolExecution) => (
         <div key={tool.id} className="duration-300 animate-in slide-in-from-bottom-2">
           <ToolBlock
-            type="call"
+            type="tool_call"
             toolName={tool.name}
             args={typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments}
           />
           {tool.result && (
             <ToolBlock
-              type="result"
+              type="tool_result"
               toolName={tool.name}
               result={tool.result}
               isError={!!tool.error}

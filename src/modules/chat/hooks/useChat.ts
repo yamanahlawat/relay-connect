@@ -33,9 +33,9 @@ const initialStreamState: StreamState = {
   error: undefined,
 };
 
-export function useChat(sessionId: string) {
+export function useChat(initialSessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
-    sessionId,
+    sessionId: initialSessionId,
     messages: [],
     streamingMessageId: null,
   });
@@ -270,8 +270,14 @@ export function useChat(sessionId: string) {
     (messageId: string) => {
       const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
       if (messageToEdit) {
-        setEditingMessageId(messageId);
-        setEditingMessage(messageToEdit.content);
+        try {
+          const parsedContent = JSON.parse(messageToEdit.content);
+          setEditingMessageId(messageId);
+          setEditingMessage(parsedContent.content || messageToEdit.content);
+        } catch {
+          setEditingMessageId(messageId);
+          setEditingMessage(messageToEdit.content);
+        }
       }
     },
     [chatState.messages]

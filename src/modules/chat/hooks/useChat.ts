@@ -1,7 +1,7 @@
 import { streamCompletion } from '@/lib/api/chat';
 import { parseStream } from '@/modules/chat/utils/stream';
-import { ChatState, StreamParams } from '@/types/chat';
-import { MessageRead } from '@/types/message';
+import type { ChatState, StreamParams } from '@/types/chat';
+import type { MessageRead } from '@/types/message';
 import type { ToolExecution } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
@@ -49,7 +49,7 @@ export function useChat(sessionId: string) {
       const assistantMessageId = `assistant-${userMessage.id}`;
       let streamState = { ...initialStreamState };
 
-      // Initialize chat state with new message
+      // Initialize chat state with the user message and initial assistant message
       setChatState((prev) => {
         if (prev.streamingMessageId === assistantMessageId) {
           return prev;
@@ -65,7 +65,7 @@ export function useChat(sessionId: string) {
           id: assistantMessageId,
           content: JSON.stringify({
             type: 'thinking',
-            content: 'Starting to process...',
+            content: 'Thinking...',
             extraData: { blocks: [] },
           }),
           role: 'assistant',
@@ -77,6 +77,7 @@ export function useChat(sessionId: string) {
           usage: null,
           parent_id: userMessage.id,
           extra_data: {},
+          attachments: [],
         };
 
         newMessages.push(assistantMessage);
@@ -88,43 +89,52 @@ export function useChat(sessionId: string) {
         };
       });
 
-      const updateAssistantMessage = (newStreamState: StreamState) => {
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: JSON.stringify({
-                    type: newStreamState.isThinking ? 'thinking' : 'content',
-                    content: newStreamState.isThinking ? newStreamState.thinkingText : newStreamState.content,
-                    toolName: newStreamState.activeTool?.name,
-                    toolArgs: newStreamState.activeTool?.arguments,
-                    extraData: {
-                      completedTools: newStreamState.completedTools,
-                      activeTool: newStreamState.activeTool,
-                      thinkingText: newStreamState.thinkingText,
-                    },
-                  }),
-                  status: 'processing',
-                }
-              : msg
-          ),
-        }));
-      };
-
       try {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
         const reader = await streamCompletion(sessionId, userMessage.id, params);
 
         for await (const block of parseStream(reader)) {
           switch (block.type) {
+            case 'done':
+              // If we have a final message with metadata
+              if (block.message) {
+                setChatState((prev) => ({
+                  ...prev,
+                  messages: prev.messages.map((msg) => (msg.id === assistantMessageId ? block.message : msg)),
+                  streamingMessageId: null,
+                }));
+              } else {
+                // Ensure completed state
+                setChatState((prev) => ({
+                  ...prev,
+                  messages: prev.messages.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? {
+                          ...msg,
+                          status: 'completed',
+                          content: JSON.stringify({
+                            type: 'content',
+                            content: streamState.content,
+                            extraData: {
+                              completedTools: streamState.completedTools,
+                              accumulatedContent: streamState.content,
+                            },
+                          }),
+                        }
+                      : msg
+                  ),
+                  streamingMessageId: null,
+                }));
+              }
+              break;
+
             case 'thinking':
               streamState = {
                 ...streamState,
                 isThinking: true,
                 thinkingText: typeof block.content === 'string' ? block.content : undefined,
               };
+              updateMessageState();
               break;
 
             case 'tool_start':
@@ -138,6 +148,7 @@ export function useChat(sessionId: string) {
                   },
                   isThinking: false,
                 };
+                updateMessageState();
               }
               break;
 
@@ -151,6 +162,7 @@ export function useChat(sessionId: string) {
                     arguments: block.toolArgs,
                   },
                 };
+                updateMessageState();
               }
               break;
 
@@ -170,6 +182,7 @@ export function useChat(sessionId: string) {
                   completedTools: [...streamState.completedTools, completedTool],
                   activeTool: null,
                 };
+                updateMessageState();
               }
               break;
 
@@ -180,6 +193,7 @@ export function useChat(sessionId: string) {
                   content: streamState.content + block.content,
                   isThinking: false,
                 };
+                updateMessageState();
               }
               break;
 
@@ -192,34 +206,7 @@ export function useChat(sessionId: string) {
                 },
               };
               throw new Error(block.errorDetail);
-
-            case 'done':
-              // Final message update
-              setChatState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
-                        ...msg,
-                        content: JSON.stringify({
-                          type: 'content',
-                          content: streamState.content,
-                          extraData: {
-                            completedTools: streamState.completedTools,
-                            completionTimestamp: new Date().toISOString(),
-                          },
-                        }),
-                        status: 'completed',
-                      }
-                    : msg
-                ),
-                streamingMessageId: null,
-              }));
-              return;
           }
-
-          // Update message state after each block
-          updateAssistantMessage(streamState);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
@@ -246,6 +233,33 @@ export function useChat(sessionId: string) {
         toast.error('Failed to stream response', {
           description: errorMessage,
         });
+      }
+
+      function updateMessageState() {
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  content: JSON.stringify({
+                    type: streamState.isThinking ? 'thinking' : 'content',
+                    content: streamState.content,
+                    toolName: streamState.activeTool?.name,
+                    toolArgs: streamState.activeTool?.arguments,
+                    toolCallId: streamState.activeTool?.id,
+                    extraData: {
+                      completedTools: streamState.completedTools,
+                      activeTool: streamState.activeTool,
+                      thinkingText: streamState.thinkingText,
+                      accumulatedContent: streamState.content,
+                    },
+                  }),
+                  status: 'processing',
+                }
+              : msg
+          ),
+        }));
       }
     },
     [queryClient]

@@ -11,6 +11,7 @@ export function transformStreamBlock(block: RawStreamBlock): StreamBlock {
     errorType: block.error_type ?? undefined,
     errorDetail: block.error_detail ?? undefined,
     extraData: block.extra_data,
+    message: block.message ?? undefined,
   };
 }
 

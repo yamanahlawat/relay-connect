@@ -33,9 +33,9 @@ const initialStreamState: StreamState = {
   error: undefined,
 };
 
-export function useChat(initialSessionId: string) {
+export function useChat(sessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
-    sessionId: initialSessionId,
+    sessionId,
     messages: [],
     streamingMessageId: null,
   });
@@ -49,18 +49,30 @@ export function useChat(initialSessionId: string) {
       const assistantMessageId = `assistant-${userMessage.id}`;
       let streamState = { ...initialStreamState };
 
-      // Initialize chat state with the user message and initial assistant message
+      // Helper: update the assistant (streaming) message by locating its index.
+      const updateAssistantMessage = (
+        updater: (msg: MessageRead) => MessageRead,
+        extraState: Partial<ChatState> = {}
+      ) => {
+        setChatState((prev) => {
+          const idx = prev.messages.findIndex((msg) => msg.id === assistantMessageId);
+          if (idx === -1) return prev;
+          const updatedMessage = updater(prev.messages[idx]);
+          const newMessages = [...prev.messages];
+          newMessages[idx] = updatedMessage;
+          return { ...prev, messages: newMessages, ...extraState };
+        });
+      };
+
+      // Create/update the initial user and assistant messages.
       setChatState((prev) => {
-        if (prev.streamingMessageId === assistantMessageId) {
-          return prev;
-        }
+        if (prev.streamingMessageId === assistantMessageId) return prev;
 
         const newMessages = [...prev.messages];
         if (!skipUserMessage && !newMessages.some((msg) => msg.id === userMessage.id)) {
           newMessages.push(userMessage);
         }
 
-        // Initial assistant message
         const assistantMessage: MessageRead = {
           id: assistantMessageId,
           content: JSON.stringify({
@@ -81,13 +93,29 @@ export function useChat(initialSessionId: string) {
         };
 
         newMessages.push(assistantMessage);
-
-        return {
-          ...prev,
-          messages: newMessages,
-          streamingMessageId: assistantMessageId,
-        };
+        return { ...prev, messages: newMessages, streamingMessageId: assistantMessageId };
       });
+
+      // Common updater to reflect streamState changes.
+      const updateMessageState = () => {
+        updateAssistantMessage((msg) => ({
+          ...msg,
+          content: JSON.stringify({
+            type: streamState.isThinking ? 'thinking' : 'content',
+            content: streamState.content,
+            toolName: streamState.activeTool?.name,
+            toolArgs: streamState.activeTool?.arguments,
+            toolCallId: streamState.activeTool?.id,
+            extraData: {
+              completedTools: streamState.completedTools,
+              activeTool: streamState.activeTool,
+              thinkingText: streamState.thinkingText,
+              accumulatedContent: streamState.content,
+            },
+          }),
+          status: 'processing',
+        }));
+      };
 
       try {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
@@ -96,35 +124,25 @@ export function useChat(initialSessionId: string) {
         for await (const block of parseStream(reader)) {
           switch (block.type) {
             case 'done':
-              // If we have a final message with metadata
               if (block.message) {
-                setChatState((prev) => ({
-                  ...prev,
-                  messages: prev.messages.map((msg) => (msg.id === assistantMessageId ? block.message : msg)),
-                  streamingMessageId: null,
-                }));
+                // Replace the streaming message with the final message.
+                updateAssistantMessage(() => block.message, { streamingMessageId: null });
               } else {
-                // Ensure completed state
-                setChatState((prev) => ({
-                  ...prev,
-                  messages: prev.messages.map((msg) =>
-                    msg.id === assistantMessageId
-                      ? {
-                          ...msg,
-                          status: 'completed',
-                          content: JSON.stringify({
-                            type: 'content',
-                            content: streamState.content,
-                            extraData: {
-                              completedTools: streamState.completedTools,
-                              accumulatedContent: streamState.content,
-                            },
-                          }),
-                        }
-                      : msg
-                  ),
-                  streamingMessageId: null,
-                }));
+                updateAssistantMessage(
+                  (msg) => ({
+                    ...msg,
+                    status: 'completed',
+                    content: JSON.stringify({
+                      type: 'content',
+                      content: streamState.content,
+                      extraData: {
+                        completedTools: streamState.completedTools,
+                        accumulatedContent: streamState.content,
+                      },
+                    }),
+                  }),
+                  { streamingMessageId: null }
+                );
               }
               break;
 
@@ -210,74 +228,34 @@ export function useChat(initialSessionId: string) {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: JSON.stringify({
-                    type: 'error',
-                    errorType: streamState.error?.type || 'StreamError',
-                    errorDetail: streamState.error?.detail || errorMessage,
-                  }),
-                  status: 'failed',
-                  error_message: errorMessage,
-                }
-              : msg
-          ),
-          streamingMessageId: null,
-        }));
+        updateAssistantMessage(
+          (msg) => ({
+            ...msg,
+            content: JSON.stringify({
+              type: 'error',
+              errorType: streamState.error?.type || 'StreamError',
+              errorDetail: streamState.error?.detail || errorMessage,
+            }),
+            status: 'failed',
+            error_message: errorMessage,
+          }),
+          { streamingMessageId: null }
+        );
 
         toast.error('Failed to stream response', {
           description: errorMessage,
         });
       }
-
-      function updateMessageState() {
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: JSON.stringify({
-                    type: streamState.isThinking ? 'thinking' : 'content',
-                    content: streamState.content,
-                    toolName: streamState.activeTool?.name,
-                    toolArgs: streamState.activeTool?.arguments,
-                    toolCallId: streamState.activeTool?.id,
-                    extraData: {
-                      completedTools: streamState.completedTools,
-                      activeTool: streamState.activeTool,
-                      thinkingText: streamState.thinkingText,
-                      accumulatedContent: streamState.content,
-                    },
-                  }),
-                  status: 'processing',
-                }
-              : msg
-          ),
-        }));
-      }
     },
     [queryClient]
   );
 
-  // Message editing handlers
   const handleEditStart = useCallback(
     (messageId: string) => {
       const messageToEdit = chatState.messages.find((msg) => msg.id === messageId);
       if (messageToEdit) {
-        try {
-          const parsedContent = JSON.parse(messageToEdit.content);
-          setEditingMessageId(messageId);
-          setEditingMessage(parsedContent.content || messageToEdit.content);
-        } catch {
-          setEditingMessageId(messageId);
-          setEditingMessage(messageToEdit.content);
-        }
+        setEditingMessageId(messageId);
+        setEditingMessage(messageToEdit.content);
       }
     },
     [chatState.messages]

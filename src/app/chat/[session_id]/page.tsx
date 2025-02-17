@@ -21,7 +21,7 @@ import { MessageRead } from '@/types/message';
 import { debounce } from 'lodash';
 import { ArrowDown } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function ChatPage() {
@@ -33,7 +33,7 @@ export default function ChatPage() {
   const { initialMessageId, clearInitialMessageId } = useMessageStreamingStore();
   const { settings: chatSettings, updateSettings: setChatSettings } = useChatSettings();
 
-  // Hooks
+  // Chat state hooks
   const {
     chatState,
     setChatState,
@@ -55,17 +55,19 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatInputContainerRef = useRef<HTMLDivElement>(null);
 
-  // State for system context, scrolling behavior, and scroll-to-bottom icon
+  // Local state for system context and scrolling behavior
   const [disableAutoScroll, setDisableAutoScroll] = useState(false);
   const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [chatInputHeight, setChatInputHeight] = useState(0);
 
+  // File upload & drag handling
   const fileUpload = useFileUpload(sessionId, {
     onError: () => toast.error('Failed to upload file'),
   });
-
   const { isDragging } = useFileDrag({
     onDrop: (files) => {
       if (files.length > 0) {
@@ -75,25 +77,40 @@ export default function ChatPage() {
     fileTypes: ['image/'],
   });
 
-  // Update system context
-  const handleSystemContextChange = async (newPrompt: string) => {
-    setSystemContext(newPrompt);
-    if (chatState.sessionId) {
-      await mutations.updateSession.mutateAsync({
-        sessionId: chatState.sessionId,
-        update: { system_context: newPrompt },
-      });
-    }
-  };
+  // Use ResizeObserver to update the chat input container height
+  useLayoutEffect(() => {
+    if (!chatInputContainerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setChatInputHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(chatInputContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-  // Handle stop generation
+  // Update system context and session metadata
+  const handleSystemContextChange = useCallback(
+    async (newPrompt: string) => {
+      setSystemContext(newPrompt);
+      if (chatState.sessionId) {
+        await mutations.updateSession.mutateAsync({
+          sessionId: chatState.sessionId,
+          update: { system_context: newPrompt },
+        });
+      }
+    },
+    [chatState.sessionId, mutations.updateSession]
+  );
+
+  // Stop current generation if streaming
   const handleStopGeneration = useCallback(() => {
     if (chatState.sessionId && chatState.streamingMessageId) {
       mutations.stopMessage.mutate();
     }
   }, [chatState.sessionId, chatState.streamingMessageId, mutations.stopMessage]);
 
-  // Global Escape key event listener
+  // Global Escape key event listener to cancel generation
   useEffect(() => {
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && chatState.streamingMessageId) {
@@ -104,104 +121,120 @@ export default function ChatPage() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [chatState.streamingMessageId, handleStopGeneration]);
 
-  // Handle message sending
-  const handleSendMessage = async (content: string, attachmentIds: string[], settings: ChatSettings) => {
-    const trimmedContent = content.trim();
-    if (!trimmedContent && fileUpload.files.length === 0) return;
+  // Handle sending messages (or editing an existing one)
+  const handleSendMessage = useCallback(
+    async (content: string, attachmentIds: string[], settings: ChatSettings) => {
+      const trimmedContent = content.trim();
+      if (!trimmedContent && fileUpload.files.length === 0) return;
 
-    if (editingMessageId) {
+      // Edit message flow
+      if (editingMessageId) {
+        try {
+          const messageIndex = chatState.messages.findIndex((msg) => msg.id === editingMessageId);
+          const messagesToDelete = chatState.messages.slice(messageIndex + 1);
+
+          setChatState((prev) => ({
+            ...prev,
+            messages: prev.messages
+              .slice(0, messageIndex + 1)
+              .map((msg) =>
+                msg.id === editingMessageId ? { ...msg, content: trimmedContent, status: 'processing' } : msg
+              ),
+          }));
+
+          const updatedMessage = await mutations.updateMessage.mutateAsync({
+            sessionId: chatState.sessionId,
+            messageId: editingMessageId,
+            messageData: { content: trimmedContent, status: 'completed' },
+          });
+
+          await Promise.all(
+            messagesToDelete
+              .filter((msg) => !msg.id.startsWith('assistant-'))
+              .map((msg) =>
+                mutations.deleteMessage.mutateAsync({
+                  sessionId: chatState.sessionId,
+                  messageId: msg.id,
+                })
+              )
+          );
+
+          setChatState((prev) => ({
+            ...prev,
+            messages: [...prev.messages.slice(0, messageIndex), updatedMessage],
+          }));
+
+          handleCancelEdit();
+          await handleMessageStream(chatState.sessionId, updatedMessage, settings, true);
+          return;
+        } catch (error) {
+          toast.error(`Failed to edit message: ${error}`);
+          setChatState((prev) => ({
+            ...prev,
+            messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
+          }));
+          return;
+        }
+      }
+
+      // New message flow
+      if (!selectedProvider || !selectedModel) {
+        toast.error('Please select a provider and model');
+        return;
+      }
+
       try {
-        const messageIndex = chatState.messages.findIndex((msg) => msg.id === editingMessageId);
-        const messagesToDelete = chatState.messages.slice(messageIndex + 1);
+        const currentSessionId =
+          chatState.sessionId ||
+          (
+            await mutations.createSession.mutateAsync({
+              title: content.slice(0, 50),
+              provider_id: selectedProvider.id,
+              llm_model_id: selectedModel.id,
+              system_context: systemContext,
+            })
+          ).id;
 
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages
-            .slice(0, messageIndex + 1)
-            .map((msg) =>
-              msg.id === editingMessageId ? { ...msg, content: trimmedContent, status: 'processing' } : msg
-            ),
-        }));
+        if (chatState.sessionId && systemContext) {
+          await mutations.updateSession.mutateAsync({
+            sessionId: chatState.sessionId,
+            update: { system_context: systemContext },
+          });
+        }
 
-        const updatedMessage = await mutations.updateMessage.mutateAsync({
-          sessionId: chatState.sessionId,
-          messageId: editingMessageId,
-          messageData: { content: trimmedContent, status: 'completed' },
+        const userMessage = await mutations.createMessage.mutateAsync({
+          sessionId: currentSessionId,
+          messageData: {
+            content,
+            role: 'user',
+            status: 'completed',
+            attachment_ids: attachmentIds,
+          },
         });
 
-        await Promise.all(
-          messagesToDelete
-            .filter((msg) => !msg.id.startsWith('assistant-'))
-            .map((msg) =>
-              mutations.deleteMessage.mutateAsync({
-                sessionId: chatState.sessionId,
-                messageId: msg.id,
-              })
-            )
-        );
-
-        setChatState((prev) => ({
-          ...prev,
-          messages: [...prev.messages.slice(0, messageIndex), updatedMessage],
-        }));
-
-        handleCancelEdit();
-        await handleMessageStream(chatState.sessionId, updatedMessage, settings, true);
-        return;
+        await handleMessageStream(currentSessionId, userMessage, {
+          max_tokens: settings.maxTokens,
+          temperature: settings.temperature,
+          top_p: settings.topP,
+        });
       } catch (error) {
-        toast.error(`Failed to edit message: ${error}`);
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) => (msg.id === editingMessageId ? { ...msg, status: 'failed' } : msg)),
-        }));
-        return;
+        toast.error(`Failed to send message: ${error}`);
       }
-    }
+    },
+    [
+      chatState,
+      editingMessageId,
+      fileUpload.files,
+      handleCancelEdit,
+      handleMessageStream,
+      mutations,
+      selectedProvider,
+      selectedModel,
+      systemContext,
+    ]
+  );
 
-    if (!selectedProvider || !selectedModel) {
-      toast.error('Please select a provider and model');
-      return;
-    }
-
-    try {
-      const currentSessionId =
-        chatState.sessionId ||
-        (
-          await mutations.createSession.mutateAsync({
-            title: content.slice(0, 50),
-            provider_id: selectedProvider.id,
-            llm_model_id: selectedModel.id,
-            system_context: systemContext,
-          })
-        ).id;
-
-      if (chatState.sessionId && systemContext) {
-        await mutations.updateSession.mutateAsync({
-          sessionId: chatState.sessionId,
-          update: { system_context: systemContext },
-        });
-      }
-
-      const userMessage = await mutations.createMessage.mutateAsync({
-        sessionId: currentSessionId,
-        messageData: {
-          content,
-          role: 'user',
-          status: 'completed',
-          attachment_ids: attachmentIds,
-        },
-      });
-
-      await handleMessageStream(currentSessionId, userMessage, {
-        max_tokens: settings.maxTokens,
-        temperature: settings.temperature,
-        top_p: settings.topP,
-      });
-    } catch (error) {
-      toast.error(`Failed to send message: ${error}`);
-    }
-  };
-
+  // Ensure initial message is processed
   useInitialMessage({
     sessionId: chatState.sessionId,
     initialMessageId,
@@ -209,7 +242,7 @@ export default function ChatPage() {
     clearInitialMessageId,
   });
 
-  // Debounced scroll handler (also updates the scroll-to-bottom visibility)
+  // Debounced scroll handler to show/hide the scroll-to-bottom icon and trigger pagination
   const handleScroll = useMemo(
     () =>
       debounce(() => {
@@ -217,10 +250,8 @@ export default function ChatPage() {
         if (!scrollArea) return;
 
         const distanceFromBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
-        // Show the scroll-to-bottom icon if the distance is greater than 50px
         setShowScrollToBottom(distanceFromBottom > 50);
 
-        // Trigger pagination when near the top
         if (scrollArea.scrollTop <= 100 && messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
           messagesQuery.fetchNextPage();
         }
@@ -228,11 +259,10 @@ export default function ChatPage() {
     [messagesQuery]
   );
 
-  // Combined auto-scroll effect during streaming
+  // Auto-scroll effect during streaming messages
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea || !chatState.streamingMessageId) return;
-    // Use a stricter threshold (10px) when auto-scroll is disabled; otherwise 50px
     const threshold = disableAutoScroll ? 15 : 50;
     const nearBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight < threshold;
     if (nearBottom) {
@@ -241,16 +271,16 @@ export default function ChatPage() {
     }
   }, [chatState.messages, chatState.streamingMessageId, disableAutoScroll]);
 
-  // Cleanup the debounced scroll handler on unmount
+  // Cancel debounced scroll on unmount
   useEffect(() => {
     return () => handleScroll.cancel();
   }, [handleScroll]);
 
-  // Group messages for display
+  // Group messages by role for display
   const messageGroups = useMemo(() => {
     return chatState.messages.reduce((groups: MessageRead[][], message) => {
       const lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup[0] && lastGroup[0].role === message.role) {
+      if (lastGroup && lastGroup[0]?.role === message.role) {
         lastGroup.push(message);
       } else {
         groups.push([message]);
@@ -259,7 +289,7 @@ export default function ChatPage() {
     }, []);
   }, [chatState.messages]);
 
-  // Deduplicate and sort API messages
+  // Deduplicate and sort messages coming from the API
   useEffect(() => {
     if (messagesQuery.data) {
       setChatState((prev) => {
@@ -279,7 +309,7 @@ export default function ChatPage() {
     }
   }, [messagesQuery.data, setChatState]);
 
-  // Scroll to bottom on initial load or session change
+  // Scroll to bottom on initial load or when the session changes
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea || !shouldScrollToBottom || !chatState.messages.length) return;
@@ -300,7 +330,7 @@ export default function ChatPage() {
     });
   }, [messagesQuery.data, messagesQuery.isFetchingNextPage]);
 
-  // Add scroll event listener
+  // Attach scroll event listener to the scroll area
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea) return;
@@ -308,7 +338,7 @@ export default function ChatPage() {
     return () => scrollArea.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Update system context on session change
+  // Update system context if session details change
   const { sessionDetails } = useSession(sessionId);
   useEffect(() => {
     if (sessionDetails) {
@@ -316,7 +346,7 @@ export default function ChatPage() {
     }
   }, [sessionDetails]);
 
-  // Reset scroll flag on session change and cleanup streaming state
+  // Reset scroll flag on session change and clear streaming state on cleanup
   useEffect(() => {
     setShouldScrollToBottom(true);
     return () => {
@@ -326,11 +356,11 @@ export default function ChatPage() {
     };
   }, [chatState.streamingMessageId, sessionId, setChatState]);
 
-  // Scroll-to-bottom handler triggered by the icon
-  const handleScrollToBottom = () => {
+  // Handler for the scroll-to-bottom icon
+  const handleScrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     setDisableAutoScroll(false);
-  };
+  }, []);
 
   return (
     <ChatSplitView>
@@ -347,18 +377,20 @@ export default function ChatPage() {
           scrollAreaRef={scrollAreaRef}
           setDisableAutoScroll={setDisableAutoScroll}
         />
-        {/* Conditionally render the scroll-to-bottom icon */}
         {showScrollToBottom && (
           <Button
             onClick={handleScrollToBottom}
             variant="default"
             size="icon"
-            className="absolute bottom-40 right-8 z-10 rounded-full shadow-lg"
+            // The button is positioned relative to the chat container,
+            // with its bottom offset dynamically set based on the chat input's height.
+            style={{ bottom: chatInputHeight + 20, right: 32 }}
+            className="absolute z-10 rounded-full shadow-lg"
           >
             <ArrowDown className="h-5 w-5" />
           </Button>
         )}
-        <div className="w-full border-t border-border/40">
+        <div ref={chatInputContainerRef} className="w-full border-t border-border/40">
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}

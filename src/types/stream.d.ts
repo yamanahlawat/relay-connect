@@ -1,65 +1,79 @@
-type StreamBlockType = 'content' | 'thinking' | 'tool_start' | 'tool_call' | 'tool_result' | 'done' | 'error';
-
-interface TextContent {
+// Content types
+export interface TextContent {
   type: 'text';
   text: string;
 }
 
-interface ImageContent {
+export interface ImageContent {
   type: 'image';
   url: string;
   alt?: string;
 }
 
-interface EmbeddedResource {
+export interface EmbeddedResource {
   type: 'embedded';
   resourceType: string;
   data: unknown;
 }
 
-type ContentItem = TextContent | ImageContent | EmbeddedResource;
+export type ContentItem = TextContent | ImageContent | EmbeddedResource;
+
+// Block types
+export type StreamBlockType = 'content' | 'thinking' | 'tool_start' | 'tool_call' | 'tool_result' | 'done' | 'error';
+
+// Tool execution states
+export type ToolExecutionStatus = 'starting' | 'calling' | 'completed' | 'error';
+export type ToolActivityStatus = 'starting' | 'calling' | 'processing';
 
 // Tool execution tracking
-export interface ToolExecution {
+interface ToolExecution {
   id: string;
   name: string;
-  status: 'starting' | 'calling' | 'completed' | 'error';
+  status: ToolExecutionStatus;
   arguments?: Record<string, unknown>;
-  result?: string | ContentItem[];
+  tool_result?: ContentItem[];
   error?: string;
   timestamp: string;
 }
 
-// Current tool state
+// Active tool state
 export interface ActiveTool {
   id: string;
   name: string;
-  status: 'starting' | 'calling' | 'processing';
+  status: ToolActivityStatus;
   arguments?: Record<string, unknown>;
+}
+
+// Extra data for stream blocks
+export interface StreamBlockExtraData {
+  completedTools: ToolExecution[];
+  activeTool: ActiveTool | null;
+  accumulatedContent: string;
+  completionTimestamp?: string;
+  // Added fields to match usage in useChat
+  type?: StreamBlockType;
+  content?: string;
+  toolName?: string;
+  toolArgs?: Record<string, unknown>;
+  toolCallId?: string;
+  thinkingText?: string;
+  errorType?: string;
+  errorDetail?: string;
 }
 
 // Stream block with improved typing
 export interface StreamBlock {
   type: StreamBlockType;
   content?: string | ContentItem[];
-
-  // Tool-specific fields
   toolName?: string;
   toolArgs?: Record<string, unknown>;
   toolCallId?: string;
   toolStatus?: string;
-
-  // Error handling
+  toolResult?: ContentItem[];
   errorType?: string;
   errorDetail?: string;
-
-  // Metadata and state tracking
-  extraData?: {
-    completedTools: ToolExecution[];
-    activeTool: ActiveTool | null;
-    accumulatedContent: string;
-    completionTimestamp?: string;
-  };
+  extraData?: StreamBlockExtraData;
+  message?: unknown; // For final message replacement
 }
 
 // Raw stream block from backend
@@ -70,6 +84,7 @@ export interface RawStreamBlock {
   tool_args: Record<string, unknown> | null;
   tool_call_id: string | null;
   tool_status: string | null;
+  tool_result: ContentItem[] | null;
   error_type: string | null;
   error_detail: string | null;
   extra_data?: {
@@ -81,27 +96,27 @@ export interface RawStreamBlock {
 
 // State management for streaming
 export interface StreamingState {
-  // Overall message state
-  status: 'thinking' | 'processing' | 'done' | 'error';
-
-  // Content accumulation
-  accumulatedContent: string;
-
-  // Tool execution tracking
+  content: string;
   completedTools: ToolExecution[];
-  activeTool: ActiveTool | null;
-
-  // Error handling
+  activeTools: ActiveTool[];
+  isThinking: boolean;
+  thinkingText?: string;
   error?: {
     type: string;
     detail: string;
   };
 }
 
-// Helper type for block accumulation
-export interface AccumulatedBlocks {
-  blocks: StreamBlock[];
-  currentContent: string;
+// Message extra data structure
+export interface MessageExtraData {
+  type: StreamBlockType;
+  content?: string | ContentItem[];
+  toolName?: string;
+  toolArgs?: Record<string, unknown>;
+  toolCallId?: string;
   completedTools: ToolExecution[];
   activeTool: ActiveTool | null;
+  thinkingText?: string;
+  accumulatedContent: string;
+  blocks?: StreamBlock[];
 }

@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
         port: '8000',
         pathname: '/api/v1/attachments/**',
       },
+      // allow all http and https separately
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
   },
 };

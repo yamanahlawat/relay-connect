@@ -31,7 +31,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   ]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex h-screen w-screen">
         <HydrationBoundary state={dehydrate(queryClient)}>
           <AppSidebar />

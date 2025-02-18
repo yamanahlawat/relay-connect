@@ -2,34 +2,50 @@ import { streamCompletion } from '@/lib/api/chat';
 import { parseStream } from '@/modules/chat/utils/stream';
 import type { ChatState, StreamParams } from '@/types/chat';
 import type { MessageRead } from '@/types/message';
-import type { ToolExecution } from '@/types/stream';
+import type { ContentItem } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-interface StreamState {
+interface ToolStreamState {
   content: string;
-  completedTools: ToolExecution[];
-  activeTool: {
+  thinking: {
+    isThinking: boolean;
+    content?: string;
+  };
+  activeTools: Map<
+    string,
+    {
+      id: string;
+      name: string;
+      status: 'starting' | 'calling';
+      arguments?: Record<string, unknown>;
+      startTime: Date;
+    }
+  >;
+  completedTools: Array<{
     id: string;
     name: string;
-    status: 'starting' | 'calling' | 'processing';
     arguments?: Record<string, unknown>;
-  } | null;
-  isThinking: boolean;
-  thinkingText?: string;
+    result?: string | ContentItem[];
+    error?: string;
+    startTime: Date;
+    endTime: Date;
+  }>;
   error?: {
     type: string;
     detail: string;
   };
 }
 
-const initialStreamState: StreamState = {
+const initialStreamState: ToolStreamState = {
   content: '',
+  thinking: {
+    isThinking: false,
+    content: undefined,
+  },
+  activeTools: new Map(),
   completedTools: [],
-  activeTool: null,
-  isThinking: false,
-  thinkingText: undefined,
   error: undefined,
 };
 
@@ -49,7 +65,6 @@ export function useChat(sessionId: string) {
       const assistantMessageId = `assistant-${userMessage.id}`;
       let streamState = { ...initialStreamState };
 
-      // Helper: update the assistant (streaming) message by locating its index.
       const updateAssistantMessage = (
         updater: (msg: MessageRead) => MessageRead,
         extraState: Partial<ChatState> = {}
@@ -64,7 +79,17 @@ export function useChat(sessionId: string) {
         });
       };
 
-      // Create/update the initial user and assistant messages.
+      // Create initial messages with streamState data
+      const createMessageExtraData = (state: ToolStreamState) => ({
+        type: state.thinking.isThinking ? 'thinking' : 'content',
+        content: state.content,
+        thinking: state.thinking,
+        activeTools: Array.from(state.activeTools.values()),
+        completedTools: state.completedTools,
+        error: state.error,
+      });
+
+      // Initial message setup...
       setChatState((prev) => {
         if (prev.streamingMessageId === assistantMessageId) return prev;
 
@@ -75,11 +100,7 @@ export function useChat(sessionId: string) {
 
         const assistantMessage: MessageRead = {
           id: assistantMessageId,
-          content: JSON.stringify({
-            type: 'thinking',
-            content: 'Thinking...',
-            extraData: { blocks: [] },
-          }),
+          content: 'Thinking...',
           role: 'assistant',
           status: 'pending',
           created_at: userMessage.created_at,
@@ -88,7 +109,7 @@ export function useChat(sessionId: string) {
           error_code: null,
           usage: null,
           parent_id: userMessage.id,
-          extra_data: {},
+          extra_data: createMessageExtraData(streamState),
           attachments: [],
         };
 
@@ -96,111 +117,60 @@ export function useChat(sessionId: string) {
         return { ...prev, messages: newMessages, streamingMessageId: assistantMessageId };
       });
 
-      // Common updater to reflect streamState changes.
-      const updateMessageState = () => {
-        updateAssistantMessage((msg) => ({
-          ...msg,
-          content: JSON.stringify({
-            type: streamState.isThinking ? 'thinking' : 'content',
-            content: streamState.content,
-            toolName: streamState.activeTool?.name,
-            toolArgs: streamState.activeTool?.arguments,
-            toolCallId: streamState.activeTool?.id,
-            extraData: {
-              completedTools: streamState.completedTools,
-              activeTool: streamState.activeTool,
-              thinkingText: streamState.thinkingText,
-              accumulatedContent: streamState.content,
-            },
-          }),
-          status: 'processing',
-        }));
-      };
-
       try {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
         const reader = await streamCompletion(sessionId, userMessage.id, params);
 
         for await (const block of parseStream(reader)) {
           switch (block.type) {
-            case 'done':
-              if (block.message) {
-                // Replace the streaming message with the final message.
-                updateAssistantMessage(() => block.message, { streamingMessageId: null });
-              } else {
-                updateAssistantMessage(
-                  (msg) => ({
-                    ...msg,
-                    status: 'completed',
-                    content: JSON.stringify({
-                      type: 'content',
-                      content: streamState.content,
-                      extraData: {
-                        completedTools: streamState.completedTools,
-                        accumulatedContent: streamState.content,
-                      },
-                    }),
-                  }),
-                  { streamingMessageId: null }
-                );
-              }
-              break;
-
             case 'thinking':
               streamState = {
                 ...streamState,
-                isThinking: true,
-                thinkingText: typeof block.content === 'string' ? block.content : undefined,
+                thinking: {
+                  isThinking: true,
+                  content: typeof block.content === 'string' ? block.content : undefined,
+                },
               };
-              updateMessageState();
               break;
 
             case 'tool_start':
               if (block.toolCallId && block.toolName) {
-                streamState = {
-                  ...streamState,
-                  activeTool: {
-                    id: block.toolCallId,
-                    name: block.toolName,
-                    status: 'starting',
-                  },
-                  isThinking: false,
+                const newTool = {
+                  id: block.toolCallId,
+                  name: block.toolName,
+                  status: 'starting' as const,
+                  startTime: new Date(),
                 };
-                updateMessageState();
+                streamState.activeTools.set(block.toolCallId, newTool);
+                streamState.thinking.isThinking = false;
               }
               break;
 
             case 'tool_call':
-              if (streamState.activeTool && block.toolCallId === streamState.activeTool.id) {
-                streamState = {
-                  ...streamState,
-                  activeTool: {
-                    ...streamState.activeTool,
-                    status: 'calling',
+              if (block.toolCallId && block.toolArgs) {
+                const existingTool = streamState.activeTools.get(block.toolCallId);
+                if (existingTool) {
+                  streamState.activeTools.set(block.toolCallId, {
+                    ...existingTool,
+                    status: 'calling' as const,
                     arguments: block.toolArgs,
-                  },
-                };
-                updateMessageState();
+                  });
+                }
               }
               break;
 
             case 'tool_result':
-              if (streamState.activeTool && block.toolCallId === streamState.activeTool.id) {
-                const completedTool: ToolExecution = {
-                  id: streamState.activeTool.id,
-                  name: streamState.activeTool.name,
-                  status: 'completed',
-                  arguments: streamState.activeTool.arguments,
-                  result: block.content,
-                  timestamp: new Date().toISOString(),
-                };
-
-                streamState = {
-                  ...streamState,
-                  completedTools: [...streamState.completedTools, completedTool],
-                  activeTool: null,
-                };
-                updateMessageState();
+              if (block.toolCallId) {
+                const completedTool = streamState.activeTools.get(block.toolCallId);
+                if (completedTool) {
+                  streamState.completedTools.push({
+                    ...completedTool,
+                    result: block.toolResult,
+                    error: undefined,
+                    endTime: new Date(),
+                  });
+                  streamState.activeTools.delete(block.toolCallId);
+                }
               }
               break;
 
@@ -209,9 +179,11 @@ export function useChat(sessionId: string) {
                 streamState = {
                   ...streamState,
                   content: streamState.content + block.content,
-                  isThinking: false,
+                  thinking: {
+                    isThinking: false,
+                    content: undefined,
+                  },
                 };
-                updateMessageState();
               }
               break;
 
@@ -224,20 +196,51 @@ export function useChat(sessionId: string) {
                 },
               };
               throw new Error(block.errorDetail);
+
+            case 'done':
+              if (block.message) {
+                // Handle final message state
+                updateAssistantMessage(() => block.message, { streamingMessageId: null });
+              } else {
+                // Create final state with accumulated data
+                updateAssistantMessage(
+                  (msg) => ({
+                    ...msg,
+                    status: 'completed',
+                    content: streamState.content,
+                    extra_data: {
+                      type: 'content',
+                      completedTools: streamState.completedTools,
+                      content: streamState.content,
+                    },
+                  }),
+                  { streamingMessageId: null }
+                );
+              }
+              break;
           }
+
+          // Update message state after each block
+          updateAssistantMessage((msg) => ({
+            ...msg,
+            content: streamState.content || streamState.thinking.content || 'Thinking...',
+            status: 'processing',
+            extra_data: createMessageExtraData(streamState),
+          }));
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
         updateAssistantMessage(
           (msg) => ({
             ...msg,
-            content: JSON.stringify({
+            content: errorMessage,
+            status: 'failed',
+            error_message: errorMessage,
+            extra_data: {
               type: 'error',
               errorType: streamState.error?.type || 'StreamError',
               errorDetail: streamState.error?.detail || errorMessage,
-            }),
-            status: 'failed',
-            error_message: errorMessage,
+            },
           }),
           { streamingMessageId: null }
         );

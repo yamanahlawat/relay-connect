@@ -1,193 +1,118 @@
-import { MessageRead } from '@/types/message';
-import { StreamBlock, StreamBlockType, ToolExecution } from '@/types/stream';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 import StreamingIndicator from '../message/StreamingIndicator';
-import ToolBlock from '../message/ToolBox';
+import ToolBlock from '../message/ToolBlock';
+
+import type { MessageRead } from '@/types/message';
+import type { ContentItem } from '@/types/stream';
 
 interface StreamBlockRendererProps {
   message: MessageRead;
-  isStreaming?: boolean;
+  // If you still want an explicit prop for "streaming",
+  // you can pass message.status === 'processing'
+  // isStreaming?: boolean;
 }
 
-interface ParsedContent {
-  type: StreamBlockType;
-  content?: string;
-  toolName?: string;
-  toolArgs?: Record<string, unknown>;
-  completedTools: ToolExecution[];
-  activeTool: ActiveTool | null;
-  thinkingText?: string;
-  error?: ErrorState;
-}
+const StreamBlockRenderer = memo(function StreamBlockRenderer({ message }: StreamBlockRendererProps) {
+  // Determine if we are still streaming
+  // Alternatively, if you pass isStreaming explicitly, use that instead.
+  const isStreaming = message.status === 'processing';
 
-interface ActiveTool {
-  id: string;
-  name: string;
-  status: 'tool_start' | 'tool_call';
-  arguments?: Record<string, unknown>;
-}
+  // We expect partial aggregator data in `message.extra_data`.
+  const extraData = message.extra_data ?? {};
 
-interface ErrorState {
-  type: string;
-  detail: string;
-}
+  // This is the partial text accumulated during streaming
+  const partialContent = (extraData.content as string) || '';
 
-// Memoized components for better performance
-const ThinkingIndicator = memo(function ThinkingIndicator({ content }: { content?: string }) {
-  return (
-    <div className="duration-300 animate-in fade-in-0">
-      <StreamingIndicator type="thinking" text={content} />
-    </div>
-  );
-});
+  // "Thinking" status from aggregator
+  const thinking = extraData.thinking?.isThinking ? extraData.thinking : { isThinking: false };
 
-const ActiveToolBlock = memo(function ActiveToolBlock({ tool }: { tool: ActiveTool }) {
-  return (
-    <div className="duration-300 animate-in slide-in-from-bottom-2">
-      <ToolBlock type={tool.status} toolName={tool.name} args={tool.arguments} isStreaming={true} />
-    </div>
-  );
-});
+  // Tools used during streaming (aggregator):
+  // - activeTools: Tools that haven't completed yet
+  // - completedTools: Tools that have finished
+  const activeTools = Array.isArray(extraData.activeTools) ? extraData.activeTools : [];
+  const completedToolsAggregator = Array.isArray(extraData.completedTools) ? extraData.completedTools : [];
 
-const CompletedToolBlock = memo(function CompletedToolBlock({ tool }: { tool: ToolExecution }) {
-  const parsedArgs = useMemo(() => {
-    if (typeof tool.arguments === 'string') {
-      try {
-        return JSON.parse(tool.arguments);
-      } catch {
-        return tool.arguments;
-      }
-    }
-    return tool.arguments;
-  }, [tool.arguments]);
+  // Tools from the final message (non-streaming scenario or from the DB):
+  // This is the "classic" array of tool executions once the message is fully complete.
+  const completedToolsFinal = Array.isArray(extraData.tool_executions) ? extraData.tool_executions : [];
 
-  return (
-    <div className="duration-300 animate-in slide-in-from-bottom-2">
-      <ToolBlock type="tool_call" toolName={tool.name} args={parsedArgs} />
-      {tool.result && (
-        <ToolBlock
-          type="tool_result"
-          toolName={tool.name}
-          result={tool.result}
-          isError={!!tool.error}
-          errorMessage={tool.error}
-        />
-      )}
-    </div>
-  );
-});
+  // Decide which text content to show:
+  // - If streaming, we typically show partialContent (chunked in)
+  // - If fully completed, show message.content or partialContent if you prefer
+  const finalContent = message.content || '';
+  const displayedContent = isStreaming ? partialContent : finalContent || partialContent;
 
-const ContentBlock = memo(function ContentBlock({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
-  return (
-    <div className="duration-300 animate-in fade-in-0">
-      <div className="prose prose-sm dark:prose-invert max-w-none transition-all">
-        <MarkdownRenderer content={content} isStreaming={isStreaming} />
-      </div>
-    </div>
-  );
-});
-
-const ErrorBlock = memo(function ErrorBlock({ error }: { error: ErrorState }) {
-  return (
-    <div className="text-red-500 duration-300 animate-in fade-in-0">
-      <p className="font-medium">{error.type}</p>
-      <p className="text-sm opacity-90">{error.detail}</p>
-    </div>
-  );
-});
-
-// Helper functions for parsing and state management
-const parseStreamContent = (content: string): StreamBlock | null => {
-  try {
-    return JSON.parse(content) as StreamBlock;
-  } catch {
-    return null;
-  }
-};
-
-const createParsedContent = (parsed: StreamBlock | null, isProcessing: boolean): ParsedContent => {
-  if (!parsed) {
-    return {
-      type: 'content',
-      content: '',
-      completedTools: [],
-      activeTool: null,
-    };
-  }
-
-  return {
-    type: parsed.type,
-    content: parsed.content,
-    toolName: parsed.toolName,
-    toolArgs: parsed.toolArgs,
-    completedTools: parsed.extraData?.completedTools || [],
-    activeTool: parsed.extraData?.activeTool
-      ? {
-          ...parsed.extraData.activeTool,
-          status: parsed.extraData.activeTool.status === 'starting' ? 'tool_start' : 'tool_call',
-        }
-      : null,
-    thinkingText: parsed.type === 'thinking' || isProcessing ? (parsed.content as string) : undefined,
-    error:
-      parsed.type === 'error'
-        ? {
-            type: parsed.errorType as string,
-            detail: parsed.errorDetail as string,
-          }
-        : undefined,
-  };
-};
-
-// Main component with performance optimizations
-export const StreamBlockRenderer = memo(function StreamBlockRenderer({
-  message,
-  isStreaming,
-}: StreamBlockRendererProps) {
-  const state = useMemo(() => {
-    // Handle completed messages with tool executions
-    if (!isStreaming && message.extra_data?.tool_executions) {
-      return {
-        type: 'content' as StreamBlockType,
-        content: message.content,
-        completedTools: message.extra_data.tool_executions,
-        activeTool: null,
-        thinkingText: undefined,
-      } as ParsedContent;
-    }
-
-    const parsed = parseStreamContent(message.content);
-    const isProcessing = typeof parsed?.content === 'string' && parsed.content.includes('Processing');
-
-    return createParsedContent(parsed, isProcessing);
-  }, [message.content, message.extra_data, isStreaming]);
-
-  // Render completed message with tools
-  if (!isStreaming && state.type === 'content' && message.extra_data?.tool_executions) {
-    return (
-      <div className="space-y-4">
-        {message.extra_data.tool_executions.map((tool: ToolExecution) => (
-          <CompletedToolBlock key={tool.id} tool={tool} />
-        ))}
-        {state.content && <ContentBlock content={state.content} />}
-      </div>
-    );
-  }
-
-  // Render streaming content
   return (
     <div className="space-y-4">
-      {isStreaming && state.type === 'thinking' && <ThinkingIndicator content={state.content} />}
+      {/* Thinking Indicator (only if aggregator says we are "thinking") */}
+      {thinking.isThinking && (
+        <div className="duration-300 animate-in fade-in-0">
+          <StreamingIndicator type="thinking" text={thinking.content || 'Thinking...'} />
+        </div>
+      )}
 
-      {state.activeTool && <ActiveToolBlock tool={state.activeTool} />}
+      {/* Active Tools (streaming) */}
+      {isStreaming &&
+        activeTools.map((tool) => (
+          <div key={tool.id} className="duration-300 animate-in slide-in-from-bottom-2">
+            {/* Usually 'tool_start' or 'tool_call' shape */}
+            <ToolBlock
+              type={tool.status === 'starting' ? 'tool_start' : 'tool_call'}
+              toolName={tool.name}
+              args={tool.arguments}
+              isStreaming={true}
+            />
+          </div>
+        ))}
 
-      {state.completedTools.map((tool) => (
-        <CompletedToolBlock key={tool.id} tool={tool} />
-      ))}
+      {/* Completed Tools (from aggregator) during streaming */}
+      {isStreaming &&
+        completedToolsAggregator.map((tool) => {
+          // tool.result might be a string or a ContentItem[]. Adjust as needed.
+          return (
+            <div key={tool.id} className="space-y-2">
+              <ToolBlock type="tool_call" toolName={tool.name} args={tool.arguments} isStreaming={false} />
+              {tool.result && (
+                <ToolBlock
+                  type="tool_result"
+                  toolName={tool.name}
+                  // Convert a string result to ContentItem[] if needed
+                  result={typeof tool.result === 'string' ? [{ type: 'text', text: tool.result }] : tool.result}
+                  isError={!!tool.error}
+                  errorMessage={tool.error}
+                  isStreaming={false}
+                />
+              )}
+            </div>
+          );
+        })}
 
-      {state.content && state.type === 'content' && <ContentBlock content={state.content} isStreaming={isStreaming} />}
+      {/* Completed Tools (final message) if not streaming */}
+      {!isStreaming &&
+        completedToolsFinal.map((tool) => (
+          <div key={tool.id} className="space-y-2">
+            <ToolBlock type="tool_call" toolName={tool.name} args={tool.arguments} isStreaming={false} />
+            {tool.result && (
+              <ToolBlock
+                type="tool_result"
+                toolName={tool.name}
+                // If your final tool result is a string, wrap it in an array for Markdown:
+                result={typeof tool.result === 'string' ? [{ type: 'text', text: tool.result }] : tool.result}
+                isError={!!tool.error}
+                errorMessage={tool.error}
+                isStreaming={false}
+              />
+            )}
+          </div>
+        ))}
 
-      {state.error && <ErrorBlock error={state.error} />}
+      {/* Main Content (Markdown) */}
+      {displayedContent && !thinking.isThinking && (
+        <div className="prose prose-sm dark:prose-invert max-w-none transition-all">
+          <MarkdownRenderer content={displayedContent as string | ContentItem[]} isStreaming={isStreaming} />
+        </div>
+      )}
     </div>
   );
 });

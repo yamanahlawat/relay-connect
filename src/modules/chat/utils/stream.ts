@@ -10,6 +10,7 @@ export function transformStreamBlock(block: RawStreamBlock): StreamBlock {
     toolStatus: block.tool_status ?? undefined,
     errorType: block.error_type ?? undefined,
     errorDetail: block.error_detail ?? undefined,
+    toolResult: block.tool_result ?? undefined,
     extraData: block.extra_data,
     message: block.message ?? undefined,
   };

@@ -1,5 +1,3 @@
-// Location: src/modules/settings/Models/ModelSettings.tsx
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,14 +15,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { createModel, deleteModel, listModels, updateModel } from '@/lib/api/models';
-import { listProviders } from '@/lib/api/providers';
+import { createModel, deleteModel, updateModel } from '@/lib/api/models';
 import type { components } from '@/lib/api/schema';
+import { useModelsByProvider } from '@/lib/queries/models';
+import { useProviders } from '@/lib/queries/providers';
 import { ModelGroup } from '@/modules/settings/Models/ModelGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -69,33 +68,14 @@ export function ModelSettings() {
   const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
   const queryClient = useQueryClient();
 
-  // Query for fetching providers first
-  const { data: providers = [], isLoading: isLoadingProviders } = useQuery({
-    queryKey: ['providers'],
-    queryFn: listProviders,
-  });
+  // Query for fetching providers (for the Provider select in the form)
+  const { data: providers = [], isLoading: isLoadingProviders } = useProviders();
 
-  // Query for fetching models for each provider
-  const { data: modelsData, isLoading: isLoadingModels } = useQuery({
-    queryKey: ['models', providers.map((p) => p.id)],
-    queryFn: async () => {
-      const modelsByProvider = await Promise.all(
-        providers.map(async (provider) => {
-          const models = await listModels(provider.id);
-          return {
-            providerId: provider.id,
-            models,
-          };
-        })
-      );
+  // Query for fetching all models grouped by provider
+  const { data: modelsByProvider, isLoading: isLoadingModels } = useModelsByProvider();
 
-      // Flatten the array of models
-      return modelsByProvider.reduce((acc, { models }) => [...acc, ...models], [] as Model[]);
-    },
-    enabled: providers.length > 0, // Only run if we have providers
-  });
-
-  const models = useMemo(() => modelsData || [], [modelsData]);
+  // Use an empty object if no data is available yet
+  const groupedModels = modelsByProvider || {};
 
   // Form setup
   const form = useForm<ModelFormValues>({
@@ -228,25 +208,6 @@ export function ModelSettings() {
     setIsCreateDialogOpen(true);
   };
 
-  // Group models by provider with provider information
-  const groupedModels = useMemo(() => {
-    // Create a map of provider IDs to names for efficient lookup
-    const providerMap = new Map(providers.map((p) => [p.id, p.name]));
-
-    // Group models by provider
-    return models.reduce(
-      (acc, model) => {
-        const providerName = providerMap.get(model.provider_id) || 'Unknown Provider';
-        if (!acc[providerName]) {
-          acc[providerName] = [];
-        }
-        acc[providerName].push(model);
-        return acc;
-      },
-      {} as Record<string, Model[]>
-    );
-  }, [models, providers]);
-
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -270,14 +231,14 @@ export function ModelSettings() {
                 <div className="flex h-[200px] items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : models.length === 0 ? (
+              ) : Object.keys(groupedModels).length === 0 ? (
                 <EmptyState onAdd={handleAddModel} />
               ) : (
                 <div className="space-y-6">
-                  {Object.entries(groupedModels).map(([provider, models]) => (
+                  {Object.entries(groupedModels).map(([providerName, models]) => (
                     <ModelGroup
-                      key={provider}
-                      title={provider}
+                      key={providerName}
+                      title={providerName}
                       models={models}
                       onEdit={handleEditModel}
                       onDelete={handleDeleteClick}
@@ -416,7 +377,7 @@ export function ModelSettings() {
                         <Input
                           type="number"
                           min={0}
-                          step={0.000001}
+                          step="any"
                           placeholder="0.0"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}

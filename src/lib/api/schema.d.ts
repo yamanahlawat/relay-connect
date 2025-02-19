@@ -18,6 +18,7 @@ export interface paths {
      *     Retrieves a paginated list of all language model providers.
      *
      *     ### Parameters
+     *     - **is_active** (optional): Filter by active status
      *     - **offset** (optional): Number of records to skip (default: 0)
      *     - **limit** (optional): Maximum number of records to return (default: 10)
      *
@@ -119,6 +120,7 @@ export interface paths {
      *
      *     ### Parameters
      *     - **provider_id** (optional): Filter models by provider UUID
+     *     - **is_active** (optional): Filter by active status
      *     - **offset** (optional): Number of records to skip (default: 0)
      *     - **limit** (optional): Maximum number of records to return (default: 10)
      *
@@ -141,6 +143,26 @@ export interface paths {
      *     - **is_active**: Whether the model is active (default: True)
      */
     post: operations['create_model_api_v1_models__post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/models/all/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Models By Provider
+     * @description Retrieves all models across all providers in a single request
+     */
+    get: operations['list_models_by_provider_api_v1_models_all__get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -986,6 +1008,10 @@ export interface components {
       /** Output Cost Per Token */
       output_cost_per_token?: number | null;
     };
+    /** ModelsByProvider */
+    ModelsByProvider: {
+      [key: string]: components['schemas']['ModelRead'][];
+    };
     /**
      * ProviderCreate
      * @description Schema for creating a new provider.
@@ -1171,6 +1197,7 @@ export interface operations {
   list_providers_api_v1_providers__get: {
     parameters: {
       query?: {
+        is_active?: boolean | null;
         offset?: number;
         limit?: number;
       };
@@ -1368,6 +1395,7 @@ export interface operations {
     parameters: {
       query?: {
         provider_id?: string | null;
+        is_active?: boolean | null;
         offset?: number;
         limit?: number;
       };
@@ -1444,6 +1472,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_models_by_provider_api_v1_models_all__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelsByProvider'];
         };
       };
     };

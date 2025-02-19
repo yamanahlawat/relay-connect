@@ -15,11 +15,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { createProvider, deleteProvider, listProviders, updateProvider } from '@/lib/api/providers';
+import { createProvider, deleteProvider, updateProvider } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
+import { useProviders } from '@/lib/queries/providers';
 import { ProviderGroup } from '@/modules/settings/Providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -64,10 +65,7 @@ export function ProviderSettings() {
   const queryClient = useQueryClient();
 
   // Query for fetching providers
-  const { data: providers = [], isLoading } = useQuery({
-    queryKey: ['providers'],
-    queryFn: listProviders,
-  });
+  const { data: providers = [], isLoading } = useProviders();
 
   // Form setup
   const form = useForm<ProviderFormValues>({

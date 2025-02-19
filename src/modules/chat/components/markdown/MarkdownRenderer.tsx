@@ -187,7 +187,7 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
 
       {/* Regular Content */}
       {processedContent.regularContent && (
-        <div className={cn('mt-4', isStreaming && 'opacity-90')}>
+        <div className={cn(isStreaming && 'opacity-90')}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeSanitize, rehypeKatex]}

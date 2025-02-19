@@ -1,8 +1,14 @@
 import client from '@/lib/api/client';
 import { ProviderCreate, ProviderRead, ProviderUpdate } from '@/types/provider';
 
-export const listProviders = async (): Promise<ProviderRead[]> => {
-  const { data, error } = await client.GET('/api/v1/providers/');
+export const listProviders = async (isActive?: boolean): Promise<ProviderRead[]> => {
+  const { data, error } = await client.GET('/api/v1/providers/', {
+    params: {
+      query: {
+        ...(typeof isActive === 'boolean' ? { is_active: isActive } : {}),
+      },
+    },
+  });
   if (error) {
     throw new Error(`Error fetching providers: ${error.detail}`);
   }

@@ -1,11 +1,12 @@
 import client from '@/lib/api/client';
-import { ModelCreate, ModelRead, ModelUpdate } from '@/types/model';
+import type { ModelCreate, ModelRead, ModelUpdate, ModelsByProvider } from '@/types/model';
 
-export const listModels = async (providerId: string): Promise<ModelRead[]> => {
+export const listModels = async (providerId: string, isActive?: boolean): Promise<ModelRead[]> => {
   const { data, error } = await client.GET('/api/v1/models/', {
     params: {
       query: {
         provider_id: providerId,
+        is_active: isActive,
       },
     },
   });
@@ -47,4 +48,12 @@ export const deleteModel = async (modelId: string): Promise<void> => {
   if (error) {
     throw new Error(`Error deleting model: ${error.detail}`);
   }
+};
+
+export const listModelsByProvider = async (): Promise<ModelsByProvider> => {
+  const { data, error } = await client.GET('/api/v1/models/all/', {});
+  if (error) {
+    throw new Error(`Error fetching models by provider: ${error}`);
+  }
+  return data;
 };

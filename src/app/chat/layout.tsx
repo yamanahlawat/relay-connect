@@ -2,7 +2,7 @@ import { SidebarToggle } from '@/components/SidebarToggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { listChatSessions } from '@/lib/api/chatSessions';
-import { listProviders } from '@/lib/api/providers';
+import { prefetchProviders } from '@/lib/queries/providers';
 import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
 import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
@@ -12,13 +12,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   await Promise.all([
     // Prefetch the list of providers
-    queryClient.prefetchQuery({
-      queryKey: ['providers'],
-      queryFn: async () => {
-        const response = await listProviders();
-        return response;
-      },
-    }),
+    prefetchProviders(queryClient, true),
     // Prefetch the first page of chat sessions
     queryClient.prefetchInfiniteQuery({
       queryKey: ['chat-sessions', ''],

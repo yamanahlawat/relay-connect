@@ -308,16 +308,18 @@ export default function ChatContainer() {
     <ChatSplitView>
       <div ref={chatContainerRef} className="relative flex h-full flex-col">
         {isDragging && <FileDropOverlay isOver={isDragging} />}
-        <ChatMessageList
-          messageGroups={messageGroups}
-          streamingMessageId={chatState.streamingMessageId}
-          onEditClick={handleEditStart}
-          editingMessageId={editingMessageId}
-          onScroll={handleScroll}
-          isFetchingNextPage={messagesQuery.isFetchingNextPage}
-          messagesEndRef={messagesEndRef}
-          scrollAreaRef={scrollAreaRef}
-        />
+        <div className="flex-1 overflow-hidden">
+          <ChatMessageList
+            messageGroups={messageGroups}
+            streamingMessageId={chatState.streamingMessageId}
+            onEditClick={handleEditStart}
+            editingMessageId={editingMessageId}
+            onScroll={handleScroll}
+            isFetchingNextPage={messagesQuery.isFetchingNextPage}
+            messagesEndRef={messagesEndRef}
+            scrollAreaRef={scrollAreaRef}
+          />
+        </div>
         {showScrollToBottom && (
           <Button
             onClick={() => scrollToBottom()}
@@ -329,7 +331,7 @@ export default function ChatContainer() {
             <ArrowDown className="h-5 w-5" />
           </Button>
         )}
-        <div ref={chatInputContainerRef} className="w-full border-t border-border/40">
+        <div ref={chatInputContainerRef} className="max-h-32">
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}

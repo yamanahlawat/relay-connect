@@ -3,11 +3,11 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateChatSession } from '@/lib/api/chatSessions';
-import { listModels } from '@/lib/api/models';
-import { listProviders } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
+import { useModelsWithLoading } from '@/lib/queries/models';
+import { useProvidersWithLoading } from '@/lib/queries/providers';
 import { useProviderModel } from '@/stores/providerModel';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -33,17 +33,7 @@ export default function ProviderModelSelect() {
     isLoading: isLoadingProviders,
     isError: isProvidersError,
     error: providersError,
-  } = useQuery({
-    queryKey: ['providers'],
-    queryFn: async () => {
-      setLoading(true);
-      try {
-        return await listProviders();
-      } finally {
-        setLoading(false);
-      }
-    },
-  });
+  } = useProvidersWithLoading(true, { onLoadingChange: setLoading });
 
   // Fetch models for selected provider
   const {
@@ -51,19 +41,7 @@ export default function ProviderModelSelect() {
     isLoading: isLoadingModels,
     isError: isModelsError,
     error: modelsError,
-  } = useQuery({
-    queryKey: ['models', selectedProvider?.id],
-    queryFn: async () => {
-      if (!selectedProvider?.id) return [];
-      setLoading(true);
-      try {
-        return await listModels(selectedProvider.id);
-      } finally {
-        setLoading(false);
-      }
-    },
-    enabled: !!selectedProvider?.id,
-  });
+  } = useModelsWithLoading(selectedProvider?.id, true, { onLoadingChange: setLoading });
 
   // Session update mutation
   const updateSessionMutation = useMutation({

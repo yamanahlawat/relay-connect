@@ -329,7 +329,7 @@ export default function ChatContainer() {
             <ArrowDown className="h-5 w-5" />
           </Button>
         )}
-        <div ref={chatInputContainerRef} className="w-full border-t border-border/40">
+        <div ref={chatInputContainerRef}>
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}

@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
+import MCPServers from '@/modules/chat/components/mcp/Servers';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { FilePreviewData } from '@/types/attachment';
 import { ChatInputProps } from '@/types/chat';
@@ -262,6 +263,7 @@ export function ChatInput({
               onSystemContextChange={onSystemContextChange}
               disabled={disabled}
             />
+            <MCPServers />
           </div>
 
           {hasContent && (

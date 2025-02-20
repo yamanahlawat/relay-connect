@@ -38,16 +38,13 @@ interface ToolStreamState {
   };
 }
 
-const initialStreamState: ToolStreamState = {
+const getInitialStreamState = () => ({
   content: '',
-  thinking: {
-    isThinking: false,
-    content: undefined,
-  },
+  thinking: { isThinking: false, content: undefined },
   activeTools: new Map(),
   completedTools: [],
   error: undefined,
-};
+});
 
 export function useChat(sessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
@@ -63,7 +60,13 @@ export function useChat(sessionId: string) {
   const handleMessageStream = useCallback(
     async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
       const assistantMessageId = `assistant-${userMessage.id}`;
-      let streamState = { ...initialStreamState };
+
+      // Reset stream state at the start of each new message
+      let streamState = { ...getInitialStreamState() };
+
+      // Clear any existing message with this ID first
+      // streamState.completedTools = [];
+      // streamState.activeTools = new Map();
 
       const updateAssistantMessage = (
         updater: (msg: MessageRead) => MessageRead,
@@ -198,25 +201,7 @@ export function useChat(sessionId: string) {
               throw new Error(block.errorDetail);
 
             case 'done':
-              if (block.message) {
-                // Handle final message state
-                updateAssistantMessage(() => block.message, { streamingMessageId: null });
-              } else {
-                // Create final state with accumulated data
-                updateAssistantMessage(
-                  (msg) => ({
-                    ...msg,
-                    status: 'completed',
-                    content: streamState.content,
-                    extra_data: {
-                      type: 'content',
-                      completedTools: streamState.completedTools,
-                      content: streamState.content,
-                    },
-                  }),
-                  { streamingMessageId: null }
-                );
-              }
+              updateAssistantMessage(() => block.message, { streamingMessageId: null });
               break;
           }
 

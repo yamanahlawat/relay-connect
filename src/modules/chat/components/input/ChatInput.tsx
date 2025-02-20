@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
+import MCPServers from '@/modules/chat/components/mcp/Servers';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
 import { FilePreviewData } from '@/types/attachment';
 import { ChatInputProps } from '@/types/chat';
@@ -138,7 +139,7 @@ export function ChatInput({
   const hasContent = currentValue.trim().length > 0 || files.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="max-h-32 w-full border-t border-border">
+    <form onSubmit={handleSubmit} className="w-full border-t border-border">
       <div className="mx-auto p-4">
         <div className="relative rounded-lg border border-input bg-background">
           {/* Display file previews if there are files */}
@@ -262,6 +263,7 @@ export function ChatInput({
               onSystemContextChange={onSystemContextChange}
               disabled={disabled}
             />
+            <MCPServers />
           </div>
 
           {hasContent && (

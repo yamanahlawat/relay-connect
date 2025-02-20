@@ -156,7 +156,7 @@ export function WelcomeContent() {
       </div>
 
       {/* Chat Input */}
-      <div className="mt-auto max-h-32 w-full border-t border-border/40">
+      <div className="mt-auto w-full border-t border-border/40">
         <ChatInput
           value={message}
           onChange={setMessage}

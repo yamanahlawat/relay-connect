@@ -613,6 +613,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/mcp/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Mcp Tools
+     * @description List all available MCP tools grouped by server.
+     *     Returns:
+     *         List of servers and their available tools.
+     */
+    get: operations['list_mcp_tools_api_v1_mcp__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -660,6 +682,16 @@ export interface components {
      * @enum {string}
      */
     AttachmentType: 'image' | 'video' | 'document' | 'audio';
+    /**
+     * BaseTool
+     * @description Base model for available tool metadata.
+     */
+    BaseTool: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+    };
     /** Body_upload_attachment_api_v1_attachments__folder___post */
     Body_upload_attachment_api_v1_attachments__folder___post: {
       /**
@@ -773,6 +805,13 @@ export interface components {
     HTTPValidationError: {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
+    };
+    /** MCPServerTools */
+    MCPServerTools: {
+      /** Name */
+      name: string;
+      /** Tools */
+      tools: components['schemas']['BaseTool'][];
     };
     /**
      * MessageCreate
@@ -1008,7 +1047,12 @@ export interface components {
       /** Output Cost Per Token */
       output_cost_per_token?: number | null;
     };
-    /** ModelsByProvider */
+    /**
+     * ModelsByProvider
+     * @description Schema for reading models grouped by provider.
+     *     Args:
+     *         RootModel (dict[str, list[ModelRead]]): Root model for models grouped by provider
+     */
     ModelsByProvider: {
       [key: string]: components['schemas']['ModelRead'][];
     };
@@ -2168,6 +2212,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_mcp_tools_api_v1_mcp__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MCPServerTools'][];
         };
       };
     };

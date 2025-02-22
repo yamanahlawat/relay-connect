@@ -11,58 +11,54 @@ type ToolBlockType = Extract<StreamBlockType, 'tool_start' | 'tool_call' | 'tool
 
 interface ToolBlockProps {
   type: ToolBlockType;
-  toolName?: string;
-  args?: Record<string, unknown>;
-  // result can be a string or ContentItem[] from aggregator
-  result?: string | ContentItem[];
-  isStreaming?: boolean;
-  isError?: boolean;
-  errorMessage?: string;
-  onCollapse?: (isOpen: boolean) => void;
-}
-
-interface TypeMetadata {
-  icon: typeof Terminal | typeof Loader2 | typeof CheckCircle2 | typeof AlertCircle;
-  iconColor: string;
-  bgColor: string;
-  iconClasses: string;
+  tool_name?: string;
+  tool_args?: Record<string, unknown>;
+  tool_result?: string | ContentItem[];
+  is_streaming?: boolean;
+  is_error?: boolean;
+  error_message?: string;
+  next_block_type?: ToolBlockType;
+  on_collapse?: (is_open: boolean) => void;
 }
 
 export default function ToolBlock({
   type,
-  toolName,
-  args,
-  result,
-  isStreaming,
-  isError,
-  errorMessage,
-  onCollapse,
+  tool_name,
+  tool_args,
+  tool_result,
+  is_streaming,
+  is_error,
+  error_message,
+  next_block_type,
+  on_collapse,
 }: ToolBlockProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [is_open, setIsOpen] = useState(false);
 
   const handleCollapseChange = (open: boolean) => {
     setIsOpen(open);
-    onCollapse?.(open);
+    on_collapse?.(open);
   };
 
-  // Convert `result` to ContentItem[] if it's just a string
-  // or a big block of text. We can also merge multiple items if you prefer.
-  const resultAsContentItems: ContentItem[] = Array.isArray(result)
-    ? result
-    : typeof result === 'string'
-      ? [{ type: 'text', text: result }]
+  // Determine if this block should show streaming state
+  const isBlockStreaming = is_streaming && !next_block_type;
+
+  // Convert tool_result to ContentItem[] if it's just a string
+  const resultAsContentItems: ContentItem[] = Array.isArray(tool_result)
+    ? tool_result
+    : typeof tool_result === 'string'
+      ? [{ type: 'text', text: tool_result }]
       : [];
 
   const getTypeMetadata = (): TypeMetadata => {
     const baseMetadata = {
-      iconClasses: isStreaming ? 'animate-spin' : '',
+      iconClasses: is_streaming ? 'animate-spin' : '',
     };
 
     switch (type) {
       case 'tool_start':
         return {
           ...baseMetadata,
-          icon: isStreaming ? Loader2 : Terminal,
+          icon: isBlockStreaming ? Loader2 : Terminal,
           iconColor: 'text-blue-500',
           bgColor: 'bg-blue-500/10',
         };
@@ -70,7 +66,7 @@ export default function ToolBlock({
       case 'tool_call':
         return {
           ...baseMetadata,
-          icon: isStreaming ? Loader2 : Terminal,
+          icon: isBlockStreaming ? Loader2 : Terminal,
           iconColor: 'text-amber-500',
           bgColor: 'bg-amber-500/10',
         };
@@ -78,9 +74,9 @@ export default function ToolBlock({
       case 'tool_result':
         return {
           ...baseMetadata,
-          icon: isError ? AlertCircle : isStreaming ? Loader2 : CheckCircle2,
-          iconColor: isError ? 'text-red-500' : isStreaming ? 'text-blue-500' : 'text-green-500',
-          bgColor: isError ? 'bg-red-500/10' : isStreaming ? 'bg-blue-500/10' : 'bg-green-500/10',
+          icon: is_error ? AlertCircle : isBlockStreaming ? Loader2 : CheckCircle2,
+          iconColor: is_error ? 'text-red-500' : isBlockStreaming ? 'text-blue-500' : 'text-green-500',
+          bgColor: is_error ? 'bg-red-500/10' : isBlockStreaming ? 'bg-blue-500/10' : 'bg-green-500/10',
         };
 
       default:
@@ -98,20 +94,20 @@ export default function ToolBlock({
   const getDisplayTitle = () => {
     switch (type) {
       case 'tool_start':
-        return `Starting ${toolName}...`;
+        return `Starting ${tool_name}...`;
       case 'tool_call':
-        return `Executing ${toolName}`;
+        return `Executing ${tool_name}`;
       case 'tool_result':
-        return `Results from ${toolName}`;
+        return `Results from ${tool_name}`;
       default:
-        return toolName || 'Tool Execution';
+        return tool_name || 'Tool Execution';
     }
   };
 
   const displayTitle = getDisplayTitle();
 
-  // If streaming, show a spinner next to the text
-  const toolNameOrIndicator = isStreaming ? (
+  // If this block is streaming, show a spinner next to the text
+  const toolNameOrIndicator = isBlockStreaming ? (
     <StreamingIndicator type="thinking" text={displayTitle} className="ml-2" />
   ) : (
     <span className="font-medium">{displayTitle}</span>
@@ -120,25 +116,25 @@ export default function ToolBlock({
   // Determine if there's extra detail to show in the collapsible
   // e.g. 'tool_call' with arguments, or 'tool_result' with some text or an error
   const hasExtraDetail =
-    (type === 'tool_call' && args) || (type === 'tool_result' && (resultAsContentItems.length > 0 || isError));
+    (type === 'tool_call' && tool_args) || (type === 'tool_result' && (resultAsContentItems.length > 0 || is_error));
 
   // Renders the content in the collapsible body
   const renderContent = () => {
-    if (isError) {
+    if (is_error) {
       return (
         <div className="text-red-500">
           <p className="font-medium">Error executing tool</p>
-          <p className="text-sm opacity-90">{errorMessage}</p>
+          <p className="text-sm opacity-90">{error_message}</p>
         </div>
       );
     }
 
-    if (type === 'tool_call' && args) {
+    if (type === 'tool_call' && tool_args) {
       // Show arguments as JSON
       return (
         <div className="rounded-md font-mono text-sm">
           <div className="mb-1 text-xs text-muted-foreground">Arguments:</div>
-          <JsonCodeBlock data={args} />
+          <JsonCodeBlock data={tool_args} />
         </div>
       );
     }
@@ -150,7 +146,7 @@ export default function ToolBlock({
         <div className="space-y-4">
           <div className="max-w-full break-words">
             <div className="prose prose-sm dark:prose-invert prose-pre:whitespace-pre-wrap max-w-none">
-              <MarkdownRenderer content={mergedText} isStreaming={isStreaming} />
+              <MarkdownRenderer content={mergedText} isStreaming={is_streaming} />
             </div>
           </div>
         </div>
@@ -161,7 +157,7 @@ export default function ToolBlock({
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={handleCollapseChange}>
+    <Collapsible open={is_open} onOpenChange={handleCollapseChange}>
       <div className="relative pl-5">
         {/* Vertical line for styling */}
         <div className="absolute left-2 top-0 h-full w-px bg-border" />
@@ -170,7 +166,11 @@ export default function ToolBlock({
         {!hasExtraDetail ? (
           <div className="flex items-center gap-2 py-1 text-sm">
             <div className={cn('flex h-4 w-4 items-center justify-center rounded-full', bgColor)}>
-              <Icon className={cn('h-3 w-3', iconColor, iconClasses)} />
+              {is_streaming ? (
+                <Loader2 className={cn('h-3 w-3', iconColor, 'animate-spin')} />
+              ) : (
+                <Icon className={cn('h-3 w-3', iconColor, iconClasses)} />
+              )}
             </div>
             {toolNameOrIndicator}
           </div>
@@ -178,10 +178,14 @@ export default function ToolBlock({
           <>
             <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md py-1 text-sm hover:text-foreground">
               <div className={cn('flex h-4 w-4 items-center justify-center rounded-full', bgColor)}>
-                <Icon className={cn('h-3 w-3', iconColor, iconClasses)} />
+                {is_streaming ? (
+                  <Loader2 className={cn('h-3 w-3', iconColor, 'animate-spin')} />
+                ) : (
+                  <Icon className={cn('h-3 w-3', iconColor, iconClasses)} />
+                )}
               </div>
               <ChevronDown
-                className={cn('h-4 w-4 shrink-0 transition-transform duration-200', !isOpen && '-rotate-90')}
+                className={cn('h-4 w-4 shrink-0 transition-transform duration-200', !is_open && '-rotate-90')}
               />
               {toolNameOrIndicator}
             </CollapsibleTrigger>
@@ -193,7 +197,7 @@ export default function ToolBlock({
                   className={cn(
                     'overflow-x-auto rounded-lg border bg-muted/20 p-4',
                     'text-sm leading-relaxed text-muted-foreground/90',
-                    isError && 'border-red-500/30 bg-red-500/5'
+                    is_error && 'border-red-500/30 bg-red-500/5'
                   )}
                 >
                   {renderContent()}
@@ -205,4 +209,11 @@ export default function ToolBlock({
       </div>
     </Collapsible>
   );
+}
+
+interface TypeMetadata {
+  icon: typeof Terminal | typeof Loader2 | typeof CheckCircle2 | typeof AlertCircle;
+  iconColor: string;
+  bgColor: string;
+  iconClasses: string;
 }

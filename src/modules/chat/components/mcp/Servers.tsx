@@ -2,22 +2,24 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useListMCPServers } from '@/lib/queries/mcp';
+import { useRefreshListMCPServers } from '@/lib/queries/mcp';
 import { cn } from '@/lib/utils';
 import { MCPServerTools } from '@/types/mcp';
 import { ChevronDown, CircuitBoard, PocketKnife } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // A small helper component to show the "No servers" message
 function NoActiveServers() {
   return (
-    <div className="rounded-md border border-dashed p-6">
-      <div className="flex flex-col items-center justify-center text-center">
-        <PocketKnife className="h-8 w-8 text-muted-foreground/60" />
-        <h3 className="mt-3 text-sm font-medium">No Active MCP Servers</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          No servers are currently connected. Connect or start a server.
-        </p>
+    <div className="flex h-full min-h-[200px] items-center justify-center">
+      <div className="rounded-md border border-dashed p-6">
+        <div className="flex flex-col items-center justify-center text-center">
+          <PocketKnife className="h-8 w-8 text-muted-foreground/60" />
+          <h3 className="mt-3 text-sm font-medium">No Active MCP Servers</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            No servers are currently connected. Connect or start a server.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -62,9 +64,31 @@ function ServerStatusIcon({ isLoading, hasServers }: { isLoading: boolean; hasSe
 
 export default function MCPServers() {
   const [openServer, setOpenServer] = useState<string | null>(null);
-  const { data: servers, isLoading } = useListMCPServers();
+  const { data: servers, isLoading } = useRefreshListMCPServers();
+  const [contentHeight, setContentHeight] = useState<number>(0);
 
   const hasServers = !!servers && servers.length > 0;
+
+  // Calculate optimal height based on content
+  useEffect(() => {
+    if (!servers) return;
+
+    // Base height for header
+    let height = 100;
+
+    // Add height for each server section
+    height += servers.length * 80;
+
+    // Add height for tools if a server is open
+    if (openServer) {
+      const openServerTools = servers.find((s) => s.name === openServer)?.tools.length || 0;
+      height += openServerTools * 60;
+    }
+
+    // Cap at maximum height and ensure minimum height
+    const finalHeight = Math.max(200, Math.min(400, height));
+    setContentHeight(finalHeight);
+  }, [servers, openServer]);
 
   return (
     <Popover>
@@ -87,57 +111,59 @@ export default function MCPServers() {
             <p className="text-xs text-muted-foreground">Active MCP servers and their available tools.</p>
           </div>
 
-          <ScrollArea className="h-[350px] pr-3">
-            {/* Loading state */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-4">
-                <div className="text-sm text-muted-foreground">Loading MCP servers...</div>
-              </div>
-            )}
+          <div style={{ height: contentHeight }} className="transition-all duration-300">
+            <ScrollArea className="h-full pr-3">
+              {/* Loading state */}
+              {isLoading && (
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-sm text-muted-foreground">Loading MCP servers...</div>
+                </div>
+              )}
 
-            {/* No servers */}
-            {!isLoading && !hasServers && <NoActiveServers />}
+              {/* No servers */}
+              {!isLoading && !hasServers && <NoActiveServers />}
 
-            {/* Server list */}
-            {hasServers && (
-              <div className="space-y-4">
-                {servers.map((server: MCPServerTools) => (
-                  <div key={server.name}>
-                    {/* Server header */}
-                    <div className="flex items-center gap-2 pb-2">
-                      <CircuitBoard className="h-4 w-4 text-foreground" />
-                      <span className="font-medium text-foreground">{server.name}</span>
+              {/* Server list */}
+              {hasServers && (
+                <div className="space-y-4">
+                  {servers.map((server: MCPServerTools) => (
+                    <div key={server.name}>
+                      {/* Server header */}
+                      <div className="flex items-center gap-2 pb-2">
+                        <CircuitBoard className="h-4 w-4 text-foreground" />
+                        <span className="font-medium text-foreground">{server.name}</span>
+                      </div>
+
+                      {/* Tools collapsible */}
+                      <Collapsible
+                        open={openServer === server.name}
+                        onOpenChange={(isOpen) => setOpenServer(isOpen ? server.name : null)}
+                      >
+                        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors hover:bg-accent">
+                          <div className="flex items-center gap-2">
+                            <PocketKnife className="h-4 w-4" />
+                            <span className="font-medium">Show Tools ({server.tools.length})</span>
+                          </div>
+                          <ChevronDown
+                            className={cn(
+                              'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                              openServer === server.name && 'rotate-180'
+                            )}
+                          />
+                        </CollapsibleTrigger>
+
+                        <CollapsibleContent className="space-y-1.5 pt-2">
+                          {server.tools.map((tool, index) => (
+                            <ToolCard key={tool.name} tool={tool} index={index} />
+                          ))}
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
-
-                    {/* Tools collapsible */}
-                    <Collapsible
-                      open={openServer === server.name}
-                      onOpenChange={(isOpen) => setOpenServer(isOpen ? server.name : null)}
-                    >
-                      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors hover:bg-accent">
-                        <div className="flex items-center gap-2">
-                          <PocketKnife className="h-4 w-4" />
-                          <span className="font-medium">Show Tools ({server.tools.length})</span>
-                        </div>
-                        <ChevronDown
-                          className={cn(
-                            'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                            openServer === server.name && 'rotate-180'
-                          )}
-                        />
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent className="space-y-1.5 pt-2">
-                        {server.tools.map((tool, index) => (
-                          <ToolCard key={tool.name} tool={tool} index={index} />
-                        ))}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

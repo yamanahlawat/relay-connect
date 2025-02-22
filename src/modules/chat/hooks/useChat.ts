@@ -2,49 +2,10 @@ import { streamCompletion } from '@/lib/api/chat';
 import { parseStream } from '@/modules/chat/utils/stream';
 import type { ChatState, StreamParams } from '@/types/chat';
 import type { MessageRead } from '@/types/message';
-import type { ContentItem } from '@/types/stream';
+import type { StreamBlock, StreamState, StreamingContent } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-
-interface ToolStreamState {
-  content: string;
-  thinking: {
-    isThinking: boolean;
-    content?: string;
-  };
-  activeTools: Map<
-    string,
-    {
-      id: string;
-      name: string;
-      status: 'starting' | 'calling';
-      arguments?: Record<string, unknown>;
-      startTime: Date;
-    }
-  >;
-  completedTools: Array<{
-    id: string;
-    name: string;
-    arguments?: Record<string, unknown>;
-    result?: string | ContentItem[];
-    error?: string;
-    startTime: Date;
-    endTime: Date;
-  }>;
-  error?: {
-    type: string;
-    detail: string;
-  };
-}
-
-const getInitialStreamState = () => ({
-  content: '',
-  thinking: { isThinking: false, content: undefined },
-  activeTools: new Map(),
-  completedTools: [],
-  error: undefined,
-});
 
 export function useChat(sessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
@@ -61,41 +22,72 @@ export function useChat(sessionId: string) {
     async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
       const assistantMessageId = `assistant-${userMessage.id}`;
 
-      // Reset stream state at the start of each new message
-      let streamState = { ...getInitialStreamState() };
+      // Initialize stream state
+      const streamState: StreamState = {
+        contentSections: [],
+        toolBlocks: [],
+        lastIndex: 0,
+        thinking: { isThinking: false },
+      };
 
-      // Clear any existing message with this ID first
-      // streamState.completedTools = [];
-      // streamState.activeTools = new Map();
+      // Function to get all blocks in order
+      const getAllBlocks = () => {
+        const allBlocks: StreamBlock[] = [];
 
+        let currentContentIndex = 0;
+        let currentToolIndex = 0;
+
+        while (
+          currentContentIndex < streamState.contentSections.length ||
+          currentToolIndex < streamState.toolBlocks.length
+        ) {
+          const content = streamState.contentSections[currentContentIndex];
+          const tool = streamState.toolBlocks[currentToolIndex];
+
+          if (!tool || (content && content.index < tool.index)) {
+            // Add content block
+            allBlocks.push({
+              type: 'content',
+              content: content.content,
+              isComplete: content.isComplete,
+            });
+            currentContentIndex++;
+          } else {
+            // Add tool block
+            allBlocks.push(tool);
+            currentToolIndex++;
+          }
+        }
+
+        return allBlocks;
+      };
+
+      // Update assistant message with current stream state
       const updateAssistantMessage = (
-        updater: (msg: MessageRead) => MessageRead,
+        updatedFields: Partial<MessageRead> = {},
         extraState: Partial<ChatState> = {}
       ) => {
         setChatState((prev) => {
           const idx = prev.messages.findIndex((msg) => msg.id === assistantMessageId);
           if (idx === -1) return prev;
-          const updatedMessage = updater(prev.messages[idx]);
+
           const newMessages = [...prev.messages];
-          newMessages[idx] = updatedMessage;
+          newMessages[idx] = {
+            ...newMessages[idx],
+            ...updatedFields,
+            extra_data: {
+              stream_blocks: getAllBlocks(),
+              thinking: streamState.thinking,
+              error: streamState.error,
+            },
+          };
+
           return { ...prev, messages: newMessages, ...extraState };
         });
       };
 
-      // Create initial messages with streamState data
-      const createMessageExtraData = (state: ToolStreamState) => ({
-        type: state.thinking.isThinking ? 'thinking' : 'content',
-        content: state.content,
-        thinking: state.thinking,
-        activeTools: Array.from(state.activeTools.values()),
-        completedTools: state.completedTools,
-        error: state.error,
-      });
-
-      // Initial message setup...
+      // Initial message setup
       setChatState((prev) => {
-        if (prev.streamingMessageId === assistantMessageId) return prev;
-
         const newMessages = [...prev.messages];
         if (!skipUserMessage && !newMessages.some((msg) => msg.id === userMessage.id)) {
           newMessages.push(userMessage);
@@ -103,7 +95,7 @@ export function useChat(sessionId: string) {
 
         const assistantMessage: MessageRead = {
           id: assistantMessageId,
-          content: 'Thinking...',
+          content: '',
           role: 'assistant',
           status: 'pending',
           created_at: userMessage.created_at,
@@ -112,7 +104,10 @@ export function useChat(sessionId: string) {
           error_code: null,
           usage: null,
           parent_id: userMessage.id,
-          extra_data: createMessageExtraData(streamState),
+          extra_data: {
+            stream_blocks: [],
+            thinking: { isThinking: true },
+          },
           attachments: [],
         };
 
@@ -124,109 +119,99 @@ export function useChat(sessionId: string) {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
         const reader = await streamCompletion(sessionId, userMessage.id, params);
 
+        let currentSection: StreamingContent | null = null;
+
         for await (const block of parseStream(reader)) {
           switch (block.type) {
             case 'thinking':
-              streamState = {
-                ...streamState,
-                thinking: {
-                  isThinking: true,
-                  content: typeof block.content === 'string' ? block.content : undefined,
-                },
+              streamState.thinking = {
+                isThinking: true,
+                content: block.content as string,
               };
-              break;
-
-            case 'tool_start':
-              if (block.toolCallId && block.toolName) {
-                const newTool = {
-                  id: block.toolCallId,
-                  name: block.toolName,
-                  status: 'starting' as const,
-                  startTime: new Date(),
-                };
-                streamState.activeTools.set(block.toolCallId, newTool);
-                streamState.thinking.isThinking = false;
-              }
-              break;
-
-            case 'tool_call':
-              if (block.toolCallId && block.toolArgs) {
-                const existingTool = streamState.activeTools.get(block.toolCallId);
-                if (existingTool) {
-                  streamState.activeTools.set(block.toolCallId, {
-                    ...existingTool,
-                    status: 'calling' as const,
-                    arguments: block.toolArgs,
-                  });
-                }
-              }
-              break;
-
-            case 'tool_result':
-              if (block.toolCallId) {
-                const completedTool = streamState.activeTools.get(block.toolCallId);
-                if (completedTool) {
-                  streamState.completedTools.push({
-                    ...completedTool,
-                    result: block.toolResult,
-                    error: undefined,
-                    endTime: new Date(),
-                  });
-                  streamState.activeTools.delete(block.toolCallId);
-                }
-              }
               break;
 
             case 'content':
-              if (typeof block.content === 'string') {
-                streamState = {
-                  ...streamState,
-                  content: streamState.content + block.content,
-                  thinking: {
-                    isThinking: false,
-                    content: undefined,
-                  },
+              // Start new section if needed
+              if (!currentSection) {
+                currentSection = {
+                  content: '',
+                  index: streamState.lastIndex++,
+                  isComplete: false,
                 };
+                streamState.contentSections.push(currentSection);
               }
+
+              // Accumulate content
+              currentSection.content += block.content || '';
+              streamState.thinking.isThinking = false;
+              break;
+
+            case 'tool_start':
+              // Complete current content section if exists
+              if (currentSection) {
+                currentSection.isComplete = true;
+                currentSection = null;
+              }
+
+              const toolStartBlock = {
+                ...block,
+                index: streamState.lastIndex++,
+              };
+              streamState.toolBlocks.push(toolStartBlock);
+              break;
+
+            case 'tool_call':
+              const toolCallBlock = {
+                ...block,
+                index: streamState.lastIndex++,
+              };
+              streamState.toolBlocks.push(toolCallBlock);
+              break;
+
+            case 'tool_result':
+              const toolResultBlock = {
+                ...block,
+                index: streamState.lastIndex++,
+              };
+              streamState.toolBlocks.push(toolResultBlock);
               break;
 
             case 'error':
-              streamState = {
-                ...streamState,
-                error: {
-                  type: block.errorType || 'UnknownError',
-                  detail: block.errorDetail || 'An unknown error occurred',
-                },
+              if (currentSection) {
+                currentSection.isComplete = true;
+              }
+              streamState.error = {
+                type: block.error_type || 'UnknownError',
+                detail: block.error_detail || 'An unknown error occurred',
               };
-              throw new Error(block.errorDetail);
+              throw new Error(block.error_detail);
 
             case 'done':
-              updateAssistantMessage(() => block.message, { streamingMessageId: null });
-              break;
+              // Complete final section if exists
+              if (currentSection) {
+                currentSection.isComplete = true;
+              }
+
+              // Final update with complete message
+              if (block.message) {
+                updateAssistantMessage(block.message, { streamingMessageId: null });
+              }
+              return;
           }
 
-          // Update message state after each block
-          updateAssistantMessage((msg) => ({
-            ...msg,
-            content: streamState.content || streamState.thinking.content || 'Thinking...',
+          // Update message with current state
+          updateAssistantMessage({
             status: 'processing',
-            extra_data: createMessageExtraData(streamState),
-          }));
+          });
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
         updateAssistantMessage(
-          (msg) => ({
-            ...msg,
+          {
             content: errorMessage,
             status: 'failed',
             error_message: errorMessage,
-            extra_data: {
-              type: 'error',
-              errorType: streamState.error?.type || 'StreamError',
-              errorDetail: streamState.error?.detail || errorMessage,
-            },
-          }),
+          },
           { streamingMessageId: null }
         );
 

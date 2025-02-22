@@ -1,20 +1,4 @@
-import type { RawStreamBlock, StreamBlock } from '@/types/stream';
-
-export function transformStreamBlock(block: RawStreamBlock): StreamBlock {
-  return {
-    type: block.type,
-    content: block.content ?? undefined,
-    toolName: block.tool_name ?? undefined,
-    toolArgs: block.tool_args ?? undefined,
-    toolCallId: block.tool_call_id ?? undefined,
-    toolStatus: block.tool_status ?? undefined,
-    errorType: block.error_type ?? undefined,
-    errorDetail: block.error_detail ?? undefined,
-    toolResult: block.tool_result ?? undefined,
-    extraData: block.extra_data,
-    message: block.message ?? undefined,
-  };
-}
+import type { StreamBlock } from '@/types/stream';
 
 export async function* parseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
@@ -41,10 +25,8 @@ export async function* parseStream(
         try {
           // Remove 'data: ' prefix if present and parse
           const jsonStr = trimmedLine.replace(/^data: /, '');
-          const rawBlock = JSON.parse(jsonStr) as RawStreamBlock;
-
-          // Immediately yield the transformed block
-          yield transformStreamBlock(rawBlock);
+          // Parse directly as StreamBlock since we're using snake_case throughout
+          yield JSON.parse(jsonStr) as StreamBlock;
         } catch (error) {
           console.warn('Error parsing stream block:', error, '\nLine:', trimmedLine);
           continue;
@@ -52,14 +34,13 @@ export async function* parseStream(
       }
     }
 
-    // Process any remaining data in buffer
+    // Process any remaining data
     if (buffer.trim()) {
       try {
         const jsonStr = buffer.trim().replace(/^data: /, '');
-        const rawBlock = JSON.parse(jsonStr) as RawStreamBlock;
-        yield transformStreamBlock(rawBlock);
+        yield JSON.parse(jsonStr) as StreamBlock;
       } catch (error) {
-        console.warn('Error parsing final block:', error);
+        console.warn('Error parsing final stream block:', error);
       }
     }
   } finally {

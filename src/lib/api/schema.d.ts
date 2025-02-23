@@ -564,6 +564,29 @@ export interface paths {
     patch: operations['update_message_api_v1_messages__session_id___message_id___patch'];
     trace?: never;
   };
+  '/api/v1/messages/bulk/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Bulk Delete Messages
+     * @description ## Bulk Delete Messages
+     *     Permanently deletes multiple messages by their IDs.
+     *     ### Parameters
+     *     - **message_ids**: List of UUIDs for the messages to delete.
+     */
+    delete: operations['bulk_delete_messages_api_v1_messages_bulk__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/attachments/{folder}/': {
     parameters: {
       query?: never;
@@ -2139,6 +2162,37 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MessageRead'];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  bulk_delete_messages_api_v1_messages_bulk__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': string[];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

@@ -1,5 +1,9 @@
 import client from '@/lib/api/client';
 import { MessageCreate, MessageRead, MessageUpdate } from '@/types/message';
+import { paths } from './schema';
+
+type BulkDeleteMessagesRequest =
+  paths['/api/v1/messages/bulk/']['delete']['requestBody']['content']['application/json'];
 
 /**
  * List all messages in a chat session
@@ -106,5 +110,17 @@ export async function deleteMessage(sessionId: string, messageId: string): Promi
   });
   if (error) {
     throw new Error(`Error deleting message: ${error.detail}`);
+  }
+}
+
+/**
+ * Bulk delete messages
+ */
+export async function deleteMessages(messageIds: BulkDeleteMessagesRequest): Promise<void> {
+  const { error } = await client.DELETE('/api/v1/messages/bulk/', {
+    body: messageIds,
+  });
+  if (error) {
+    throw new Error(`Error deleting messages: ${error.detail}`);
   }
 }

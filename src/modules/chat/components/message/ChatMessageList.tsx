@@ -17,7 +17,7 @@ interface ChatMessageListProps {
 
 function EmptyStatePlaceholder() {
   return (
-    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+    <div className="flex flex-1 items-center justify-center text-muted-foreground">
       <div className="text-center">
         <p className="mb-2 text-lg font-medium">No messages yet</p>
         <p className="text-sm">Start a conversation by typing a message below</p>
@@ -41,7 +41,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   }
 
   return (
-    <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 md:px-8" onScroll={onScroll}>
+    <ScrollArea ref={scrollAreaRef} className="flex-1 p-2 md:px-8" onScroll={onScroll}>
       <div className="mx-auto max-w-5xl space-y-4">
         {isFetchingNextPage && (
           <div className="flex justify-center py-4">

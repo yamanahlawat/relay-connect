@@ -4,8 +4,34 @@ import type { ChatState, StreamParams } from '@/types/chat';
 import type { MessageRead } from '@/types/message';
 import type { StreamBlock, StreamState, StreamingContent } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+// Helper function to get all blocks in order
+const getAllBlocks = (streamState: StreamState): StreamBlock[] => {
+  const allBlocks: StreamBlock[] = [];
+  let currentContentIndex = 0;
+  let currentToolIndex = 0;
+
+  while (currentContentIndex < streamState.contentSections.length || currentToolIndex < streamState.toolBlocks.length) {
+    const content = streamState.contentSections[currentContentIndex];
+    const tool = streamState.toolBlocks[currentToolIndex];
+
+    if (!tool || (content && content.index < tool.index)) {
+      allBlocks.push({
+        type: 'content',
+        content: content.content,
+        isComplete: content.isComplete,
+      });
+      currentContentIndex++;
+    } else {
+      allBlocks.push(tool);
+      currentToolIndex++;
+    }
+  }
+
+  return allBlocks;
+};
 
 export function useChat(sessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
@@ -18,75 +44,50 @@ export function useChat(sessionId: string) {
   const [editingMessage, setEditingMessage] = useState<string>('');
   const queryClient = useQueryClient();
 
+  // Use ref for stream state to avoid recreation
+  const streamStateRef = useRef<StreamState | null>(null);
+  const assistantMessageIdRef = useRef<string | null>(null);
+
+  // Memoized update function at hook level
+  const updateAssistantMessage = useCallback(
+    (updatedFields: Partial<MessageRead> = {}, extraState: Partial<ChatState> = {}) => {
+      if (!streamStateRef.current || !assistantMessageIdRef.current) return;
+
+      setChatState((prev) => {
+        const idx = prev.messages.findIndex((msg) => msg.id === assistantMessageIdRef.current);
+        if (idx === -1) return prev;
+
+        const newMessages = [...prev.messages];
+        newMessages[idx] = {
+          ...newMessages[idx],
+          ...updatedFields,
+          extra_data: {
+            stream_blocks: getAllBlocks(streamStateRef.current!),
+            thinking: streamStateRef.current.thinking,
+            error: streamStateRef.current.error,
+          },
+        };
+
+        return { ...prev, messages: newMessages, ...extraState };
+      });
+    },
+    [] // No dependencies needed as we use refs
+  );
+
   const handleMessageStream = useCallback(
     async (sessionId: string, userMessage: MessageRead, params?: StreamParams, skipUserMessage: boolean = false) => {
       const assistantMessageId = `assistant-${userMessage.id}`;
+      assistantMessageIdRef.current = assistantMessageId;
 
       // Initialize stream state
-      const streamState: StreamState = {
+      streamStateRef.current = {
         contentSections: [],
         toolBlocks: [],
         lastIndex: 0,
         thinking: { isThinking: false },
       };
 
-      // Function to get all blocks in order
-      const getAllBlocks = () => {
-        const allBlocks: StreamBlock[] = [];
-
-        let currentContentIndex = 0;
-        let currentToolIndex = 0;
-
-        while (
-          currentContentIndex < streamState.contentSections.length ||
-          currentToolIndex < streamState.toolBlocks.length
-        ) {
-          const content = streamState.contentSections[currentContentIndex];
-          const tool = streamState.toolBlocks[currentToolIndex];
-
-          if (!tool || (content && content.index < tool.index)) {
-            // Add content block
-            allBlocks.push({
-              type: 'content',
-              content: content.content,
-              isComplete: content.isComplete,
-            });
-            currentContentIndex++;
-          } else {
-            // Add tool block
-            allBlocks.push(tool);
-            currentToolIndex++;
-          }
-        }
-
-        return allBlocks;
-      };
-
-      // Update assistant message with current stream state
-      const updateAssistantMessage = (
-        updatedFields: Partial<MessageRead> = {},
-        extraState: Partial<ChatState> = {}
-      ) => {
-        setChatState((prev) => {
-          const idx = prev.messages.findIndex((msg) => msg.id === assistantMessageId);
-          if (idx === -1) return prev;
-
-          const newMessages = [...prev.messages];
-          newMessages[idx] = {
-            ...newMessages[idx],
-            ...updatedFields,
-            extra_data: {
-              stream_blocks: getAllBlocks(),
-              thinking: streamState.thinking,
-              error: streamState.error,
-            },
-          };
-
-          return { ...prev, messages: newMessages, ...extraState };
-        });
-      };
-
-      // Initial message setup
+      // Batch initial message setup
       setChatState((prev) => {
         const newMessages = [...prev.messages];
         if (!skipUserMessage && !newMessages.some((msg) => msg.id === userMessage.id)) {
@@ -122,105 +123,81 @@ export function useChat(sessionId: string) {
         let currentSection: StreamingContent | null = null;
 
         for await (const block of parseStream(reader)) {
+          if (!streamStateRef.current) break;
+
           switch (block.type) {
             case 'thinking':
-              streamState.thinking = {
+              streamStateRef.current.thinking = {
                 isThinking: true,
                 content: block.content as string,
               };
               break;
 
             case 'content':
-              // Start new section if needed
               if (!currentSection) {
                 currentSection = {
                   content: '',
-                  index: streamState.lastIndex++,
+                  index: streamStateRef.current.lastIndex++,
                   isComplete: false,
                 };
-                streamState.contentSections.push(currentSection);
+                streamStateRef.current.contentSections.push(currentSection);
               }
-
-              // Accumulate content
               currentSection.content += block.content || '';
-              streamState.thinking.isThinking = false;
+              streamStateRef.current.thinking.isThinking = false;
               break;
 
             case 'tool_start':
-              // Complete current content section if exists
+            case 'tool_call':
+            case 'tool_result':
               if (currentSection) {
                 currentSection.isComplete = true;
                 currentSection = null;
               }
-
-              const toolStartBlock = {
+              streamStateRef.current.toolBlocks.push({
                 ...block,
-                index: streamState.lastIndex++,
-              };
-              streamState.toolBlocks.push(toolStartBlock);
-              break;
-
-            case 'tool_call':
-              const toolCallBlock = {
-                ...block,
-                index: streamState.lastIndex++,
-              };
-              streamState.toolBlocks.push(toolCallBlock);
-              break;
-
-            case 'tool_result':
-              const toolResultBlock = {
-                ...block,
-                index: streamState.lastIndex++,
-              };
-              streamState.toolBlocks.push(toolResultBlock);
+                index: streamStateRef.current.lastIndex++,
+              });
               break;
 
             case 'error':
               if (currentSection) {
                 currentSection.isComplete = true;
               }
-              streamState.error = {
+              streamStateRef.current.error = {
                 type: block.error_type || 'UnknownError',
                 detail: block.error_detail || 'An unknown error occurred',
               };
               throw new Error(block.error_detail);
 
             case 'done':
-              // Complete final section if exists
               if (currentSection) {
                 currentSection.isComplete = true;
               }
-
-              // Final update with complete message
               if (block.message) {
                 updateAssistantMessage(block.message, { streamingMessageId: null });
               }
               return;
           }
 
-          // Update message with current state
-          updateAssistantMessage({
-            status: 'processing',
-          });
+          // Batch update message state
+          updateAssistantMessage();
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to stream response';
-        updateAssistantMessage(
-          {
-            content: errorMessage,
-            status: 'failed',
-            error_message: errorMessage,
-          },
-          { streamingMessageId: null }
-        );
-
-        toast.error('Failed to stream response', {
-          description: errorMessage,
-        });
+        console.error('Stream error:', error);
+        toast.error('Failed to stream message');
+        if (streamStateRef.current) {
+          streamStateRef.current.error = {
+            type: 'StreamError',
+            detail: error instanceof Error ? error.message : 'Unknown error occurred',
+          };
+          updateAssistantMessage({ status: 'error' }, { streamingMessageId: null });
+        }
+      } finally {
+        streamStateRef.current = null;
+        assistantMessageIdRef.current = null;
       }
     },
-    [queryClient]
+    [queryClient, updateAssistantMessage] // Include updateAssistantMessage in dependencies
   );
 
   const handleEditStart = useCallback(

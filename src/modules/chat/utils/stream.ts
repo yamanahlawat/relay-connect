@@ -9,41 +9,61 @@ export async function* parseStream(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
 
-      // Append new chunk to buffer
-      buffer += decoder.decode(value, { stream: true });
-
-      // Split on newlines and process each line immediately
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep last incomplete chunk in buffer
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine || trimmedLine === 'data: ') continue;
-
-        try {
-          // Remove 'data: ' prefix if present and parse
-          const jsonStr = trimmedLine.replace(/^data: /, '');
-          // Parse directly as StreamBlock since we're using snake_case throughout
-          yield JSON.parse(jsonStr) as StreamBlock;
-        } catch (error) {
-          console.warn('Error parsing stream block:', error, '\nLine:', trimmedLine);
-          continue;
+      if (done) {
+        // Process any remaining complete lines in buffer
+        const lines = buffer.split('\n');
+        for (const line of lines) {
+          const block = parseLine(line);
+          if (block) yield block;
         }
+        break;
       }
-    }
 
-    // Process any remaining data
-    if (buffer.trim()) {
-      try {
-        const jsonStr = buffer.trim().replace(/^data: /, '');
-        yield JSON.parse(jsonStr) as StreamBlock;
-      } catch (error) {
-        console.warn('Error parsing final stream block:', error);
+      // Append new chunk and split into lines
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      // Keep the last potentially incomplete line in buffer
+      buffer = lines.pop() || '';
+
+      // Process all complete lines
+      for (const line of lines) {
+        const block = parseLine(line);
+        if (block) yield block;
       }
     }
+  } catch (error) {
+    console.error('Stream processing error:', error);
+    // Yield error block
+    yield {
+      type: 'error',
+      error_type: 'stream_error',
+      error_detail: error instanceof Error ? error.message : 'Unknown error',
+      index: Date.now(),
+    } as StreamBlock;
   } finally {
     reader.releaseLock();
+  }
+}
+
+function parseLine(line: string): StreamBlock | null {
+  const trimmedLine = line.trim();
+  if (!trimmedLine || trimmedLine === 'data: ') return null;
+
+  try {
+    // Remove 'data: ' prefix if present
+    const jsonStr = trimmedLine.replace(/^data: /, '');
+    const parsed = JSON.parse(jsonStr) as StreamBlock;
+
+    // Basic validation
+    if (parsed && typeof parsed === 'object' && 'type' in parsed && typeof parsed.type === 'string') {
+      return parsed;
+    }
+
+    console.warn('Invalid stream block format:', parsed);
+    return null;
+  } catch (error) {
+    console.warn('Error parsing stream block:', error, '\nLine:', trimmedLine);
+    return null;
   }
 }

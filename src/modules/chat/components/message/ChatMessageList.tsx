@@ -41,7 +41,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   }
 
   return (
-    <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 md:px-8" onScroll={onScroll}>
+    <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 md:px-8" onScroll={onScroll}>
       <div className="mx-auto max-w-5xl space-y-4">
         {isFetchingNextPage && (
           <div className="flex justify-center py-4">

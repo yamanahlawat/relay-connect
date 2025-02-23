@@ -1,6 +1,6 @@
 import { stopChatCompletion } from '@/lib/api/chat';
 import { createChatSession, updateChatSession } from '@/lib/api/chatSessions';
-import { createMessage, deleteMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
+import { createMessage, listSessionMessages, updateMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
 import { ChatState } from '@/types/chat';
 import { MessageCreate } from '@/types/message';
@@ -88,15 +88,6 @@ export function useMessageQueries({
       onError: () => toast.error('Failed to update message'),
     }),
 
-    deleteMessage: useMutation({
-      mutationFn: ({ sessionId, messageId }: { sessionId: string; messageId: string }) =>
-        deleteMessage(sessionId, messageId),
-      onSuccess: () => {
-        // Invalidate messages cache for this session
-        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-      },
-      onError: () => toast.error('Failed to delete message'),
-    }),
     stopMessage: useMutation({
       mutationFn: () => stopChatCompletion(sessionId),
       onSuccess: () => {

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
+import { useBulkDeleteMessages } from '@/lib/queries/messages';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
 import { ChatMessageList } from '@/modules/chat/components/message/ChatMessageList';
@@ -50,6 +51,8 @@ export default function ChatContainer() {
     editingMessageId,
     setChatState,
   });
+
+  const bulkDeleteMessages = useBulkDeleteMessages(sessionId);
 
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -212,16 +215,13 @@ export default function ChatContainer() {
             messageData: { content: trimmedContent, status: 'completed' },
           });
 
-          await Promise.all(
-            messagesToDelete
-              .filter((msg) => !msg.id.startsWith('assistant-'))
-              .map((msg) =>
-                mutations.deleteMessage.mutateAsync({
-                  sessionId: chatState.sessionId,
-                  messageId: msg.id,
-                })
-              )
-          );
+          const messageIdsToDelete = messagesToDelete
+            .filter((msg) => !msg.id.startsWith('assistant-'))
+            .map((msg) => msg.id);
+
+          if (messageIdsToDelete.length > 0) {
+            await bulkDeleteMessages.mutateAsync(messageIdsToDelete);
+          }
 
           setChatState((prev) => ({
             ...prev,
@@ -294,13 +294,13 @@ export default function ChatContainer() {
       chatState.sessionId,
       setChatState,
       mutations.updateMessage,
-      mutations.deleteMessage,
       mutations.createSession,
       mutations.createMessage,
       mutations.updateSession,
       handleCancelEdit,
       handleMessageStream,
       systemContext,
+      bulkDeleteMessages,
     ]
   );
 

@@ -11,7 +11,7 @@ interface StreamBlockRendererProps {
 
 const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, isStreaming }: StreamBlockRendererProps) {
   const streamBlocks = message.extra_data?.stream_blocks ?? [];
-  const thinking = isStreaming ? (message.extra_data?.thinking ?? { is_thinking: false }) : { is_thinking: false };
+  const thinking = isStreaming ? (message.extra_data?.thinking ?? { isThinking: false }) : { isThinking: false };
 
   if (isStreaming) {
     return <StreamingMessage blocks={streamBlocks} thinking={thinking} />;

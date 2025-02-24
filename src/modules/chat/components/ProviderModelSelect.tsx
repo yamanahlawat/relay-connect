@@ -1,14 +1,19 @@
 'use client';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { updateChatSession } from '@/lib/api/chatSessions';
 import type { components } from '@/lib/api/schema';
 import { useModelsWithLoading } from '@/lib/queries/models';
 import { useProvidersWithLoading } from '@/lib/queries/providers';
 import { useProviderModel } from '@/stores/providerModel';
+import { Tooltip } from '@radix-ui/react-tooltip';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'next/navigation';
+import { MessageSquarePlus } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
@@ -21,9 +26,11 @@ interface PreviousState {
 
 export default function ProviderModelSelect() {
   const params = useParams();
+  const router = useRouter();
   const sessionId = params.session_id as string;
   const queryClient = useQueryClient();
   const previousState = useRef<PreviousState>({ providerId: undefined, modelId: undefined });
+  const pathname = usePathname();
 
   const { selectedProvider, selectedModel, setSelectedProvider, setSelectedModel, setLoading } = useProviderModel();
 
@@ -116,6 +123,24 @@ export default function ProviderModelSelect() {
 
   const isUpdating = sessionId ? updateSessionMutation.isPending : false;
 
+  const isMac = typeof window !== 'undefined' && navigator.platform.includes('Mac');
+
+  // Add global event listener for Command + Option + N (Mac) or Ctrl + Alt + N (Windows/Linux)
+  useEffect(() => {
+    const handleNewChatShortcut = (e: KeyboardEvent) => {
+      if ((isMac ? e.metaKey && e.altKey : e.ctrlKey && e.altKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault(); // Prevent default
+        router.push('/'); // Navigate to new chat creation page
+      }
+    };
+
+    document.addEventListener('keydown', handleNewChatShortcut);
+
+    return () => {
+      document.removeEventListener('keydown', handleNewChatShortcut);
+    };
+  }, [router, isMac]);
+
   return (
     <div className="flex w-full items-center justify-between px-4">
       <div className="flex items-center gap-4">
@@ -158,7 +183,22 @@ export default function ProviderModelSelect() {
         </Select>
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+        {pathname !== '/' && (
+          <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" className="text-foreground hover:text-foreground" asChild>
+                  <Link href="/" title="">
+                    <MessageSquarePlus className="h-4 w-4" />
+                    New Chat
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">New Chat ({isMac ? '⌘ + Option + N' : 'Ctrl + Alt + N'})</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <ThemeToggle />
       </div>
     </div>

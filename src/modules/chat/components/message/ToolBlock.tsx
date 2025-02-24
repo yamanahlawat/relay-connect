@@ -2,22 +2,20 @@ import JsonCodeBlock from '@/components/JsonCodeBlock';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
-import type { ContentItem, StreamBlockType } from '@/types/stream';
+import type { ContentItem, StreamBlockType, TextContent } from '@/types/stream';
 import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Terminal } from 'lucide-react';
 import { useState } from 'react';
 import StreamingIndicator from './StreamingIndicator';
 
-type ToolBlockType = Extract<StreamBlockType, 'tool_start' | 'tool_call' | 'tool_result'>;
-
 interface ToolBlockProps {
-  type: ToolBlockType;
-  tool_name?: string;
-  tool_args?: Record<string, unknown>;
-  tool_result?: string | ContentItem[];
+  type: StreamBlockType;
+  tool_name: string | null;
+  tool_args?: Record<string, unknown> | null;
+  tool_result?: string | ContentItem[] | null;
   is_streaming?: boolean;
   is_error?: boolean;
-  error_message?: string;
-  next_block_type?: ToolBlockType;
+  error_message?: string | null;
+  next_block_type?: StreamBlockType;
   on_collapse?: (is_open: boolean) => void;
 }
 
@@ -140,8 +138,11 @@ export default function ToolBlock({
     }
 
     if (type === 'tool_result') {
-      // If there's multiple items, you could merge them into one string if you prefer:
-      const mergedText = resultAsContentItems.map((item) => item.text).join('\n\n');
+      // Filter for text content items and extract their text
+      const mergedText = resultAsContentItems
+        .filter((item): item is TextContent => item.type === 'text')
+        .map((item) => item.text)
+        .join('\n\n');
       return (
         <div className="space-y-4">
           <div className="max-w-full break-words">

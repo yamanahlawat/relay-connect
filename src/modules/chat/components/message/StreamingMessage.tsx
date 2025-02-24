@@ -14,7 +14,7 @@ const ContentBlock = memo(function ContentBlock({
 }) {
   return (
     <div className={`prose prose-sm dark:prose-invert max-w-none ${is_streaming ? 'typing-effect' : ''}`}>
-      <MarkdownRenderer content={block.content || ''} is_streaming={is_streaming} />
+      <MarkdownRenderer content={block.content || ''} isStreaming={is_streaming} />
       {is_streaming && <span className="typing-cursor" />}
     </div>
   );
@@ -64,11 +64,11 @@ const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: St
     return blocks
       .map((block, index) => ({
         ...block,
-        index: block.index || index,
-        next_block_type: index < blocks.length - 1 ? blocks[index + 1].type : undefined,
+        index,
+        next_block_type: index < blocks.length - 1 ? blocks[index + 1]?.type : undefined,
       }))
       .sort((a, b) => a.index - b.index) as ProcessedStreamBlock[];
-  }, [blocks]); // Dependency only on blocks array
+  }, [blocks]);
 
   return (
     <MessageErrorBoundary>

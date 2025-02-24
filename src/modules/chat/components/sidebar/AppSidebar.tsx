@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
@@ -14,7 +13,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { deleteChatSession, listChatSessions, updateChatSession } from '@/lib/api/chatSessions';
 import { cn } from '@/lib/utils';
 import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
@@ -25,10 +23,10 @@ import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Loader, MessageSquarePlus, Sparkles } from 'lucide-react';
+import { Loader, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ComponentProps, useEffect, useMemo, useState } from 'react';
+import { ComponentProps, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export function AppSidebar({ className, ...props }: ComponentProps<typeof Sidebar>) {
@@ -39,8 +37,6 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
   const pathname = usePathname();
   const router = useRouter();
   const { clearCode } = useCodeCascade();
-
-  const isMac = typeof window !== 'undefined' && navigator.platform.includes('Mac');
 
   const {
     data: chatSessions,
@@ -66,7 +62,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
   const groups = useChatGroups(chatSessions?.pages);
   const lastChatRef = useIntersectionObserver(isFetchingNextPage, hasNextPage, fetchNextPage);
 
-  const handleDeleteChat = async (chatId: string, e: MouseEvent) => {
+  const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -105,25 +101,6 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
     return chatSessions?.pages?.some((page) => page.length > 0) ?? false;
   }, [chatSessions?.pages]);
 
-  // Add global event listener for Command + Shift N or Ctrl + Shift + N
-  useEffect(() => {
-    const handleNewChatShortcut = (e: KeyboardEvent) => {
-      // Check if 'Cmd + Shift + N' (Mac) or 'Ctrl + Shift + N' (Windows/Linux) is pressed
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'n') {
-        e.preventDefault(); // Prevent default
-        router.push('/'); // Navigate to new chat creation page
-      }
-    };
-
-    // Attach event listener for the keyboard shortcut
-    document.addEventListener('keydown', handleNewChatShortcut);
-
-    // Cleanup event listener on component unmount
-    return () => {
-      document.removeEventListener('keydown', handleNewChatShortcut);
-    };
-  }, [router]);
-
   return (
     <Sidebar className={cn('w-64 border-r', className)} {...props}>
       <SidebarHeader className="h-14 justify-center px-3 py-2">
@@ -136,18 +113,6 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
               <span className="pl-1 font-semibold">Relay Connect</span>
             </Link>
           </div>
-          <TooltipProvider delayDuration={200} skipDelayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground hover:text-foreground" asChild>
-                  <Link href="/" title="">
-                    <MessageSquarePlus className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">New Chat ({isMac ? '⌘' : 'Ctrl'}+ Shift + N)</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </SidebarHeader>
 
@@ -192,8 +157,10 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
                             setEditingChatId(chat.id);
                             setEditValue(chat.title);
                           }}
-                          onFinishEdit={() => handleRenameChat(chat.id, editValue)}
-                          onDelete={(e) => handleDeleteChat(chat.id, e)}
+                          onFinishEdit={() => {
+                            handleRenameChat(chat.id, true);
+                          }}
+                          onDelete={(e: React.MouseEvent) => handleDeleteChat(chat.id, e)}
                           clearCode={clearCode}
                         />
                       </SidebarMenuItem>

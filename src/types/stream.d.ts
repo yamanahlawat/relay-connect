@@ -87,11 +87,7 @@ export interface RawStreamBlock {
   tool_result: ContentItem[] | null;
   error_type: string | null;
   error_detail: string | null;
-  extra_data?: {
-    tool_executions?: ToolExecution[];
-    completion_timestamp?: string;
-    [key: string]: unknown;
-  };
+  extra_data: object | null;
 }
 
 // Streaming message component types
@@ -103,7 +99,7 @@ export interface StreamingMessageProps {
   };
 }
 
-export interface ProcessedStreamBlock extends StreamBlock {
+export interface ProcessedStreamBlock extends RawStreamBlock {
   index: number;
   next_block_type?: StreamBlockType;
 }
@@ -136,19 +132,6 @@ export interface StreamingState {
   activeTools: ActiveTool[];
   isThinking: boolean;
   thinkingText?: string;
-  error?: {
-    type: string;
-    detail: string;
-  };
-}
-
-// Message extra data structure
-interface MessageExtraData {
-  stream_blocks: StreamBlock[];
-  thinking?: {
-    isThinking: boolean;
-    content?: string;
-  };
   error?: {
     type: string;
     detail: string;

@@ -45,6 +45,7 @@ export function ChatLoadingSkeleton() {
         <div className="mt-2 flex items-center gap-2">
           <Skeleton className="h-8 w-8 rounded-full" /> {/* Tool button */}
           <Skeleton className="h-8 w-8 rounded-full" /> {/* Settings button */}
+          <Skeleton className="h-8 w-8 rounded-full" /> {/* MCP Servers button */}
         </div>
       </div>
     </div>

@@ -4,6 +4,8 @@ import { MessageRead } from '@/types/message';
 import { Loader2 } from 'lucide-react';
 import { memo } from 'react';
 
+type NonEmptyArray<T> = [T, ...T[]];
+
 interface ChatMessageListProps {
   messageGroups: MessageRead[][];
   streamingMessageId: string | null;
@@ -17,7 +19,7 @@ interface ChatMessageListProps {
 
 function EmptyStatePlaceholder() {
   return (
-    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+    <div className="flex flex-1 items-center justify-center text-muted-foreground">
       <div className="text-center">
         <p className="mb-2 text-lg font-medium">No messages yet</p>
         <p className="text-sm">Start a conversation by typing a message below</p>
@@ -41,7 +43,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   }
 
   return (
-    <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 md:px-8" onScroll={onScroll}>
+    <ScrollArea ref={scrollAreaRef} className="flex-1 p-2 md:px-8" onScroll={onScroll}>
       <div className="mx-auto max-w-5xl space-y-4">
         {isFetchingNextPage && (
           <div className="flex justify-center py-4">
@@ -49,16 +51,18 @@ export const ChatMessageList = memo(function ChatMessageList({
           </div>
         )}
 
-        {messageGroups.map((group) => (
-          <ChatMessage
-            key={group[0]?.id}
-            messages={group}
-            role={group[0]?.role}
-            isStreaming={group.some((msg) => msg.id === streamingMessageId)}
-            onEditClick={group[0]?.role === 'user' ? onEditClick : undefined}
-            editingMessageId={editingMessageId}
-          />
-        ))}
+        {messageGroups
+          .filter((group): group is NonEmptyArray<MessageRead> => group.length > 0)
+          .map((group) => (
+            <ChatMessage
+              key={group[0].id}
+              messages={group}
+              role={group[0].role}
+              isStreaming={group.some((msg) => msg.id === streamingMessageId)}
+              onEditClick={group[0]?.role === 'user' ? onEditClick : undefined}
+              editingMessageId={editingMessageId}
+            />
+          ))}
 
         <div ref={messagesEndRef} />
       </div>

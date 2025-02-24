@@ -6,7 +6,7 @@ import { defaultChatSettings } from '@/lib/defaults';
 import { cn } from '@/lib/utils';
 import MCPServers from '@/modules/chat/components/mcp/Servers';
 import { AdvancedSettings } from '@/modules/chat/components/settings/AdvancedSettings';
-import { FilePreviewData } from '@/types/attachment';
+import { FilePreviewData, UploadFile } from '@/types/attachment';
 import { ChatInputProps } from '@/types/chat';
 import { Paperclip, Pencil, SendHorizontal, StopCircle, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -79,14 +79,16 @@ export function ChatInput({
   );
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = e.clipboardData.items;
+    const items = Array.from(e.clipboardData.items);
     const imageFiles: File[] = [];
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        const file = items[i].getAsFile();
+
+    for (const item of items) {
+      if (item?.type.startsWith('image/')) {
+        const file = item.getAsFile();
         if (file) imageFiles.push(file);
       }
     }
+
     if (imageFiles.length > 0) {
       e.preventDefault();
       handleFiles(imageFiles);
@@ -129,7 +131,7 @@ export function ChatInput({
   }, [currentValue]);
 
   // Transform the files from the upload hook into the common FilePreviewData shape.
-  const filePreviewData: FilePreviewData[] = files.map((file) => ({
+  const filePreviewData: FilePreviewData[] = files.map((file: UploadFile) => ({
     id: file.id,
     file_name: file.file.name,
     absolute_url: file.absolute_url,
@@ -206,7 +208,7 @@ export function ChatInput({
                         <span className="sr-only">Stop response</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="left">Stop response</TooltipContent>
+                    <TooltipContent side="left">Stop response (Esc)</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               ) : (

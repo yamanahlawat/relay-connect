@@ -12,7 +12,7 @@ export async function uploadAttachment(file: File, folder: string): Promise<Atta
     params: {
       path: { folder },
     },
-    body: formData,
+    body: formData as unknown as { file: string },
   });
 
   if (error) {

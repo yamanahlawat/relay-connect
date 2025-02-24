@@ -8,30 +8,24 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Helper function to get all blocks in order
-const getAllBlocks = (streamState: StreamState): StreamBlock[] => {
-  const allBlocks: StreamBlock[] = [];
-  let currentContentIndex = 0;
-  let currentToolIndex = 0;
+function getAllBlocks(streamState: StreamState): StreamBlock[] {
+  // Combine content sections and tool blocks into a single array with indices
+  const combinedBlocks: (StreamBlock & { index: number })[] = [
+    ...streamState.contentSections.map((content) => ({
+      type: 'content' as const,
+      content: content.content,
+      isComplete: content.isComplete,
+      index: content.index,
+    })),
+    ...streamState.toolBlocks.map((tool, idx) => ({
+      ...tool,
+      index: idx,
+    })),
+  ];
 
-  while (currentContentIndex < streamState.contentSections.length || currentToolIndex < streamState.toolBlocks.length) {
-    const content = streamState.contentSections[currentContentIndex];
-    const tool = streamState.toolBlocks[currentToolIndex];
-
-    if (!tool || (content && content.index < tool.index)) {
-      allBlocks.push({
-        type: 'content',
-        content: content.content,
-        isComplete: content.isComplete,
-      });
-      currentContentIndex++;
-    } else {
-      allBlocks.push(tool);
-      currentToolIndex++;
-    }
-  }
-
-  return allBlocks;
-};
+  // Sort by index to maintain chronological order
+  return combinedBlocks.sort((a, b) => a.index - b.index).map((block) => block);
+}
 
 export function useChat(sessionId: string) {
   const [chatState, setChatState] = useState<ChatState>({
@@ -63,8 +57,8 @@ export function useChat(sessionId: string) {
           ...updatedFields,
           extra_data: {
             stream_blocks: getAllBlocks(streamStateRef.current!),
-            thinking: streamStateRef.current.thinking,
-            error: streamStateRef.current.error,
+            thinking: streamStateRef.current?.thinking,
+            error: streamStateRef.current?.error,
           },
         };
 

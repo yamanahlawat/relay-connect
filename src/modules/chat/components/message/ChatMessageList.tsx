@@ -4,6 +4,8 @@ import { MessageRead } from '@/types/message';
 import { Loader2 } from 'lucide-react';
 import { memo } from 'react';
 
+type NonEmptyArray<T> = [T, ...T[]];
+
 interface ChatMessageListProps {
   messageGroups: MessageRead[][];
   streamingMessageId: string | null;
@@ -49,16 +51,18 @@ export const ChatMessageList = memo(function ChatMessageList({
           </div>
         )}
 
-        {messageGroups.map((group) => (
-          <ChatMessage
-            key={group[0]?.id}
-            messages={group}
-            role={group[0]?.role}
-            isStreaming={group.some((msg) => msg.id === streamingMessageId)}
-            onEditClick={group[0]?.role === 'user' ? onEditClick : undefined}
-            editingMessageId={editingMessageId}
-          />
-        ))}
+        {messageGroups
+          .filter((group): group is NonEmptyArray<MessageRead> => group.length > 0)
+          .map((group) => (
+            <ChatMessage
+              key={group[0].id}
+              messages={group}
+              role={group[0].role}
+              isStreaming={group.some((msg) => msg.id === streamingMessageId)}
+              onEditClick={group[0]?.role === 'user' ? onEditClick : undefined}
+              editingMessageId={editingMessageId}
+            />
+          ))}
 
         <div ref={messagesEndRef} />
       </div>

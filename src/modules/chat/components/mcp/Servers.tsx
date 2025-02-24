@@ -25,7 +25,7 @@ function NoActiveServers() {
   );
 }
 
-function ToolCard({ tool, index }: { tool: { name: string; description?: string }; index: number }) {
+function ToolCard({ tool, index }: { tool: { name: string; description?: string | null }; index: number }) {
   return (
     <div
       className={cn(

@@ -19,3 +19,10 @@ export interface FilePreviewProps {
   showPreview?: boolean;
   imageSize?: 'sm' | 'lg';
 }
+
+export interface UploadFile {
+  id: string;
+  file: File;
+  absolute_url: string;
+  status: string;
+}

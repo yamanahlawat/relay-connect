@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import CodeBlock from '@/modules/chat/components/markdown/CodeBlock';
 import ThinkBlock from '@/modules/chat/components/markdown/ThinkBlock';
+import { ContentItem } from '@/types/stream';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { Components } from 'react-markdown';
@@ -27,7 +28,7 @@ export interface MarkdownRendererProps {
   /**
    * The markdown content to render
    */
-  content: string;
+  content: string | ContentItem[];
   /**
    * Whether the content is currently being streamed
    */
@@ -145,12 +146,12 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
 
     if (hasOpeningTag) {
       const [beforeThink, ...rest] = content.split('<think>');
-      regularContent = beforeThink;
+      regularContent = beforeThink!;
       const afterThink = rest.join('<think>');
 
       if (hasClosingTag) {
         const [think, ...remaining] = afterThink.split('</think>');
-        thinkContent = think;
+        thinkContent = think!;
         regularContent += remaining.join('</think>');
       } else {
         thinkContent = afterThink;

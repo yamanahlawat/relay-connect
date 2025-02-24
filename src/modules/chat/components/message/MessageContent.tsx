@@ -7,7 +7,7 @@ import type { MessageContentProps } from '@/types/message';
 import { format } from 'date-fns';
 import { Coins, Pencil } from 'lucide-react';
 
-export function MessageContent({ message, isStreaming, role, onEditClick, isEditing }: MessageContentProps) {
+export function MessageContent({ message, isStreaming = false, role, onEditClick, isEditing }: MessageContentProps) {
   const messageCreateDate = parseBackendUTCDate(message.created_at);
 
   return (

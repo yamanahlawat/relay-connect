@@ -35,12 +35,19 @@ export async function* parseStream(
   } catch (error) {
     console.error('Stream processing error:', error);
     // Yield error block
-    yield {
+    const errorBlock: StreamBlock = {
       type: 'error',
+      content: null,
+      tool_name: null,
+      tool_args: null,
+      tool_call_id: null,
+      tool_status: null,
+      tool_result: null,
       error_type: 'stream_error',
       error_detail: error instanceof Error ? error.message : 'Unknown error',
-      index: Date.now(),
-    } as StreamBlock;
+      extra_data: null,
+    };
+    yield errorBlock;
   } finally {
     reader.releaseLock();
   }

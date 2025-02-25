@@ -16,7 +16,7 @@ export function useIntersectionObserver(
       }
 
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
+        if (entries[0]?.isIntersecting && hasNextPage) {
           fetchNextPage();
         }
       });

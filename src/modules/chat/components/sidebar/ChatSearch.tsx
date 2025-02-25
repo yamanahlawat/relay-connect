@@ -14,6 +14,14 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearchRef = useRef<ReturnType<typeof debounce> | undefined>(undefined);
 
+  // Initialize to false so the server and initial client render match.
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    // Now that we're on the client, detect macOS.
+    setIsMac(/macintosh/i.test(navigator.userAgent));
+  }, []);
+
   // Create a stable debounced search function
   useEffect(() => {
     debouncedSearchRef.current = debounce((query: string) => {
@@ -81,7 +89,7 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
       )}
       {!searchValue && (
         <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">{navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}</span>K
+          <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span>K
         </kbd>
       )}
     </div>

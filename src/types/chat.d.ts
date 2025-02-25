@@ -1,12 +1,12 @@
 import { components } from '@/lib/api/schema';
-import type { MessageRead } from '@/types/message';
+import type { StreamingMessageRead } from '@/types/message';
 
 type CompletionRequest = components['schemas']['CompletionRequest'];
 type CompletionResponse = components['schemas']['CompletionResponse'];
 
 export interface ChatState {
   sessionId: string;
-  messages: MessageRead[];
+  messages: StreamingMessageRead[];
   streamingMessageId: string | null;
 }
 

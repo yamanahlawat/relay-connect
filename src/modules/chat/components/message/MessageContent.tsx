@@ -20,7 +20,7 @@ export function MessageContent({ message, isStreaming = false, role, onEditClick
         </div>
       ) : (
         // Assistant messages might contain stream blocks
-        <StreamBlockRenderer message={message} isStreaming={isStreaming} />
+        <StreamBlockRenderer message={message} is_streaming={isStreaming} />
       )}
 
       {/* Metadata Section */}

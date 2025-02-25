@@ -399,7 +399,7 @@ export function ModelSettings() {
                       <Input
                         type="number"
                         min={0}
-                        step={0.000001}
+                        step="any"
                         placeholder="0.0"
                         {...field}
                         onChange={(e) => field.onChange(Number(e.target.value))}

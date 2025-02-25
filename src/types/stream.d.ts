@@ -12,7 +12,7 @@ export interface ImageContent {
 
 export interface EmbeddedResource {
   type: 'embedded';
-  resourceType: string;
+  resource_type: string;
   data: unknown;
 }
 
@@ -46,38 +46,23 @@ export interface ActiveTool {
 
 // Extra data for stream blocks
 export interface StreamBlockExtraData {
-  completedTools: ToolExecution[];
-  activeTool: ActiveTool | null;
-  accumulatedContent: string;
-  completionTimestamp?: string;
+  completed_tools: ToolExecution[];
+  active_tool: ActiveTool | null;
+  accumulated_content: string;
+  completion_timestamp?: string;
   // Added fields to match usage in useChat
   type?: StreamBlockType;
   content?: string;
-  toolName?: string;
-  toolArgs?: Record<string, unknown>;
-  toolCallId?: string;
-  thinkingText?: string;
-  errorType?: string;
-  errorDetail?: string;
+  tool_name?: string;
+  tool_args?: Record<string, unknown>;
+  tool_call_id?: string;
+  thinking_text?: string;
+  error_type?: string;
+  error_detail?: string;
 }
 
 // Stream block with improved typing
 export interface StreamBlock {
-  type: StreamBlockType;
-  content?: string | ContentItem[];
-  toolName?: string;
-  toolArgs?: Record<string, unknown>;
-  toolCallId?: string;
-  toolStatus?: string;
-  toolResult?: ContentItem[];
-  errorType?: string;
-  errorDetail?: string;
-  extraData?: StreamBlockExtraData;
-  message?: unknown; // For final message replacement
-}
-
-// Raw stream block from backend
-export interface RawStreamBlock {
   type: StreamBlockType;
   content: string | ContentItem[] | null;
   tool_name: string | null;
@@ -90,50 +75,50 @@ export interface RawStreamBlock {
   extra_data: object | null;
 }
 
-// Streaming message component types
-export interface StreamingMessageProps {
-  blocks: StreamBlock[];
+// Stream state (snake_case to match API)
+export interface StreamState {
+  content_sections: StreamingContent[];
+  tool_blocks: StreamBlock[];
+  last_index: number;
   thinking: {
-    isThinking: boolean;
+    is_thinking: boolean;
     content?: string;
+  };
+  error?: {
+    type: string;
+    detail: string;
   };
 }
 
-export interface ProcessedStreamBlock extends RawStreamBlock {
-  index: number;
-  next_block_type?: StreamBlockType;
-}
-
-// Streaming state management
 export interface StreamingContent {
   content: string;
   index: number;
-  isComplete: boolean;
+  is_complete: boolean;
 }
 
-export interface StreamState {
-  contentSections: StreamingContent[];
-  toolBlocks: StreamBlock[];
-  lastIndex: number;
+// Component props (snake_case since they handle API data)
+export interface StreamingMessageProps {
+  blocks: StreamBlock[];
   thinking: {
-    isThinking: boolean;
+    is_thinking: boolean;
     content?: string;
   };
+}
+
+// Streaming state management
+export interface StreamingState {
+  content: string;
+  completed_tools: ToolExecution[];
+  active_tools: ActiveTool[];
+  is_thinking: boolean;
+  thinking_text?: string;
   error?: {
     type: string;
     detail: string;
   };
 }
 
-// State management for streaming
-export interface StreamingState {
-  content: string;
-  completedTools: ToolExecution[];
-  activeTools: ActiveTool[];
-  isThinking: boolean;
-  thinkingText?: string;
-  error?: {
-    type: string;
-    detail: string;
-  };
+export interface ProcessedStreamBlock extends StreamBlock {
+  index: number;
+  next_block_type?: StreamBlockType;
 }

@@ -14,7 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 type SessionUpdate = components['schemas']['SessionUpdate'];
@@ -123,7 +123,13 @@ export default function ProviderModelSelect() {
 
   const isUpdating = sessionId ? updateSessionMutation.isPending : false;
 
-  const isMac = typeof window !== 'undefined' && navigator.platform.includes('Mac');
+  // Initialize to false so the server and initial client render match.
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    // Now that we're on the client, detect macOS.
+    setIsMac(/macintosh/i.test(navigator.userAgent));
+  }, []);
 
   // Add global event listener for Command + Option + N (Mac) or Ctrl + Alt + N (Windows/Linux)
   useEffect(() => {

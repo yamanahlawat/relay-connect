@@ -23,6 +23,8 @@ export function useChatGroups(pages?: Chat[][]) {
 }
 
 function groupChatsByDate(chats: Chat[]): ChatGroup[] {
+  // Define the groups array with a non-null assertion to tell TypeScript
+  // that we know these indices will always exist
   const groups: ChatGroup[] = [
     { label: 'Today', chats: [] },
     { label: 'Yesterday', chats: [] },
@@ -39,15 +41,16 @@ function groupChatsByDate(chats: Chat[]): ChatGroup[] {
     const date = new Date(chat.last_message_at || chat.created_at);
 
     if (isToday(date)) {
-      groups[0].chats.push(chat);
+      // Use a type assertion to tell TypeScript this will never be undefined
+      (groups[0] as ChatGroup).chats.push(chat);
     } else if (isYesterday(date)) {
-      groups[1].chats.push(chat);
+      (groups[1] as ChatGroup).chats.push(chat);
     } else if (date >= sevenDaysAgo) {
-      groups[2].chats.push(chat);
+      (groups[2] as ChatGroup).chats.push(chat);
     } else if (date >= thirtyDaysAgo) {
-      groups[3].chats.push(chat);
+      (groups[3] as ChatGroup).chats.push(chat);
     } else {
-      groups[4].chats.push(chat);
+      (groups[4] as ChatGroup).chats.push(chat);
     }
   });
 

@@ -29,8 +29,6 @@ const ToolBlockWrapper = memo(function ToolBlockWrapper({ block }: { block: Proc
         tool_name={block.tool_name}
         tool_args={block.type === 'tool_call' ? block.tool_args : undefined}
         tool_result={block.type === 'tool_result' ? block.tool_result : undefined}
-        is_error={block.error_type ? true : false}
-        error_message={block.error_detail}
         is_streaming={!block.next_block_type}
         next_block_type={block.next_block_type}
       />
@@ -74,7 +72,7 @@ const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: St
     <MessageErrorBoundary>
       <div className="space-y-2">
         {/* Thinking state - Always at top */}
-        {thinking?.isThinking && (
+        {thinking?.is_thinking && (
           <div className="duration-300 animate-in fade-in-0">
             <StreamingIndicator type="thinking" text={thinking?.content} />
           </div>

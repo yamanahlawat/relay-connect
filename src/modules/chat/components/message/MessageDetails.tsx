@@ -2,10 +2,10 @@ import { memo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 import ToolBlock from '../message/ToolBlock';
 
-import type { RawStreamBlock } from '@/types/stream';
+import type { StreamBlock } from '@/types/stream';
 
 interface MessageDetailsProps {
-  blocks: RawStreamBlock[];
+  blocks: StreamBlock[];
 }
 
 const MessageDetails = memo(function MessageDetails({ blocks }: MessageDetailsProps) {

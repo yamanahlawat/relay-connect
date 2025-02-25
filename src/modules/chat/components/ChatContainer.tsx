@@ -19,11 +19,35 @@ import { useChatSettings } from '@/stores/chatSettings';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { ChatSettings } from '@/types/chat';
-import { MessageRead } from '@/types/message';
+import { MessageRead, MessageRole, StreamingMessageRead } from '@/types/message';
 import { ArrowDown } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+// Define a common interface for message grouping that both types can satisfy
+interface GroupableMessage {
+  id: string;
+  role: MessageRole;
+  content?: string | null;
+  // Add other essential properties needed for display
+  created_at: string;
+  status: string;
+  session_id: string;
+}
+
+// Type-safe adapter function for message grouping
+function adaptMessageForGrouping<T extends GroupableMessage>(messages: T[]): T[][] {
+  return messages.reduce((groups: T[][], message) => {
+    const lastGroup = groups[groups.length - 1];
+    if (lastGroup && lastGroup[0]?.role === message.role) {
+      lastGroup.push(message);
+    } else {
+      groups.push([message]);
+    }
+    return groups;
+  }, []);
+}
 
 export default function ChatContainer() {
   const params = useParams();
@@ -99,7 +123,7 @@ export default function ChatContainer() {
         }
       });
 
-      return { ...prev, messages: Array.from(messageMap.values()) };
+      return { ...prev, messages: Array.from(messageMap.values()) as StreamingMessageRead[] };
     });
   }, [messagesQuery.data, setChatState]);
 
@@ -114,17 +138,9 @@ export default function ChatContainer() {
     hasMoreMessages: !!messagesQuery.hasNextPage,
   });
 
-  // Group messages by role for display
+  // Group messages by role for display using our adapter function
   const messageGroups = useMemo(() => {
-    return chatState.messages.reduce((groups: MessageRead[][], message) => {
-      const lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup[0]?.role === message.role) {
-        lastGroup.push(message);
-      } else {
-        groups.push([message]);
-      }
-      return groups;
-    }, []);
+    return adaptMessageForGrouping<StreamingMessageRead>(chatState.messages);
   }, [chatState.messages]);
 
   // Resize observer for chat input
@@ -225,7 +241,7 @@ export default function ChatContainer() {
 
           setChatState((prev) => ({
             ...prev,
-            messages: [...prev.messages.slice(0, messageIndex), updatedMessage],
+            messages: [...prev.messages.slice(0, messageIndex), updatedMessage as StreamingMessageRead],
           }));
 
           handleCancelEdit();

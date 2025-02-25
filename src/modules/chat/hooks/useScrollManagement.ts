@@ -1,4 +1,4 @@
-import type { MessageRead } from '@/types/message';
+import type { MessageRead, StreamingMessageRead } from '@/types/message';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -6,7 +6,8 @@ interface ScrollManagementProps {
   scrollAreaRef: React.RefObject<HTMLDivElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   streamingMessageId: string | null;
-  messages: MessageRead[];
+  // Accept either MessageRead or StreamingMessageRead
+  messages: StreamingMessageRead[] | MessageRead[];
   onFetchMore: () => void;
   isFetchingMore: boolean;
   hasMoreMessages: boolean;

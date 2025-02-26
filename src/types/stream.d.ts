@@ -99,7 +99,7 @@ export interface StreamingContent {
 // Component props (snake_case since they handle API data)
 export interface StreamingMessageProps {
   blocks: StreamBlock[];
-  thinking: {
+  thinking?: {
     is_thinking: boolean;
     content?: string;
   };

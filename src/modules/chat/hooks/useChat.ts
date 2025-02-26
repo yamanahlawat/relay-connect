@@ -249,7 +249,9 @@ export function useChat(sessionId: string) {
                 // If no message, just update streamingMessageId
                 updateAssistantMessage({}, { streamingMessageId: null });
               }
-              return;
+              streamStateRef.current = null; // Clean up stream state
+              assistantMessageIdRef.current = null;
+              break; // Use break instead of return to allow finally block to execute
           }
 
           // Batch update message state

@@ -71,21 +71,21 @@ const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: St
   return (
     <MessageErrorBoundary>
       <div className="space-y-2">
-        {/* Thinking state - Always at top */}
+        {/* Always show thinking at the top if present */}
         {thinking?.is_thinking && (
           <div className="duration-300 animate-in fade-in-0">
-            <StreamingIndicator type="thinking" text={thinking?.content} />
+            <StreamingIndicator type="thinking" text={thinking.content} />
           </div>
         )}
 
-        {/* Content and Tools */}
-        {orderedBlocks.map((block, idx) => {
+        {/* Show accumulated content and tool blocks */}
+        {orderedBlocks.map((block) => {
           if (block.type === 'content') {
-            return <ContentBlock key={`content-${idx}`} block={block} is_streaming={!block.next_block_type} />;
+            return <ContentBlock key={block.index} block={block} is_streaming={!block.next_block_type} />;
           }
 
-          if (block.type === 'tool_start' || block.type === 'tool_call' || block.type === 'tool_result') {
-            return <ToolBlockWrapper key={`${block.tool_call_id}-${block.type}`} block={block} />;
+          if (['tool_start', 'tool_call', 'tool_result'].includes(block.type)) {
+            return <ToolBlockWrapper key={block.index} block={block} />;
           }
 
           return null;

@@ -133,7 +133,7 @@ export function WelcomeContent() {
   };
 
   return (
-    <main className="view-transition-root flex flex-1 flex-col">
+    <main className="view-transition-welcome-content flex flex-1 flex-col">
       {isDragging && <FileDropOverlay isOver={isDragging} />}
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6 transition-all duration-300">

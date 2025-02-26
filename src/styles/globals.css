@@ -176,8 +176,19 @@
     view-transition-name: root;
   }
 
+  .view-transition-welcome-content {
+    view-transition-name: welcome-content;
+  }
+
   .view-transition-chat-input {
     view-transition-name: chat-input;
+  }
+
+  ::view-transition-old(welcome-content),
+  ::view-transition-new(welcome-content) {
+    animation:
+      300ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
+      400ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
   }
 
   ::view-transition-old(chat-input),

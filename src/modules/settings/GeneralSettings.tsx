@@ -63,7 +63,7 @@ export function GeneralSettings() {
                     Make the UI more compact by reducing spacing
                   </span>
                 </Label>
-                <Switch id="density" />
+                <Switch id="density" disabled />
               </div>
 
               {/* Code Font */}
@@ -74,7 +74,7 @@ export function GeneralSettings() {
                     Use monospace font for code and snippets
                   </span>
                 </Label>
-                <Switch id="monoFont" />
+                <Switch id="monoFont" disabled />
               </div>
             </div>
           </CardContent>

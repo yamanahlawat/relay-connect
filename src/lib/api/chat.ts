@@ -41,12 +41,16 @@ export async function streamCompletion(
   messageId: string,
   params?: StreamParams
 ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
-  const baseUrl = `${process.env.NEXT_PUBLIC_RELAY_SERVE_HOST}/api/v1/chat/complete/${sessionId}/${messageId}/stream`;
-  const url = params
-    ? `${baseUrl}?${new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined))}`
-    : baseUrl;
-
-  const response = await fetch(url, { cache: 'no-store' });
+  const { response } = await client.GET('/api/v1/chat/complete/{session_id}/{message_id}/stream', {
+    params: {
+      path: {
+        session_id: sessionId,
+        message_id: messageId,
+      },
+      query: params,
+    },
+    parseAs: 'stream',
+  });
 
   if (!response.ok) {
     throw new Error(response.statusText || 'Failed to stream response');
@@ -60,6 +64,9 @@ export async function streamCompletion(
   return reader;
 }
 
+/**
+ * Stops an ongoing chat completion for a session
+ */
 export async function stopChatCompletion(sessionId: string): Promise<void> {
   const { error } = await client.POST('/api/v1/chat/complete/{session_id}/stop', {
     params: {

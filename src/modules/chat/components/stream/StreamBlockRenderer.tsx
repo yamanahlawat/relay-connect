@@ -10,20 +10,20 @@ interface StreamBlockRendererProps {
 }
 
 const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, is_streaming }: StreamBlockRendererProps) {
-  const stream_blocks = message.extra_data.stream_blocks ?? [];
+  const streamBlocks = message.extra_data.stream_blocks ?? [];
   const thinkingState = message.extra_data.thinking;
 
+  // Convert thinking state to match StreamingMessageProps type
   const thinking = {
-    is_thinking:
-      is_streaming && (!stream_blocks.length || stream_blocks[stream_blocks.length - 1]?.type === 'thinking'),
+    is_thinking: thinkingState?.isThinking ?? false,
     content: thinkingState?.content,
   };
 
   if (is_streaming) {
-    return <StreamingMessage blocks={stream_blocks} thinking={thinking} />;
+    return <StreamingMessage blocks={streamBlocks} thinking={thinking} />;
   }
 
-  return <MessageDetails blocks={stream_blocks} />;
+  return <MessageDetails blocks={streamBlocks} />;
 });
 
 export default StreamBlockRenderer;

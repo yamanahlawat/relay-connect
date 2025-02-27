@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload';
-import { useViewTransitionRouter } from '@/hooks/useViewTransitionRouter';
 import { createChatSession } from '@/lib/api/chatSessions';
 import { createMessage } from '@/lib/api/messages';
 import type { components } from '@/lib/api/schema';
@@ -15,7 +14,8 @@ import { useCodeCascade } from '@/stores/codeCascade';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import { useProviderModel } from '@/stores/providerModel';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileText, Loader2, MessageSquare, NotebookPen, Sparkles } from 'lucide-react';
+import { FileText, MessageSquare, NotebookPen, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -30,10 +30,10 @@ const ALL_SUGGESTIONS = [
 ] as const;
 
 export function WelcomeContent() {
-  const { navigate } = useViewTransitionRouter();
+  const router = useRouter();
   const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
   const [message, setMessage] = useState('');
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { selectedProvider, selectedModel } = useProviderModel();
   const { clearCode } = useCodeCascade();
   const queryClient = useQueryClient();
@@ -61,8 +61,8 @@ export function WelcomeContent() {
     createSession: useMutation({
       mutationFn: (data: SessionCreate) => createChatSession(data),
       onError: (error) => {
-        toast.error(`Failed to create session\n ${error.message}`);
-        setIsCreatingSession(false);
+        toast.error(`Failed to create session: ${error.message}`);
+        setIsSubmitting(false);
       },
     }),
 
@@ -70,13 +70,11 @@ export function WelcomeContent() {
       mutationFn: ({ sessionId, messageData }: { sessionId: string; messageData: MessageCreate }) =>
         createMessage(sessionId, messageData),
       onError: (error) => {
-        toast.error(`Failed to send message\n ${error.message}`);
-        setIsCreatingSession(false);
+        toast.error(`Failed to send message: ${error.message}`);
+        setIsSubmitting(false);
       },
     }),
   };
-
-  const isSubmitting = isCreatingSession || mutations.createSession.isPending || mutations.createMessage.isPending;
 
   const handleSendMessage = async (content: string, attachmentIds: string[]) => {
     if (!selectedProvider || !selectedModel) {
@@ -87,53 +85,80 @@ export function WelcomeContent() {
     if (!content.trim() && attachmentIds.length === 0) return;
 
     try {
-      // Set loading state
-      setIsCreatingSession(true);
+      // Set submitting state to disable input
+      setIsSubmitting(true);
 
       // Clear any existing code in the cascade view
       clearCode();
 
-      // Create a new session
-      const session = await mutations.createSession.mutateAsync({
-        title: content.slice(0, 100),
-        provider_id: selectedProvider.id,
-        llm_model_id: selectedModel.id,
-        system_context: systemContext,
-      });
+      // Start view transition if supported
+      if (document.startViewTransition) {
+        // Create session and message in parallel with transition
+        const sessionPromise = mutations.createSession.mutateAsync({
+          title: content.slice(0, 100),
+          provider_id: selectedProvider.id,
+          llm_model_id: selectedModel.id,
+          system_context: systemContext,
+        });
 
-      // Invalidate the chat sessions query cache to refresh the sidebar
-      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+        document.startViewTransition(async () => {
+          try {
+            // Wait for session creation
+            const session = await sessionPromise;
 
-      // Create the initial user message
-      const message = await mutations.createMessage.mutateAsync({
-        sessionId: session.id,
-        messageData: {
-          content,
-          role: 'user',
-          status: 'completed',
-          attachment_ids: attachmentIds,
-        },
-      });
+            // Create user message
+            const message = await mutations.createMessage.mutateAsync({
+              sessionId: session.id,
+              messageData: {
+                content,
+                role: 'user',
+                status: 'completed',
+                attachment_ids: attachmentIds,
+              },
+            });
 
-      // Store the message ID for streaming on the chat page
-      setInitialMessageId(message.id);
+            // Store message ID and invalidate cache
+            setInitialMessageId(message.id);
+            queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
 
-      // Prefetch the chat page data
-      await queryClient.prefetchQuery({
-        queryKey: ['session', session.id],
-        queryFn: () => Promise.resolve(session),
-      });
+            // Navigate to chat page
+            router.push(`/chat/${session.id}`);
+          } catch (error) {
+            toast.error(`Failed to process message: ${error}`);
+            setIsSubmitting(false);
+          }
+        });
+      } else {
+        // Fallback for browsers without View Transitions API
+        const session = await mutations.createSession.mutateAsync({
+          title: content.slice(0, 100),
+          provider_id: selectedProvider.id,
+          llm_model_id: selectedModel.id,
+          system_context: systemContext,
+        });
 
-      // Navigate to the chat page with view transition
-      navigate(`/chat/${session.id}`);
+        const message = await mutations.createMessage.mutateAsync({
+          sessionId: session.id,
+          messageData: {
+            content,
+            role: 'user',
+            status: 'completed',
+            attachment_ids: attachmentIds,
+          },
+        });
+
+        setInitialMessageId(message.id);
+        queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+        router.push(`/chat/${session.id}`);
+      }
     } catch (error) {
       toast.error(`Failed to send message: ${error}`);
-      setIsCreatingSession(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="view-transition-welcome-content flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col">
       {isDragging && <FileDropOverlay isOver={isDragging} />}
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6 transition-all duration-300">
@@ -176,20 +201,10 @@ export function WelcomeContent() {
               </div>
             </div>
           )}
-
-          {/* Loading indicator */}
-          {isCreatingSession && (
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-primary">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Creating your chat session...</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Chat Input */}
+      {/* Chat Input - with view-transition-name for smooth transition */}
       <div className="view-transition-chat-input mt-auto w-full border-t border-border/40">
         <ChatInput
           value={message}
@@ -197,11 +212,7 @@ export function WelcomeContent() {
           onSend={handleSendMessage}
           disabled={isSubmitting || !selectedProvider || !selectedModel}
           placeholder={
-            !selectedProvider || !selectedModel
-              ? 'Select a provider and model to start...'
-              : isCreatingSession
-                ? 'Creating your chat session...'
-                : 'Type your message...'
+            !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
           }
           settings={chatSettings}
           onSettingsChange={setChatSettings}

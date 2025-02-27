@@ -7,6 +7,7 @@ import { useBulkDeleteMessages } from '@/lib/queries/messages';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
 import { ChatMessageList } from '@/modules/chat/components/message/ChatMessageList';
+import { ChatLoadingSkeleton } from '@/modules/chat/components/skeleton/ChatLoadingSkeleton';
 import { useChat } from '@/modules/chat/hooks/useChat';
 import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
 import { useInitialMessage } from '@/modules/chat/hooks/useInitialMessage';
@@ -30,7 +31,6 @@ interface GroupableMessage {
   id: string;
   role: MessageRole;
   content?: string | null;
-  // Add other essential properties needed for display
   created_at: string;
   status: string;
   session_id: string;
@@ -87,9 +87,30 @@ export default function ChatContainer() {
   // Local state
   const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
   const [chatInputHeight, setChatInputHeight] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Handle session details
   const { sessionDetails } = useSession(sessionId);
+
+  // Track when initial loading is complete
+  useEffect(() => {
+    if (messagesQuery.isLoading) return;
+
+    // Give a very small delay to allow for any transitions/animations
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [messagesQuery.isLoading]);
+
+  // Enhanced initial message processing
+  const { isProcessing: isProcessingInitialMessage } = useInitialMessage({
+    sessionId,
+    initialMessageId,
+    handleMessageStream,
+    clearInitialMessageId,
+  });
 
   // File upload & drag handling
   const fileUpload = useFileUpload(sessionId, {
@@ -196,13 +217,13 @@ export default function ChatContainer() {
     }
   }, [sessionDetails]);
 
-  // Process initial message
-  useInitialMessage({
-    sessionId: chatState.sessionId,
-    initialMessageId,
-    handleMessageStream,
-    clearInitialMessageId,
-  });
+  // Determine if we should show the skeleton
+  const showSkeleton =
+    isInitialLoad &&
+    (messagesQuery.isLoading ||
+      isProcessingInitialMessage ||
+      !messagesQuery.data ||
+      messagesQuery.data.pages[0]?.messages.length === 0);
 
   // Message sending handler
   const handleSendMessage = useCallback(
@@ -292,6 +313,9 @@ export default function ChatContainer() {
           },
         });
 
+        // Immediate scrolling to bottom when sending a new message
+        setTimeout(() => scrollToBottom('auto'), 50);
+
         await handleMessageStream(currentSessionId, userMessage, {
           max_tokens: settings.maxTokens,
           temperature: settings.temperature,
@@ -317,12 +341,37 @@ export default function ChatContainer() {
       handleMessageStream,
       systemContext,
       bulkDeleteMessages,
+      scrollToBottom,
     ]
   );
 
+  // Show skeleton during initial loading
+  if (showSkeleton) {
+    return (
+      <ChatSplitView>
+        <div className="view-transition-chat-container relative flex h-full flex-col">
+          <ChatLoadingSkeleton />
+          {/* Keep the chat input even during loading for smoother transitions */}
+          <div ref={chatInputContainerRef} className="view-transition-chat-input">
+            <ChatInput
+              onSend={handleSendMessage}
+              disabled={true}
+              placeholder="Loading conversation..."
+              settings={chatSettings}
+              onSettingsChange={setChatSettings}
+              systemContext={systemContext}
+              onSystemContextChange={handleSystemContextChange}
+              fileUpload={fileUpload}
+            />
+          </div>
+        </div>
+      </ChatSplitView>
+    );
+  }
+
   return (
     <ChatSplitView>
-      <div ref={chatContainerRef} className="relative flex h-full flex-col">
+      <div ref={chatContainerRef} className="view-transition-chat-container relative flex h-full flex-col">
         {isDragging && <FileDropOverlay isOver={isDragging} />}
         <ChatMessageList
           messageGroups={messageGroups}
@@ -345,7 +394,7 @@ export default function ChatContainer() {
             <ArrowDown className="h-5 w-5" />
           </Button>
         )}
-        <div ref={chatInputContainerRef}>
+        <div ref={chatInputContainerRef} className="view-transition-chat-input">
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}

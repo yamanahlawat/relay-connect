@@ -353,10 +353,10 @@ export default function ChatContainer() {
   if (showSkeleton) {
     return (
       <ChatSplitView>
-        <div className="view-transition-chat-container relative flex h-full flex-col">
+        <div className="relative flex h-full flex-col">
           <ChatLoadingSkeleton />
           {/* Keep the chat input even during loading for smoother transitions */}
-          <div ref={chatInputContainerRef} className="view-transition-chat-input">
+          <div ref={chatInputContainerRef}>
             <ChatInput
               onSend={handleSendMessage}
               disabled={true}
@@ -375,7 +375,7 @@ export default function ChatContainer() {
 
   return (
     <ChatSplitView>
-      <div ref={chatContainerRef} className="view-transition-chat-container relative flex h-full flex-col">
+      <div ref={chatContainerRef} className="relative flex h-full flex-col">
         {isDragging && <FileDropOverlay isOver={isDragging} />}
         <ChatMessageList
           messageGroups={messageGroups}
@@ -398,7 +398,7 @@ export default function ChatContainer() {
             <ArrowDown className="h-5 w-5" />
           </Button>
         )}
-        <div ref={chatInputContainerRef} className="view-transition-chat-input">
+        <div ref={chatInputContainerRef}>
           <ChatInput
             onSend={handleSendMessage}
             disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}

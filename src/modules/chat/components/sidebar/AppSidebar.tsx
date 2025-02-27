@@ -110,7 +110,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
               <div className="flex aspect-square h-7 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform hover:scale-105">
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
-              <span className="pl-1 font-semibold">Relay Connect</span>
+              <span className="pl-1 font-semibold">Relay</span>
             </Link>
           </div>
         </div>

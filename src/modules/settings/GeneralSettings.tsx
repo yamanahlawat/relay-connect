@@ -42,7 +42,7 @@ export function GeneralSettings() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-base font-medium">Appearance</h3>
-            <p className="text-sm text-muted-foreground">Customize how Relay Connect looks and feels.</p>
+            <p className="text-sm text-muted-foreground">Customize how Relay looks and feels.</p>
 
             <div className="mt-6 space-y-4">
               {/* Theme Selection */}

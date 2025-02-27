@@ -218,7 +218,11 @@ export default function ChatContainer() {
   }, [sessionDetails]);
 
   // Determine if we should show the skeleton
+  // NEVER show skeleton when navigating from welcome page (initialMessageId exists)
+  // Only show skeleton when navigating directly to an existing chat
+  const isNavigatingFromWelcome = !!initialMessageId;
   const showSkeleton =
+    !isNavigatingFromWelcome && // Never show skeleton when coming from welcome page
     isInitialLoad &&
     (messagesQuery.isLoading ||
       isProcessingInitialMessage ||

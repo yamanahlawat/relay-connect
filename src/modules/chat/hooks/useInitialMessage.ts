@@ -51,7 +51,9 @@ export function useInitialMessage({
       // Create an async function inside useEffect
       const streamMessage = async () => {
         try {
-          await handleMessageStream(sessionId, initialMessage, undefined, true);
+          // Stream the message with skipUserMessage=false to ensure user message is displayed
+          // The last parameter ensures we don't skip adding the user message to the UI
+          await handleMessageStream(sessionId, initialMessage, undefined, false);
           clearInitialMessageId();
         } catch (error) {
           toast.error(`Failed to stream initial message: ${error}`);

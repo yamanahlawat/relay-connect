@@ -27,6 +27,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
+import { EmptyState } from '../EmptyState';
 
 type Model = components['schemas']['ModelRead'];
 type ModelCreate = components['schemas']['ModelCreate'];
@@ -47,20 +48,20 @@ const modelSchema = z.object({
 
 type ModelFormValues = z.infer<typeof modelSchema>;
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-      <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-        <h3 className="mt-4 text-lg font-semibold">No models configured</h3>
-        <p className="mb-4 mt-2 text-sm text-muted-foreground">Add your first model to get started.</p>
-        <Button onClick={onAdd}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Model
-        </Button>
-      </div>
-    </div>
-  );
-}
+// function EmptyState({ onAdd }: { onAdd: () => void }) {
+//   return (
+//     <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+//       <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+//         <h3 className="mt-4 text-lg font-semibold">No models configured</h3>
+//         <p className="mb-4 mt-2 text-sm text-muted-foreground">Add your first model to get started.</p>
+//         <Button onClick={onAdd}>
+//           <PlusCircle className="mr-2 h-4 w-4" />
+//           Add Model
+//         </Button>
+//       </div>
+//     </div>
+//   );
+// }
 
 export function ModelSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -232,7 +233,12 @@ export function ModelSettings() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : Object.keys(groupedModels).length === 0 ? (
-                <EmptyState onAdd={handleAddModel} />
+                <EmptyState
+                  title="No models configured"
+                  description="Add your first model to get started."
+                  buttonText="Add Model"
+                  onButtonClick={handleAddModel}
+                />
               ) : (
                 <div className="space-y-6">
                   {Object.entries(groupedModels).map(([providerName, models]) => (
@@ -372,15 +378,15 @@ export function ModelSettings() {
                   name="input_cost_per_token"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Input Cost/Token</FormLabel>
+                      <FormLabel>Input Cost per 1M Tokens</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
                           step="any"
                           placeholder="0.0"
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value * 1000000}
+                          onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -394,15 +400,15 @@ export function ModelSettings() {
                 name="output_cost_per_token"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Output Cost/Token</FormLabel>
+                    <FormLabel>Output Cost per 1M Tokens</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min={0}
                         step="any"
                         placeholder="0.0"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value * 1000000}
+                        onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
                       />
                     </FormControl>
                     <FormMessage />

@@ -112,38 +112,13 @@ export function WelcomeContent() {
         });
       };
 
-      // Handle transition with View Transitions API if supported
-      if (document.startViewTransition) {
-        try {
-          // Pre-fetch the session before starting the transition
-          const session = await sessionPromise;
+      // Process the message and navigate to the chat page
+      const session = await sessionPromise;
+      const message = await createUserMessage(session.id);
 
-          // Create user message BEFORE starting the transition
-          // This ensures the user message is visible immediately in the chat view
-          const message = await createUserMessage(session.id);
-
-          // Set message ID and invalidate cache before transition
-          setInitialMessageId(message.id);
-          queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
-
-          // Now that everything is ready, start the transition and navigate
-          document.startViewTransition(() => {
-            router.push(`/chat/${session.id}`);
-            return Promise.resolve(); // Resolve immediately since we've done all the prep work
-          });
-        } catch (error) {
-          toast.error(`Failed to process message: ${error}`);
-          setIsSubmitting(false);
-        }
-      } else {
-        // Fallback for browsers without View Transitions API
-        const session = await sessionPromise;
-        const message = await createUserMessage(session.id);
-
-        setInitialMessageId(message.id);
-        queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
-        router.push(`/chat/${session.id}`);
-      }
+      setInitialMessageId(message.id);
+      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+      router.push(`/chat/${session.id}`);
     } catch (error) {
       toast.error(`Failed to send message: ${error}`);
       setIsSubmitting(false);
@@ -153,7 +128,7 @@ export function WelcomeContent() {
   return (
     <main className="flex flex-1 flex-col">
       {isDragging && <FileDropOverlay isOver={isDragging} />}
-      <div className="view-transition-welcome-content flex flex-1 flex-col items-center justify-center px-4 py-6">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6 transition-all duration-300">
           <h1 className="text-center text-2xl font-medium text-foreground/90">What can I help you with?</h1>
 
@@ -197,8 +172,8 @@ export function WelcomeContent() {
         </div>
       </div>
 
-      {/* Chat Input - with view-transition-name for smooth transition */}
-      <div className="view-transition-chat-input mt-auto w-full border-t border-border/40">
+      {/* Chat Input */}
+      <div className="mt-auto w-full border-t border-border/40">
         <ChatInput
           value={message}
           onChange={setMessage}

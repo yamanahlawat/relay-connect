@@ -1,4 +1,3 @@
-import { ViewTransition } from '@/components/ViewTransition';
 import ReactQueryProvider from '@/context/ReactQueryProvider';
 import { ThemeProvider } from '@/context/ThemeProvider';
 import { inter } from '@/lib/fonts';
@@ -23,9 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} bg-background text-foreground antialiased`}>
         <ThemeProvider>
-          <ReactQueryProvider>
-            <ViewTransition>{children}</ViewTransition>
-          </ReactQueryProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
         </ThemeProvider>
         <Toaster />
       </body>

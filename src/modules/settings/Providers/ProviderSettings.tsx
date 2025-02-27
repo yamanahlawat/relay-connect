@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { createProvider, deleteProvider, updateProvider } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
 import { useProviders } from '@/lib/queries/providers';
+import { EmptyState } from '@/modules/settings/EmptyState';
 import { ProviderGroup } from '@/modules/settings/Providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -42,21 +43,6 @@ const providerSchema = z.object({
 });
 
 type ProviderFormValues = z.infer<typeof providerSchema>;
-
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-      <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-        <h3 className="mt-4 text-lg font-semibold">No providers configured</h3>
-        <p className="mb-4 mt-2 text-sm text-muted-foreground">Add your first provider to get started with models.</p>
-        <Button onClick={onAdd}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Provider
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export function ProviderSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -238,7 +224,12 @@ export function ProviderSettings() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : providers.length === 0 ? (
-                <EmptyState onAdd={handleAddProvider} />
+                <EmptyState
+                  title="No providers configured"
+                  description="Add your first provider to get started with models."
+                  buttonText="Add Provider"
+                  onButtonClick={handleAddProvider}
+                />
               ) : (
                 <div className="space-y-6">
                   {Object.entries(groupedProviders).map(([type, providers]) => (

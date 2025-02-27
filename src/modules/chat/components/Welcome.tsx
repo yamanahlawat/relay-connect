@@ -91,54 +91,18 @@ export function WelcomeContent() {
       // Clear any existing code in the cascade view
       clearCode();
 
-      // Start view transition if supported
-      if (document.startViewTransition) {
-        // Create session and message in parallel with transition
-        const sessionPromise = mutations.createSession.mutateAsync({
-          title: content.slice(0, 100),
-          provider_id: selectedProvider.id,
-          llm_model_id: selectedModel.id,
-          system_context: systemContext,
-        });
+      // Start creating session immediately to reduce waiting time
+      const sessionPromise = mutations.createSession.mutateAsync({
+        title: content.slice(0, 100),
+        provider_id: selectedProvider.id,
+        llm_model_id: selectedModel.id,
+        system_context: systemContext,
+      });
 
-        document.startViewTransition(async () => {
-          try {
-            // Wait for session creation
-            const session = await sessionPromise;
-
-            // Create user message
-            const message = await mutations.createMessage.mutateAsync({
-              sessionId: session.id,
-              messageData: {
-                content,
-                role: 'user',
-                status: 'completed',
-                attachment_ids: attachmentIds,
-              },
-            });
-
-            // Store message ID and invalidate cache
-            setInitialMessageId(message.id);
-            queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
-
-            // Navigate to chat page
-            router.push(`/chat/${session.id}`);
-          } catch (error) {
-            toast.error(`Failed to process message: ${error}`);
-            setIsSubmitting(false);
-          }
-        });
-      } else {
-        // Fallback for browsers without View Transitions API
-        const session = await mutations.createSession.mutateAsync({
-          title: content.slice(0, 100),
-          provider_id: selectedProvider.id,
-          llm_model_id: selectedModel.id,
-          system_context: systemContext,
-        });
-
-        const message = await mutations.createMessage.mutateAsync({
-          sessionId: session.id,
+      // Prepare message creation function for later
+      const createUserMessage = async (sessionId: string) => {
+        return mutations.createMessage.mutateAsync({
+          sessionId,
           messageData: {
             content,
             role: 'user',
@@ -146,6 +110,35 @@ export function WelcomeContent() {
             attachment_ids: attachmentIds,
           },
         });
+      };
+
+      // Handle transition with View Transitions API if supported
+      if (document.startViewTransition) {
+        try {
+          // Pre-fetch the session before starting the transition
+          const session = await sessionPromise;
+
+          // Create user message BEFORE starting the transition
+          // This ensures the user message is visible immediately in the chat view
+          const message = await createUserMessage(session.id);
+
+          // Set message ID and invalidate cache before transition
+          setInitialMessageId(message.id);
+          queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+
+          // Now that everything is ready, start the transition and navigate
+          document.startViewTransition(() => {
+            router.push(`/chat/${session.id}`);
+            return Promise.resolve(); // Resolve immediately since we've done all the prep work
+          });
+        } catch (error) {
+          toast.error(`Failed to process message: ${error}`);
+          setIsSubmitting(false);
+        }
+      } else {
+        // Fallback for browsers without View Transitions API
+        const session = await sessionPromise;
+        const message = await createUserMessage(session.id);
 
         setInitialMessageId(message.id);
         queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
@@ -160,7 +153,7 @@ export function WelcomeContent() {
   return (
     <main className="flex flex-1 flex-col">
       {isDragging && <FileDropOverlay isOver={isDragging} />}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+      <div className="view-transition-welcome-content flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6 transition-all duration-300">
           <h1 className="text-center text-2xl font-medium text-foreground/90">What can I help you with?</h1>
 

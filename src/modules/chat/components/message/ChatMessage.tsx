@@ -2,10 +2,30 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { MessageAttachments } from '@/modules/chat/components/message/MessageAttachments';
 import { MessageContent } from '@/modules/chat/components/message/MessageContent';
+import { useMessageStreamingStore } from '@/stores/messageStreaming';
 import type { ChatMessageProps } from '@/types/message';
 import { Bot, User2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function ChatMessage({ messages, role, isStreaming, onEditClick, editingMessageId }: ChatMessageProps) {
+  // Check if we're coming from welcome page by detecting initialMessageId
+  const initialMessageId = useMessageStreamingStore((state) => state.initialMessageId);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
+  // Determine if this is the first message after transitioning from welcome
+  const isFirstMessageAfterTransition =
+    initialMessageId && messages.some((msg) => msg.id === initialMessageId || msg.parent_id === initialMessageId);
+
+  // Enable animation briefly after component mounts if this is the first message
+  useEffect(() => {
+    if (isFirstMessageAfterTransition) {
+      setShouldAnimate(true);
+      // Disable animation after it plays once
+      const timer = setTimeout(() => setShouldAnimate(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFirstMessageAfterTransition]);
+
   // Combine attachments from all messages in the group (for user messages)
   const attachments =
     role === 'user'
@@ -29,7 +49,9 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
         className={cn(
           'mx-auto flex w-full max-w-2xl gap-3 rounded-lg px-3 py-2.5 transition-colors duration-300',
           role === 'user' ? 'bg-accent/50' : 'bg-background',
-          isStreaming && 'animate-in fade-in-0'
+          isStreaming && 'animate-in fade-in-0',
+          // Apply special animation for messages that appear right after welcome page transition
+          shouldAnimate && isFirstMessageAfterTransition && 'animate-message-in'
         )}
       >
         {/* Avatar */}

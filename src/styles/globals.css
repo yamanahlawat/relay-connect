@@ -121,7 +121,7 @@
     animation: fadeTrain 1s infinite;
   }
 
-  /* View Transitions API styles */
+  /* Standard animations */
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -138,78 +138,6 @@
     to {
       opacity: 0;
     }
-  }
-
-  @keyframes slide-from-right {
-    from {
-      transform: translateX(30px);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes slide-to-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-30px);
-    }
-  }
-
-  /* Default transition for the whole page */
-  ::view-transition-old(root) {
-    animation:
-      300ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
-      400ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
-  }
-
-  ::view-transition-new(root) {
-    animation:
-      300ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both fade-in,
-      400ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
-  }
-
-  /* Named transitions for specific elements */
-  .view-transition-root {
-    view-transition-name: root;
-  }
-
-  .view-transition-welcome-content {
-    view-transition-name: welcome-content;
-  }
-
-  .view-transition-chat-input {
-    view-transition-name: chat-input;
-  }
-
-  .view-transition-chat-container {
-    view-transition-name: chat-container;
-  }
-
-  /* Welcome content fades out when transitioning */
-  ::view-transition-old(welcome-content),
-  ::view-transition-new(welcome-content) {
-    animation:
-      300ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
-      400ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
-  }
-
-  /* Chat input element stays in place - no animation needed */
-  ::view-transition-old(chat-input),
-  ::view-transition-new(chat-input) {
-    animation: none;
-    mix-blend-mode: normal;
-  }
-
-  /* New chat container fades in without sliding */
-  ::view-transition-old(chat-container) {
-    animation: 200ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
-  }
-
-  ::view-transition-new(chat-container) {
-    animation: 200ms cubic-bezier(0.4, 0, 0.2, 1) 50ms both fade-in;
   }
 
   /* Animation for new messages when coming from welcome page */

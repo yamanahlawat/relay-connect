@@ -112,26 +112,71 @@ export function useChat(sessionId: string) {
   // Memoized update function at hook level
   const updateAssistantMessage = useCallback(
     (updatedFields: Partial<StreamingMessageRead> = {}, extraState: Partial<ChatState> = {}) => {
-      if (!streamStateRef.current || !assistantMessageIdRef.current) return;
+      if (!assistantMessageIdRef.current) {
+        return;
+      }
+
+      // Don't clear streamingMessageId unless explicitly requested
+      const shouldClearStreaming = extraState.streamingMessageId === null;
 
       setChatState((prev) => {
         const idx = prev.messages.findIndex((msg) => msg.id === assistantMessageIdRef.current);
-        if (idx === -1) return prev;
+        if (idx === -1) {
+          return prev;
+        }
 
+        // Create a copy of the messages array
         const newMessages = [...prev.messages];
+
+        // Get current stream blocks if available
+        const currentStreamBlocks = streamStateRef.current
+          ? getAllBlocks(reverseAdaptStreamState(streamStateRef.current))
+          : [];
+
+        // Get the existing message and ensure it's not undefined
+        const existingMessage = newMessages[idx];
+        if (!existingMessage) {
+          return prev;
+        }
+
+        // Get the existing extra_data with fallback
+        const existingExtraData = existingMessage.extra_data || {};
+
+        // Update the message - ensure we have all required fields
         newMessages[idx] = {
-          ...newMessages[idx],
+          ...existingMessage,
           ...updatedFields,
           // Ensure we always have a status
-          status: updatedFields.status || (newMessages[idx]?.status ?? 'pending'),
+          status: updatedFields.status || existingMessage.status || 'pending',
+          // Preserve and merge extra_data with proper type safety
           extra_data: {
-            stream_blocks: getAllBlocks(reverseAdaptStreamState(streamStateRef.current!)),
-            thinking: streamStateRef.current?.thinking,
-            error: streamStateRef.current?.error,
+            ...existingExtraData,
+            stream_blocks: currentStreamBlocks,
+            thinking: streamStateRef.current?.thinking || existingExtraData.thinking,
+            error: streamStateRef.current?.error || existingExtraData.error,
           },
         } as StreamingMessageRead;
 
-        return { ...prev, messages: newMessages, ...extraState };
+        // Create the new state with the updated messages
+        const newState: ChatState = {
+          ...prev,
+          messages: newMessages,
+        };
+
+        // Handle streamingMessageId updates explicitly
+        if (shouldClearStreaming) {
+          newState.streamingMessageId = null;
+        } else if (extraState.streamingMessageId !== undefined) {
+          newState.streamingMessageId = extraState.streamingMessageId;
+        }
+
+        // Type-safe approach for copying remaining properties
+        // Only include known properties from ChatState
+        if ('sessionId' in extraState && extraState.sessionId !== undefined) {
+          newState.sessionId = extraState.sessionId;
+        }
+
+        return newState;
       });
     },
     [] // No dependencies needed as we use refs
@@ -183,14 +228,41 @@ export function useChat(sessionId: string) {
         return { ...prev, messages: newMessages, streamingMessageId: assistantMessageId };
       });
 
+      // Track stream completion
+      let streamCompleted = false;
+      let streamErrored = false;
+      let timeoutId: NodeJS.Timeout | null = null;
+
+      // Set a timeout to force completion if we don't get a done event
+      const forceCompleteTimeout = () => {
+        if (!streamCompleted && !streamErrored) {
+          if (streamStateRef.current) {
+            updateAssistantMessage({ status: 'completed' }, { streamingMessageId: null });
+          }
+          streamCompleted = true;
+        }
+      };
+
       try {
         await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
         const reader = await streamCompletion(sessionId, userMessage.id, params);
 
+        // Set a timeout to force completion after 30 seconds
+        timeoutId = setTimeout(forceCompleteTimeout, 30000);
+
         let currentSection: UIStreamingContent | null = null;
 
         for await (const block of parseStream(reader)) {
-          if (!streamStateRef.current) break;
+          // Safety check for refs
+          if (!streamStateRef.current || !assistantMessageIdRef.current) {
+            break;
+          }
+
+          // Reset the timeout on each block
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(forceCompleteTimeout, 30000);
+          }
 
           switch (block.type) {
             case 'thinking':
@@ -198,6 +270,8 @@ export function useChat(sessionId: string) {
                 isThinking: true,
                 content: block.content as string,
               };
+              // Update the UI to show thinking state
+              updateAssistantMessage();
               break;
 
             case 'content':
@@ -209,11 +283,15 @@ export function useChat(sessionId: string) {
                 };
                 streamStateRef.current.contentSections.push(currentSection);
               }
+
               // Safely add content with null check
-              if (currentSection) {
-                currentSection.content += block.content || '';
+              if (currentSection && block.content) {
+                currentSection.content += block.content;
               }
               streamStateRef.current.thinking.isThinking = false;
+
+              // Update UI for each content chunk to show streaming effect
+              updateAssistantMessage();
               break;
 
             case 'tool_start':
@@ -223,8 +301,12 @@ export function useChat(sessionId: string) {
                 currentSection.isComplete = true;
                 currentSection = null;
               }
+
               // Use type assertion to avoid index property error
               streamStateRef.current.toolBlocks.push(block);
+
+              // Update UI for tool blocks
+              updateAssistantMessage();
               break;
 
             case 'error':
@@ -235,45 +317,218 @@ export function useChat(sessionId: string) {
                 type: block.error_type || 'UnknownError',
                 detail: block.error_detail || 'An unknown error occurred',
               };
+              streamErrored = true;
+
+              // Update UI for error state
+              updateAssistantMessage({ status: 'failed' });
+
               // Handle potential null error_detail
               throw new Error(block.error_detail || 'Unknown error');
 
             case 'done':
+              streamCompleted = true;
+
+              // Complete any in-progress sections
               if (currentSection) {
                 currentSection.isComplete = true;
+                currentSection = null;
               }
-              // Check if 'message' property exists on block
-              if ('message' in block && block.message) {
-                updateAssistantMessage(block.message as Partial<StreamingMessageRead>, { streamingMessageId: null });
-              } else {
-                // If no message, just update streamingMessageId
-                updateAssistantMessage({}, { streamingMessageId: null });
-              }
-              streamStateRef.current = null; // Clean up stream state
-              assistantMessageIdRef.current = null;
-              break; // Use break instead of return to allow finally block to execute
-          }
 
-          // Batch update message state
-          updateAssistantMessage();
+              try {
+                // Store message ID locally to prevent null reference issues
+                const currentMessageId = assistantMessageIdRef.current;
+                if (!currentMessageId) {
+                  return;
+                }
+
+                // @ts-expect-error - Accessing property that's not in the type definition
+                const finalMessage = block.message;
+
+                // Get current stream blocks
+                const currentBlocks = streamStateRef.current
+                  ? getAllBlocks(reverseAdaptStreamState(streamStateRef.current))
+                  : [];
+
+                // Update with streamed content first
+                updateAssistantMessage();
+
+                // Process the final message with usage information
+                if (finalMessage && typeof finalMessage === 'object') {
+                  // Extract usage information and other metadata - with null safety
+                  const usage = finalMessage.usage;
+                  const status = finalMessage.status;
+                  const content = finalMessage.content;
+
+                  // First update chat state to mark streaming as completed
+                  setChatState((prev) => {
+                    // Find the message by ID (using our locally stored ID)
+                    const idx = prev.messages.findIndex((msg) => msg.id === currentMessageId);
+                    if (idx === -1) {
+                      return prev;
+                    }
+
+                    // Get the existing message
+                    const existingMessage = prev.messages[idx];
+                    if (!existingMessage) {
+                      return prev;
+                    }
+
+                    // Create a copy of the message with updated information
+                    const updatedMessage: StreamingMessageRead = {
+                      ...existingMessage,
+                      status: status || 'completed',
+                      usage, // Add usage information
+                      content: content || existingMessage.content || '',
+                      // Extra data with safety checks
+                      extra_data: {
+                        ...(existingMessage.extra_data || {}),
+                        stream_blocks: currentBlocks,
+                      },
+                    };
+
+                    // Create a new messages array with the updated message
+                    const newMessages = [...prev.messages];
+                    newMessages[idx] = updatedMessage;
+
+                    // Return updated state with streamingMessageId set to null
+                    return {
+                      ...prev,
+                      messages: newMessages,
+                      streamingMessageId: null,
+                    };
+                  });
+                } else {
+                  // If no final message data, just complete the stream
+                  setChatState((prev) => {
+                    const idx = prev.messages.findIndex((msg) => msg.id === currentMessageId);
+                    if (idx === -1) {
+                      return prev;
+                    }
+
+                    // Get the existing message with null safety
+                    const existingMessage = prev.messages[idx];
+                    if (!existingMessage) {
+                      return prev;
+                    }
+
+                    // Create a new messages array with updated status
+                    const newMessages = [...prev.messages];
+                    newMessages[idx] = {
+                      ...existingMessage,
+                      status: 'completed',
+                      // Ensure extra_data is defined
+                      extra_data: existingMessage.extra_data || {
+                        stream_blocks: [],
+                      },
+                    } as StreamingMessageRead;
+
+                    return {
+                      ...prev,
+                      messages: newMessages,
+                      streamingMessageId: null,
+                    };
+                  });
+                }
+
+                // Clear timeout
+                if (timeoutId) {
+                  clearTimeout(timeoutId);
+                  timeoutId = null;
+                }
+
+                // Add a small delay before clearing refs to ensure state updates are processed
+                setTimeout(() => {
+                  // Now it's safe to clear the refs
+                  streamStateRef.current = null;
+                  assistantMessageIdRef.current = null;
+                }, 100);
+
+                // Return to exit the loop
+                return;
+              } catch (error) {
+                console.error('Error processing done event:', error);
+
+                // Store the message ID locally
+                const currentMessageId = assistantMessageIdRef.current;
+
+                // Force state update on error, preserving the message ID
+                if (currentMessageId) {
+                  setChatState((prev) => {
+                    const idx = prev.messages.findIndex((msg) => msg.id === currentMessageId);
+                    if (idx === -1) return prev;
+
+                    // Get the existing message with null safety
+                    const existingMessage = prev.messages[idx];
+                    if (!existingMessage) {
+                      return prev;
+                    }
+
+                    // Create a new messages array with updated status
+                    const newMessages = [...prev.messages];
+                    newMessages[idx] = {
+                      ...existingMessage,
+                      status: 'completed',
+                      // Ensure extra_data is defined
+                      extra_data: existingMessage.extra_data || {
+                        stream_blocks: [],
+                      },
+                    } as StreamingMessageRead;
+
+                    return {
+                      ...prev,
+                      messages: newMessages,
+                      streamingMessageId: null,
+                    };
+                  });
+                }
+
+                // Clear refs after state update
+                setTimeout(() => {
+                  streamStateRef.current = null;
+                  assistantMessageIdRef.current = null;
+                }, 100);
+
+                return;
+              }
+          }
+        }
+
+        // If we got here without setting streamCompleted, something went wrong
+        if (!streamCompleted && !streamErrored) {
+          console.warn('Stream loop ended without completion or error');
         }
       } catch (error) {
         console.error('Stream error:', error);
         toast.error('Failed to stream message');
+        streamErrored = true;
+
         if (streamStateRef.current) {
           streamStateRef.current.error = {
             type: 'StreamError',
             detail: error instanceof Error ? error.message : 'Unknown error occurred',
           };
-          // Use 'failed' instead of 'error'
           updateAssistantMessage({ status: 'failed' }, { streamingMessageId: null });
         }
       } finally {
-        streamStateRef.current = null;
-        assistantMessageIdRef.current = null;
+        // Clear the timeout if it exists
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        // Final fallback to ensure completion
+        if (!streamCompleted && !streamErrored) {
+          console.warn('Stream ended in finally block without completion, forcing completion');
+          updateAssistantMessage({ status: 'completed' }, { streamingMessageId: null });
+        }
+
+        // Clear refs if they haven't been cleared already
+        if (streamStateRef.current || assistantMessageIdRef.current) {
+          streamStateRef.current = null;
+          assistantMessageIdRef.current = null;
+        }
       }
     },
-    [queryClient, updateAssistantMessage] // Include updateAssistantMessage in dependencies
+    [queryClient, updateAssistantMessage, setChatState]
   );
 
   const handleEditStart = useCallback(

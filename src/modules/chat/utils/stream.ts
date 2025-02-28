@@ -5,31 +5,50 @@ export async function* parseStream(
 ): AsyncGenerator<StreamBlock, void, unknown> {
   const decoder = new TextDecoder();
   let buffer = '';
+  let hasYieldedDone = false;
 
   try {
     while (true) {
+      // Break the loop if we already processed the done event
+      if (hasYieldedDone) {
+        break;
+      }
+
       const { done, value } = await reader.read();
 
       if (done) {
         // Process any remaining complete lines in buffer
-        const lines = buffer.split('\n');
+        const lines = buffer.split('\n').filter((line) => line.trim());
         for (const line of lines) {
           const block = parseLine(line);
-          if (block) yield block;
+          if (block) {
+            if (block.type === 'done') {
+              hasYieldedDone = true;
+            }
+            yield block;
+          }
         }
         break;
       }
 
       // Append new chunk and split into lines
-      buffer += decoder.decode(value, { stream: true });
+      const chunk = decoder.decode(value, { stream: true });
+      buffer += chunk;
       const lines = buffer.split('\n');
       // Keep the last potentially incomplete line in buffer
       buffer = lines.pop() || '';
 
       // Process all complete lines
       for (const line of lines) {
+        if (!line.trim()) continue;
+
         const block = parseLine(line);
-        if (block) yield block;
+        if (block) {
+          if (block.type === 'done') {
+            hasYieldedDone = true;
+          }
+          yield block;
+        }
       }
     }
   } catch (error) {
@@ -49,7 +68,12 @@ export async function* parseStream(
     };
     yield errorBlock;
   } finally {
-    reader.releaseLock();
+    try {
+      // Ensure we release the reader lock
+      reader.releaseLock();
+    } catch (e) {
+      console.warn('Error releasing reader lock:', e);
+    }
   }
 }
 
@@ -60,11 +84,37 @@ function parseLine(line: string): StreamBlock | null {
   try {
     // Remove 'data: ' prefix if present
     const jsonStr = trimmedLine.replace(/^data: /, '');
-    const parsed = JSON.parse(jsonStr) as StreamBlock;
 
-    // Basic validation
-    if (parsed && typeof parsed === 'object' && 'type' in parsed && typeof parsed.type === 'string') {
-      return parsed;
+    // Handle potential JSON parsing errors more robustly
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.warn('JSON parse error:', parseError, '\nRaw JSON:', jsonStr);
+      return null;
+    }
+
+    // More comprehensive validation of block structure
+    if (parsed && typeof parsed === 'object') {
+      if ('type' in parsed && typeof parsed.type === 'string') {
+        // Ensure all required fields exist with proper defaults
+        const block: StreamBlock = {
+          type: parsed.type,
+          content: 'content' in parsed ? parsed.content : null,
+          tool_name: 'tool_name' in parsed ? parsed.tool_name : null,
+          tool_args: 'tool_args' in parsed ? parsed.tool_args : null,
+          tool_call_id: 'tool_call_id' in parsed ? parsed.tool_call_id : null,
+          tool_status: 'tool_status' in parsed ? parsed.tool_status : null,
+          tool_result: 'tool_result' in parsed ? parsed.tool_result : null,
+          error_type: 'error_type' in parsed ? parsed.error_type : null,
+          error_detail: 'error_detail' in parsed ? parsed.error_detail : null,
+          extra_data: 'extra_data' in parsed ? parsed.extra_data : null,
+          // Add any additional fields from the original object
+          ...parsed,
+        };
+
+        return block;
+      }
     }
 
     console.warn('Invalid stream block format:', parsed);

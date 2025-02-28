@@ -41,7 +41,7 @@ export function MessageContent({ message, isStreaming = false, role, onEditClick
             </TooltipContent>
           </Tooltip>
 
-          {/* Usage info - Only for assistant messages */}
+          {/* Usage info - Only for assistant messages with usage data */}
           {role === 'assistant' && message.usage && (
             <>
               <span className="inline-block h-0.5 w-0.5 rounded-full bg-current opacity-40" />
@@ -62,7 +62,7 @@ export function MessageContent({ message, isStreaming = false, role, onEditClick
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground">
                     <Coins className="h-2.5 w-2.5" />
-                    <span className="tabular-nums">${message.usage.total_cost.toFixed(4)}</span>
+                    <span className="tabular-nums">${message.usage.total_cost.toFixed(6)}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">

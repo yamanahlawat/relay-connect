@@ -1,72 +1,83 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface CodeCascadeState {
-  activeCode: string | null;
-  language: string | null;
+  activeCode: string;
+  language: string;
   isStreaming: boolean;
   showCodeView: boolean;
-  streamBuffer: string;
-}
-
-interface CodeCascadeActions {
-  setActiveCode: (code: string, lang?: string) => void;
-  appendStreamingCode: (chunk: string) => void;
+  userOpenedPanel: boolean;
+  lastSessionId: string; // Track the session
+  setActiveCode: (code: string, language?: string, shouldShowPanel?: boolean) => void;
+  setStreaming: (streaming: boolean) => void;
   clearCode: () => void;
-  setIsStreaming: (streaming: boolean) => void;
 }
 
-type CodeCascadeStore = CodeCascadeState & CodeCascadeActions;
+// Generate a unique session ID on page load
+const generateSessionId = () => Date.now().toString();
+const currentSessionId = generateSessionId();
 
-export const useCodeCascade = create<CodeCascadeStore>((set, get) => ({
-  // Initial state
-  activeCode: null,
-  language: null,
-  isStreaming: false,
-  showCodeView: false,
-  streamBuffer: '',
-
-  // Actions
-  setActiveCode: (code, lang) =>
-    set({
-      activeCode: code,
-      language: lang,
-      showCodeView: true,
-      streamBuffer: '',
-    }),
-
-  appendStreamingCode: (chunk) => {
-    const state = get();
-    if (state.isStreaming) {
-      set({
-        streamBuffer: state.streamBuffer + chunk,
-        showCodeView: true,
-      });
-    } else {
-      set({
-        activeCode: (state.activeCode || '') + chunk,
-        showCodeView: true,
-      });
-    }
-  },
-
-  clearCode: () =>
-    set({
-      activeCode: null,
-      language: null,
+export const useCodeCascade = create<CodeCascadeState>()(
+  persist(
+    (set) => ({
+      activeCode: '',
+      language: '',
       isStreaming: false,
       showCodeView: false,
-      streamBuffer: '',
+      userOpenedPanel: false,
+      lastSessionId: currentSessionId, // Initialize with current session
+
+      setActiveCode: (code, language = '', shouldShowPanel = false) => {
+        set((state) => {
+          const userOpened = shouldShowPanel ? true : state.userOpenedPanel;
+          const shouldShow = shouldShowPanel || userOpened;
+
+          return {
+            activeCode: code,
+            language: language || state.language,
+            showCodeView: shouldShow,
+            userOpenedPanel: userOpened,
+            lastSessionId: currentSessionId, // Update session ID with current
+          };
+        });
+      },
+
+      setStreaming: (streaming) =>
+        set((state) => {
+          // If starting a stream in a new session (after page refresh)
+          // clear the active code to prevent showing old code
+          const isNewSession = state.lastSessionId !== currentSessionId;
+
+          return {
+            isStreaming: streaming,
+            // Only show empty code view if starting streaming in a new session
+            activeCode: streaming && isNewSession ? '' : state.activeCode,
+            // When streaming starts, automatically show the code view
+            showCodeView: streaming ? true : state.showCodeView,
+            // When streaming starts, set userOpenedPanel to true to keep it open
+            userOpenedPanel: streaming ? true : state.userOpenedPanel,
+            // Always update to current session ID
+            lastSessionId: currentSessionId,
+          };
+        }),
+
+      clearCode: () =>
+        set({
+          activeCode: '',
+          language: '',
+          showCodeView: false,
+          userOpenedPanel: false,
+          // Don't reset session ID on manual clear
+        }),
     }),
-
-  setIsStreaming: (streaming) => {
-    const state = get();
-    set({ isStreaming: streaming });
-
-    if (!streaming && state.streamBuffer) {
-      set({
-        activeCode: (state.activeCode || '') + state.streamBuffer,
-        streamBuffer: '',
-      });
+    {
+      name: 'code-cascade-storage', // localStorage key
+      // Only persist these fields
+      partialize: (state) => ({
+        activeCode: state.activeCode,
+        language: state.language,
+        lastSessionId: state.lastSessionId,
+      }),
     }
-  },
-}));
+  )
+);

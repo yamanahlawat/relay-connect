@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import CodeBlock from '@/modules/chat/components/markdown/CodeBlock';
 import ThinkBlock from '@/modules/chat/components/markdown/ThinkBlock';
+import { useCodeCascade } from '@/stores/codeCascade';
 import { ContentItem } from '@/types/stream';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -165,6 +166,13 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
       isComplete: hasOpeningTag && hasClosingTag,
     });
   }, [content]);
+
+  const { setStreaming } = useCodeCascade();
+
+  // Use an effect to notify the code cascade when streaming state changes
+  useEffect(() => {
+    setStreaming(isStreaming);
+  }, [isStreaming, setStreaming]);
 
   return (
     <div

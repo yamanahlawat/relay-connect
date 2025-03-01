@@ -155,4 +155,18 @@
   .animate-message-in {
     animation: fadeInMessage 300ms ease-out forwards;
   }
+
+  /* Animation for code panel slide-in */
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .slide-in-from-right {
+    animation: slideInFromRight 0.1s ease-out forwards;
+  }
 }

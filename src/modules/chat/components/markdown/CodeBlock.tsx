@@ -22,12 +22,13 @@ function CodeBlock({
   const codeLines = code.split('\n');
   const shouldShowCTA = codeLines.length > 1 || code.length > 50;
 
-  // Always define useEffect at the top level
+  // Store the code without opening the panel
   useEffect(() => {
     // Only trigger for non-inline code blocks with content
     if (!inline && code.trim()) {
       if (shouldShowCTA) {
-        setActiveCode(code, lang);
+        // Just store the code (don't open the panel)
+        setActiveCode(code, lang, false); // Pass false to indicate not to open panel automatically
       }
     }
   }, [code, lang, inline, setActiveCode, shouldShowCTA]);
@@ -55,7 +56,10 @@ function CodeBlock({
     <div className="my-4 w-full">
       <div
         role="button"
-        onClick={() => setActiveCode(code, lang)}
+        onClick={() => {
+          // When clicked, open the panel
+          setActiveCode(code, lang, true); // Pass true to indicate opening the panel on click
+        }}
         className={cn(
           'flex cursor-pointer items-center gap-3',
           'rounded-lg border bg-muted/50 p-3',

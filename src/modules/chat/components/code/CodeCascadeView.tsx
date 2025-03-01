@@ -14,6 +14,23 @@ export function CodeCascadeView() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<MutationObserver | null>(null);
 
+  const baseStyle = theme === 'dark' ? oneDark : oneLight;
+
+  const modifiedStyle = {
+    ...baseStyle,
+    // Remove any background property to avoid conflicts
+    'pre[class*="language-"]': {
+      ...baseStyle['pre[class*="language-"]'],
+      background: undefined,
+      backgroundColor: undefined,
+    },
+    'code[class*="language-"]': {
+      ...baseStyle['code[class*="language-"]'],
+      background: undefined,
+      backgroundColor: undefined,
+    },
+  };
+
   // Setup MutationObserver for content changes
   useEffect(() => {
     if (wrapperRef.current && isStreaming) {
@@ -54,7 +71,7 @@ export function CodeCascadeView() {
     }
   }, [activeCode]);
 
-  if (!activeCode) {
+  if (!activeCode && isStreaming) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-background p-4">
         <div className="text-muted-foreground">Click on a code block to view it here</div>
@@ -86,12 +103,11 @@ export function CodeCascadeView() {
         <div className="absolute inset-0 overflow-auto" ref={wrapperRef}>
           <SyntaxHighlighter
             language={language?.toLowerCase() || 'text'}
-            style={theme === 'dark' ? oneDark : oneLight}
+            style={modifiedStyle}
             showLineNumbers={false}
             wrapLines
             customStyle={{
               margin: 0,
-              backgroundColor: 'transparent',
               fontSize: '13px',
               lineHeight: '1.6',
               padding: '1rem 1.25rem',

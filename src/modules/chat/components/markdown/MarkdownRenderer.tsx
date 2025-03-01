@@ -11,6 +11,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { containsCodeBlocks } from '../../utils/codeUtils';
 
 interface ProcessedContent {
   type: 'regular' | 'think';
@@ -169,10 +170,15 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
 
   const { setStreaming } = useCodeCascade();
 
-  // Use an effect to notify the code cascade when streaming state changes
   useEffect(() => {
-    setStreaming(isStreaming);
-  }, [isStreaming, setStreaming]);
+    if (isStreaming) {
+      const contentStr = typeof content === 'string' ? content : '';
+      const hasCodeBlock = containsCodeBlocks(contentStr);
+      setStreaming(hasCodeBlock);
+    } else {
+      setStreaming(false);
+    }
+  }, [isStreaming, content, setStreaming]);
 
   return (
     <div

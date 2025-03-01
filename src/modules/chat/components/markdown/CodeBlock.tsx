@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { CodeXml } from 'lucide-react';
 import { useEffect } from 'react';
-
+import { shouldShowCodeCTA } from '../../utils/codeUtils';
 function CodeBlock({
   inline,
   className,
@@ -19,17 +19,15 @@ function CodeBlock({
   const lang = match?.[1] || 'text';
   const code = String(children).replace(/\n$/, '');
 
-  const codeLines = code.split('\n');
-  const shouldShowCTA = codeLines.length > 1 || code.length > 50;
+  // Use our utility to determine if we should show CTA
+  const shouldShowCTA = !inline && shouldShowCodeCTA(code, lang);
 
   // Store the code without opening the panel
   useEffect(() => {
     // Only trigger for non-inline code blocks with content
-    if (!inline && code.trim()) {
-      if (shouldShowCTA) {
-        // Just store the code (don't open the panel)
-        setActiveCode(code, lang, false); // Pass false to indicate not to open panel automatically
-      }
+    if (!inline && code.trim() && shouldShowCTA) {
+      // Just store the code (don't open the panel)
+      setActiveCode(code, lang, false);
     }
   }, [code, lang, inline, setActiveCode, shouldShowCTA]);
 
@@ -43,7 +41,7 @@ function CodeBlock({
     return <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-sm text-primary">{children}</code>;
   }
 
-  // Only show CTA if code contains actual content
+  // Only show CTA if code contains actual content and meets our threshold
   if (!shouldShowCTA) {
     return (
       <div className="relative my-4 overflow-x-auto rounded-lg bg-muted p-4">
@@ -58,7 +56,7 @@ function CodeBlock({
         role="button"
         onClick={() => {
           // When clicked, open the panel
-          setActiveCode(code, lang, true); // Pass true to indicate opening the panel on click
+          setActiveCode(code, lang, true);
         }}
         className={cn(
           'flex cursor-pointer items-center gap-3',
@@ -71,12 +69,14 @@ function CodeBlock({
         </div>
 
         <div className="flex flex-col gap-1 overflow-hidden">
-          <span className="font-medium">{lang.charAt(0).toUpperCase() + lang.slice(1)} Code</span>
+          <span className="font-medium">
+            {lang.charAt(0).toUpperCase() + lang.slice(1)} {lang !== 'text' ? 'Code' : 'Block'}
+          </span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="truncate">Click to view in editor</span>
             <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground/30" />
             <span>
-              {codeLines.length} {codeLines.length === 1 ? 'line' : 'lines'}
+              {code.split('\n').length} {code.split('\n').length === 1 ? 'line' : 'lines'}
             </span>
           </div>
         </div>

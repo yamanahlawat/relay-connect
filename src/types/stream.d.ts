@@ -73,6 +73,7 @@ export interface StreamBlock {
   error_type: string | null;
   error_detail: string | null;
   extra_data: object | null;
+  stream_index?: number;
 }
 
 // Stream state (snake_case to match API)

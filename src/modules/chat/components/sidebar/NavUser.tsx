@@ -73,7 +73,6 @@ export function NavUser({ user }: NavUserProps) {
                   Settings
                 </DropdownMenuItem>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>

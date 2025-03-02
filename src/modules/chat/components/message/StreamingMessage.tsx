@@ -81,37 +81,36 @@ const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: St
 
   // Process all blocks to maintain order and streaming state
   const orderedBlocks = useMemo(() => {
-    // Filter out duplicate content blocks (same content at same position)
-    const processedBlocks = blocks.reduce(
-      (acc, block, index) => {
-        // Always include non-content blocks
-        if (block.type !== 'content') {
-          if (block.type !== 'done') {
-            // Skip done blocks in UI
-            acc.push({ ...block, index });
+    // Create a map to track unique content blocks by their content
+    const uniqueContentMap = new Map<string, boolean>();
+
+    // Process blocks while preserving original order from the stream
+    const processedBlocks = blocks
+      .filter((block) => block.type !== 'done' && block.type !== 'thinking') // Filter out non-display blocks
+      .map((block, index) => {
+        // For content blocks, check for duplicates
+        if (block.type === 'content') {
+          const content = block.content as string;
+          // If we've already seen this content, skip it
+          if (content && uniqueContentMap.has(content)) {
+            return null;
           }
-          return acc;
+          // Mark this content as seen
+          if (content) {
+            uniqueContentMap.set(content, true);
+          }
         }
 
-        // For content blocks, check if we already have one with the same content
-        const existingBlock = acc.find((b) => b.type === 'content' && b.content === block.content);
+        // Include this block with its original stream index
+        return { ...block, index };
+      })
+      .filter(Boolean) as Array<StreamBlock & { index: number }>;
 
-        if (!existingBlock) {
-          acc.push({ ...block, index });
-        }
-
-        return acc;
-      },
-      [] as Array<StreamBlock & { index: number }>
-    );
-
-    // Add next_block_type and sort
-    return processedBlocks
-      .map((block, idx) => ({
-        ...block,
-        next_block_type: idx < processedBlocks.length - 1 ? processedBlocks[idx + 1]?.type : undefined,
-      }))
-      .sort((a, b) => a.index - b.index) as ProcessedStreamBlock[];
+    // Add next_block_type information (for tool blocks to know what comes next)
+    return processedBlocks.map((block, idx) => ({
+      ...block,
+      next_block_type: idx < processedBlocks.length - 1 ? processedBlocks[idx + 1]?.type : undefined,
+    })) as ProcessedStreamBlock[];
   }, [blocks]);
 
   return (
@@ -123,21 +122,24 @@ const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: St
         </div>
       )}
 
-      {/* Show accumulated content and tool blocks */}
+      {/* Show accumulated content and tool blocks in their original order */}
       {orderedBlocks.map((block) => {
         if (block.type === 'content') {
           return (
             <ContentBlock
               key={`content-${block.index}`}
               block={block}
-              // A block is streaming if it's the last one and we're still streaming
-              is_streaming={block.index === orderedBlocks.length - 1 && isStreamingRef.current}
+              // A block is streaming if it's the last content block and we're still streaming
+              is_streaming={
+                block.index === Math.max(...orderedBlocks.filter((b) => b.type === 'content').map((b) => b.index)) &&
+                isStreamingRef.current
+              }
             />
           );
         }
 
         if (['tool_start', 'tool_call', 'tool_result'].includes(block.type)) {
-          return <ToolBlockWrapper key={`tool-${block.index}`} block={block} />;
+          return <ToolBlockWrapper key={`tool-${block.index}-${block.tool_call_id}`} block={block} />;
         }
 
         return null;

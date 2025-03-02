@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload';
-import { CODING_ASSISTANT_PROMPT } from '@/lib/prompts';
+import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { useBulkDeleteMessages } from '@/lib/queries/messages';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
@@ -85,7 +85,7 @@ export default function ChatContainer() {
   const chatInputContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Local state
-  const [systemContext, setSystemContext] = useState(CODING_ASSISTANT_PROMPT);
+  const [systemContext, setSystemContext] = useState(GENERIC_SYSTEM_CONTEXT);
   const [chatInputHeight, setChatInputHeight] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 

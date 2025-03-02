@@ -2,10 +2,11 @@ import type { StreamBlock } from '@/types/stream';
 
 export async function* parseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
-): AsyncGenerator<StreamBlock, void, unknown> {
+): AsyncGenerator<StreamBlock & { stream_index: number }, void, unknown> {
   const decoder = new TextDecoder();
   let buffer = '';
   let hasYieldedDone = false;
+  let streamIndex = 0; // Track the order of blocks in the stream
 
   try {
     while (true) {
@@ -25,7 +26,8 @@ export async function* parseStream(
             if (block.type === 'done') {
               hasYieldedDone = true;
             }
-            yield block;
+            // Add stream_index to track original order
+            yield { ...block, stream_index: streamIndex++ };
           }
         }
         break;
@@ -47,14 +49,15 @@ export async function* parseStream(
           if (block.type === 'done') {
             hasYieldedDone = true;
           }
-          yield block;
+          // Add stream_index to track original order
+          yield { ...block, stream_index: streamIndex++ };
         }
       }
     }
   } catch (error) {
     console.error('Stream processing error:', error);
     // Yield error block
-    const errorBlock: StreamBlock = {
+    const errorBlock: StreamBlock & { stream_index: number } = {
       type: 'error',
       content: null,
       tool_name: null,
@@ -65,6 +68,7 @@ export async function* parseStream(
       error_type: 'stream_error',
       error_detail: error instanceof Error ? error.message : 'Unknown error',
       extra_data: null,
+      stream_index: streamIndex++,
     };
     yield errorBlock;
   } finally {

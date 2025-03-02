@@ -12,11 +12,12 @@ interface UIStreamingContent {
   content: string;
   index: number;
   isComplete: boolean;
+  streamIndex: number;
 }
 
 interface UIStreamState {
   contentSections: UIStreamingContent[];
-  toolBlocks: StreamBlock[];
+  toolBlocks: (StreamBlock & { streamIndex: number })[];
   lastIndex: number;
   thinking: {
     isThinking: boolean;
@@ -36,8 +37,12 @@ function adaptStreamState(state: StreamState): UIStreamState {
         content: section.content,
         index: section.index,
         isComplete: section.is_complete,
+        streamIndex: section.stream_index ?? section.index,
       })) ?? [],
-    toolBlocks: state.tool_blocks ?? [],
+    toolBlocks: (state.tool_blocks ?? []).map((block) => ({
+      ...block,
+      streamIndex: block.stream_index ?? 0,
+    })),
     lastIndex: state.last_index ?? 0,
     thinking: {
       isThinking: state.thinking?.is_thinking ?? false,
@@ -55,8 +60,13 @@ function reverseAdaptStreamState(state: UIStreamState): StreamState {
         content: section.content,
         index: section.index,
         is_complete: section.isComplete,
+        stream_index: section.streamIndex, // Preserve stream order
       })) ?? [],
-    tool_blocks: state.toolBlocks ?? [],
+    tool_blocks: state.toolBlocks.map((block) => {
+      // Create a new object without streamIndex to avoid type errors
+      const { streamIndex, ...rest } = block;
+      return { ...rest, stream_index: streamIndex };
+    }),
     last_index: state.lastIndex ?? 0,
     thinking: {
       is_thinking: state.thinking?.isThinking ?? false,
@@ -69,27 +79,29 @@ function reverseAdaptStreamState(state: UIStreamState): StreamState {
 // Helper function to get all blocks in order
 function getAllBlocks(streamState: StreamState): StreamBlock[] {
   const adaptedState = adaptStreamState(streamState);
-  // Combine content sections and tool blocks into a single array with indices
-  const combinedBlocks: StreamBlock[] = [
-    ...adaptedState.contentSections.map((content) => ({
-      type: 'content' as const,
-      content: content.content,
-      tool_name: null,
-      tool_args: null,
-      tool_call_id: null,
-      tool_status: null,
-      tool_result: null,
-      error_type: null,
-      error_detail: null,
-      extra_data: null,
-    })),
-    ...adaptedState.toolBlocks,
-  ];
 
-  // Sort by index to maintain chronological order (using a custom property for sorting only)
-  return combinedBlocks.sort((a, b) => {
-    const indexA = adaptedState.contentSections.findIndex((s) => s.content === a.content);
-    const indexB = adaptedState.contentSections.findIndex((s) => s.content === b.content);
+  // Create content blocks with stream indices
+  const contentBlocks: StreamBlock[] = adaptedState.contentSections.map((content) => ({
+    type: 'content' as const,
+    content: content.content,
+    tool_name: null,
+    tool_args: null,
+    tool_call_id: null,
+    tool_status: null,
+    tool_result: null,
+    error_type: null,
+    error_detail: null,
+    extra_data: null,
+    stream_index: content.streamIndex,
+  }));
+
+  // Create combined array with all blocks
+  const allBlocks = [...contentBlocks, ...adaptedState.toolBlocks];
+
+  // Sort by stream index to maintain chronological order
+  return allBlocks.sort((a, b) => {
+    const indexA = a.stream_index !== undefined ? a.stream_index : 0;
+    const indexB = b.stream_index !== undefined ? b.stream_index : 0;
     return indexA - indexB;
   });
 }
@@ -251,6 +263,7 @@ export function useChat(sessionId: string) {
         timeoutId = setTimeout(forceCompleteTimeout, 30000);
 
         let currentSection: UIStreamingContent | null = null;
+        let streamIndex = 0; // Track the global order of blocks
 
         for await (const block of parseStream(reader)) {
           // Safety check for refs
@@ -264,11 +277,17 @@ export function useChat(sessionId: string) {
             timeoutId = setTimeout(forceCompleteTimeout, 30000);
           }
 
-          switch (block.type) {
+          // Add stream order index to the block
+          const blockWithIndex = {
+            ...block,
+            stream_index: streamIndex++, // Track order in stream
+          };
+
+          switch (blockWithIndex.type) {
             case 'thinking':
               streamStateRef.current.thinking = {
                 isThinking: true,
-                content: block.content as string,
+                content: blockWithIndex.content as string,
               };
               // Update the UI to show thinking state
               updateAssistantMessage();
@@ -280,13 +299,14 @@ export function useChat(sessionId: string) {
                   content: '',
                   index: streamStateRef.current.lastIndex++,
                   isComplete: false,
+                  streamIndex: streamIndex - 1, // Use same stream index assigned to the block
                 };
                 streamStateRef.current.contentSections.push(currentSection);
               }
 
               // Safely add content with null check
-              if (currentSection && block.content) {
-                currentSection.content += block.content;
+              if (currentSection && blockWithIndex.content) {
+                currentSection.content += blockWithIndex.content;
               }
               streamStateRef.current.thinking.isThinking = false;
 
@@ -302,8 +322,11 @@ export function useChat(sessionId: string) {
                 currentSection = null;
               }
 
-              // Use type assertion to avoid index property error
-              streamStateRef.current.toolBlocks.push(block);
+              // Store the original stream index with the tool block
+              streamStateRef.current.toolBlocks.push({
+                ...blockWithIndex,
+                streamIndex: streamIndex - 1, // Use same stream index assigned to the block
+              });
 
               // Update UI for tool blocks
               updateAssistantMessage();
@@ -314,8 +337,8 @@ export function useChat(sessionId: string) {
                 currentSection.isComplete = true;
               }
               streamStateRef.current.error = {
-                type: block.error_type || 'UnknownError',
-                detail: block.error_detail || 'An unknown error occurred',
+                type: blockWithIndex.error_type || 'UnknownError',
+                detail: blockWithIndex.error_detail || 'An unknown error occurred',
               };
               streamErrored = true;
 
@@ -323,7 +346,7 @@ export function useChat(sessionId: string) {
               updateAssistantMessage({ status: 'failed' });
 
               // Handle potential null error_detail
-              throw new Error(block.error_detail || 'Unknown error');
+              throw new Error(blockWithIndex.error_detail || 'Unknown error');
 
             case 'done':
               streamCompleted = true;
@@ -342,9 +365,9 @@ export function useChat(sessionId: string) {
                 }
 
                 // @ts-expect-error - Accessing property that's not in the type definition
-                const finalMessage = block.message;
+                const finalMessage = blockWithIndex.message;
 
-                // Get current stream blocks
+                // Get current stream blocks with proper order
                 const currentBlocks = streamStateRef.current
                   ? getAllBlocks(reverseAdaptStreamState(streamStateRef.current))
                   : [];

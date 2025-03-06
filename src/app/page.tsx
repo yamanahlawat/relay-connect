@@ -1,7 +1,7 @@
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { listChatSessions } from '@/lib/api/chatSessions';
 import { prefetchProviders } from '@/lib/queries/providers';
+import { prefetchSessions } from '@/lib/queries/session';
 import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
 import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
 import { WelcomeContent } from '@/modules/chat/components/Welcome';
@@ -11,14 +11,10 @@ export default async function Page() {
   const queryClient = new QueryClient();
 
   await Promise.all([
+    // Prefetch active providers
     prefetchProviders(queryClient, true),
-    queryClient.prefetchInfiniteQuery({
-      queryKey: ['chat-sessions'],
-      queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {
-        return await listChatSessions(pageParam.limit, pageParam.offset);
-      },
-      initialPageParam: { limit: 20, offset: 0 },
-    }),
+    // Prefetch the first page of chat sessions
+    prefetchSessions(queryClient),
   ]);
 
   return (

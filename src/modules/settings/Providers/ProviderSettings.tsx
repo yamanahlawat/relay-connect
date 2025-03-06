@@ -35,7 +35,7 @@ type ProviderUpdate = components['schemas']['ProviderUpdate'];
 // Form schema for provider creation/update
 const providerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  type: z.enum(['anthropic', 'openai', 'ollama', 'custom'] as const),
+  type: z.enum(['anthropic', 'openai', 'ollama'] as const),
   is_active: z.boolean().default(true),
   base_url: z.string().nullable().optional(),
   api_key: z.string().nullable().optional(),

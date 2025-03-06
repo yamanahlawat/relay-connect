@@ -19,6 +19,7 @@ export interface paths {
      *
      *     ### Parameters
      *     - **is_active** (optional): Filter by active status
+     *     - **provider_name** (optional): Filter providers by name
      *     - **offset** (optional): Number of records to skip (default: 0)
      *     - **limit** (optional): Maximum number of records to return (default: 10)
      *
@@ -121,6 +122,7 @@ export interface paths {
      *     ### Parameters
      *     - **provider_id** (optional): Filter models by provider UUID
      *     - **is_active** (optional): Filter by active status
+     *     - **model_name** (optional): Filter models by name
      *     - **offset** (optional): Number of records to skip (default: 0)
      *     - **limit** (optional): Maximum number of records to return (default: 10)
      *
@@ -288,46 +290,6 @@ export interface paths {
      *     - **404**: Session not found
      */
     post: operations['stop_completion_api_v1_chat_complete__session_id__stop_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/chat/complete/{session_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Complete
-     * @description ## Generate Chat Completion
-     *
-     *     Generates a completion for the given prompt in a single request.
-     *
-     *     ### Parameters
-     *     - **session_id**: UUID of the chat session
-     *     - **request**: Completion request:
-     *     - **provider_id**: UUID of the LLM provider to use
-     *     - **llm_model_id**: UUID of the model to use
-     *     - **prompt**: Text prompt to generate completion for
-     *     - **parent_id**: Optional parent message ID for threading
-     *     - **max_tokens**: Maximum tokens to generate (default: 1024)
-     *     - **temperature**: Temperature for generation (default: 0.7)
-     *
-     *     ### Returns
-     *     The generated completion with usage statistics
-     *
-     *     ### Raises
-     *     - **404**: Session, provider or model not found
-     *     - **429**: Rate limit exceeded
-     *     - **503**: Provider service unavailable
-     */
-    post: operations['complete_api_v1_chat_complete__session_id__post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -743,66 +705,6 @@ export interface components {
       total_cost: number;
     };
     /**
-     * CompletionParams
-     * @description Parameters for completion generation
-     */
-    CompletionParams: {
-      /**
-       * Max Tokens
-       * @default 4096
-       */
-      max_tokens: number;
-      /**
-       * Temperature
-       * @default 0.7
-       */
-      temperature: number;
-      /**
-       * Top P
-       * @default 0.9
-       */
-      top_p: number;
-    };
-    /**
-     * CompletionRequest
-     * @description Schema for chat request
-     */
-    CompletionRequest: {
-      /**
-       * Provider Id
-       * Format: uuid
-       */
-      provider_id: string;
-      /**
-       * Llm Model Id
-       * Format: uuid
-       */
-      llm_model_id: string;
-      /** Prompt */
-      prompt: string;
-      /** Parent Id */
-      parent_id?: string | null;
-      /** @default {
-       *       "max_tokens": 4096,
-       *       "temperature": 0.7,
-       *       "top_p": 0.9
-       *     } */
-      model_params: components['schemas']['CompletionParams'];
-    };
-    /**
-     * CompletionResponse
-     * @description Schema for chat response
-     */
-    CompletionResponse: {
-      /** Content */
-      content: string;
-      /** Model */
-      model: string;
-      /** Provider */
-      provider: string;
-      usage: components['schemas']['ChatUsage'];
-    };
-    /**
      * ErrorDetail
      * @description Details for provider-specific errors
      */
@@ -1139,7 +1041,7 @@ export interface components {
      * @description Supported LLM providers
      * @enum {string}
      */
-    ProviderType: 'anthropic' | 'openai' | 'ollama' | 'custom';
+    ProviderType: 'anthropic' | 'openai' | 'ollama';
     /**
      * ProviderUpdate
      * @description Schema for updating a provider.
@@ -1265,6 +1167,7 @@ export interface operations {
     parameters: {
       query?: {
         is_active?: boolean | null;
+        provider_name?: string | null;
         offset?: number;
         limit?: number;
       };
@@ -1463,6 +1366,7 @@ export interface operations {
       query?: {
         provider_id?: string | null;
         is_active?: boolean | null;
+        model_name?: string | null;
         offset?: number;
         limit?: number;
       };
@@ -1780,68 +1684,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  complete_api_v1_chat_complete__session_id__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompletionRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompletionResponse'];
-        };
-      };
-      /** @description Session, provider or model not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-      /** @description Rate limit exceeded */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Provider service unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
         };
       };
     };

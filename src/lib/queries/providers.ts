@@ -1,42 +1,68 @@
 import { listProviders } from '@/lib/api/providers';
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 // Query keys
 export const providerKeys = {
   all: ['providers'] as const,
-  filtered: (isActive: boolean | undefined) => [...providerKeys.all, { isActive }] as const,
+  filtered: (isActive: boolean | undefined, limit?: number, offset?: number, provider_name?: string) =>
+    [...providerKeys.all, { isActive, limit, offset, provider_name }] as const,
 };
 
-// Query hooks
-export function useProviders(isActive?: boolean) {
-  return useQuery({
-    queryKey: providerKeys.filtered(isActive),
-    queryFn: () => listProviders(isActive),
-  });
+interface UseProvidersOptions {
+  onLoadingChange?: (loading: boolean) => void;
+  limit?: number;
+  offset?: number;
+  providerName?: string;
+  isActive?: boolean;
 }
 
-// Query hook with loading state management
-export function useProvidersWithLoading(
-  isActive?: boolean,
-  { onLoadingChange }: { onLoadingChange?: (loading: boolean) => void } = {}
-) {
-  return useQuery({
-    queryKey: providerKeys.filtered(isActive),
-    queryFn: async () => {
+// Hook for infinite loading in dropdowns
+export function useProvidersWithLoading(enabled = true, options: UseProvidersOptions = {}) {
+  const { onLoadingChange, limit = 10, providerName, isActive } = options;
+
+  return useInfiniteQuery({
+    queryKey: ['providers', { limit, providerName, isActive }],
+    queryFn: async ({ pageParam = 0 }) => {
       onLoadingChange?.(true);
       try {
-        return await listProviders(isActive);
+        return await listProviders({
+          limit,
+          offset: pageParam,
+          providerName,
+          isActive,
+        });
       } finally {
         onLoadingChange?.(false);
       }
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < limit) return undefined;
+      return allPages.length * limit;
+    },
+    enabled,
   });
 }
 
-// Prefetch function
+// Hook for settings view - fetches all providers at once
+export function useProviders(isActive?: boolean) {
+  return useQuery({
+    queryKey: providerKeys.filtered(isActive, undefined, undefined, undefined),
+    queryFn: () => listProviders({ isActive, limit: 1000 }), // Fetch all providers at once for settings
+  });
+}
+
+// Prefetch function for infinite loading
 export async function prefetchProviders(queryClient: QueryClient, isActive?: boolean) {
-  await queryClient.prefetchQuery({
-    queryKey: providerKeys.filtered(isActive),
-    queryFn: () => listProviders(isActive),
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: ['providers', { limit: 10, providerName: undefined, isActive }],
+    queryFn: async ({ pageParam = 0 }) =>
+      listProviders({
+        limit: 10,
+        offset: pageParam,
+        providerName: undefined,
+        isActive,
+      }),
+    initialPageParam: 0,
   });
 }

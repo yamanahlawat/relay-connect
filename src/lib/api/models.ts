@@ -1,17 +1,30 @@
 import client from '@/lib/api/client';
 import type { ModelCreate, ModelRead, ModelUpdate, ModelsByProvider } from '@/types/model';
 
-export const listModels = async (providerId: string, isActive?: boolean): Promise<ModelRead[]> => {
+interface ListModelsParams {
+  provider_id?: string;
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+  modelName?: string;
+}
+
+export const listModels = async ({ provider_id, isActive, limit, offset, modelName }: ListModelsParams = {}): Promise<
+  ModelRead[]
+> => {
   const { data, error } = await client.GET('/api/v1/models/', {
     params: {
       query: {
-        provider_id: providerId,
-        is_active: isActive,
+        ...(provider_id ? { provider_id } : {}),
+        ...(typeof isActive === 'boolean' ? { is_active: isActive } : {}),
+        ...(limit ? { limit } : {}),
+        ...(typeof offset === 'number' ? { offset } : {}),
+        ...(modelName ? { model_name: modelName } : {}),
       },
     },
   });
   if (error) {
-    throw new Error(`Error fetching models for provider ${providerId}: ${error.detail}`);
+    throw new Error(`Error fetching models for provider ${provider_id}: ${error.detail}`);
   }
   return data;
 };
@@ -54,6 +67,18 @@ export const listModelsByProvider = async (): Promise<ModelsByProvider> => {
   const { data, error } = await client.GET('/api/v1/models/all/', {});
   if (error) {
     throw new Error(`Error fetching models by provider: ${error}`);
+  }
+  return data;
+};
+
+export const getModel = async (modelId: string): Promise<ModelRead> => {
+  const { data, error } = await client.GET('/api/v1/models/{llm_model_id}/', {
+    params: {
+      path: { llm_model_id: modelId },
+    },
+  });
+  if (error) {
+    throw new Error(`Error fetching model ${modelId}: ${error.detail}`);
   }
   return data;
 };

@@ -1,12 +1,12 @@
 'use client';
 
+import { InfiniteScrollSelect } from '@/components/custom/InfiniteScrollSelect';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { updateChatSession } from '@/lib/api/chatSessions';
 import type { components } from '@/lib/api/schema';
-import { useModelsWithLoading } from '@/lib/queries/models';
+import { useModel, useModelsWithLoading } from '@/lib/queries/models';
 import { useProvidersWithLoading } from '@/lib/queries/providers';
 import { useProviderModel } from '@/stores/providerModel';
 import { Tooltip } from '@radix-ui/react-tooltip';
@@ -14,7 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 type SessionUpdate = components['schemas']['SessionUpdate'];
@@ -31,24 +31,107 @@ export default function ProviderModelSelect() {
   const queryClient = useQueryClient();
   const previousState = useRef<PreviousState>({ providerId: undefined, modelId: undefined });
   const pathname = usePathname();
+  const [seenModelIds, setSeenModelIds] = useState<Set<string>>(new Set());
 
   const { selectedProvider, selectedModel, setSelectedProvider, setSelectedModel, setLoading } = useProviderModel();
 
-  // Fetch providers
+  // Pagination state with debounced search
+  const [providerSearch, setProviderSearch] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
+  const LIMIT = 10;
+
+  // Fetch selected model if it exists - this will now run on mount if there's a selected model
+  const { data: selectedModelData, isLoading: isLoadingSelectedModel } = useModel(selectedModel?.id);
+
+  // Initialize selected model and track initial state for rollback
+  useEffect(() => {
+    if (selectedModelData && !seenModelIds.has(selectedModelData.id)) {
+      setSeenModelIds((prev) => new Set([...prev, selectedModelData.id]));
+      setSelectedModel(selectedModelData);
+
+      // Store in previous state when initially set
+      if (!previousState.current.modelId) {
+        previousState.current = {
+          providerId: selectedProvider?.id,
+          modelId: selectedModelData.id,
+        };
+      }
+    }
+  }, [selectedModelData, seenModelIds, setSelectedModel, selectedProvider?.id]);
+
+  // Fetch providers with pagination - only active ones
   const {
-    data: providers = [],
+    data: providersData,
     isLoading: isLoadingProviders,
     isError: isProvidersError,
     error: providersError,
-  } = useProvidersWithLoading(true, { onLoadingChange: setLoading });
+    fetchNextPage: fetchNextProviders,
+    hasNextPage: hasMoreProviders,
+    isFetching: isSearchingProviders,
+  } = useProvidersWithLoading(true, {
+    onLoadingChange: setLoading,
+    limit: LIMIT,
+    providerName: providerSearch || undefined,
+    isActive: true, // Only show active providers
+  });
 
-  // Fetch models for selected provider
+  const providers = useMemo(() => providersData?.pages.flatMap((page) => page || []) ?? [], [providersData]);
+
+  // Prepare initial data for models query if we have selected model
+  const initialModelsData = useMemo(() => {
+    if (selectedModelData && !seenModelIds.has(selectedModelData.id)) {
+      return [selectedModelData];
+    }
+    return undefined;
+  }, [selectedModelData, seenModelIds]);
+
+  // Fetch models with pagination - only when provider is selected and only active models
   const {
-    data: models = [],
+    data: modelsData,
     isLoading: isLoadingModels,
     isError: isModelsError,
     error: modelsError,
-  } = useModelsWithLoading(selectedProvider?.id, true, { onLoadingChange: setLoading });
+    fetchNextPage: fetchNextModels,
+    hasNextPage: hasMoreModels,
+    isFetching: isSearchingModels,
+  } = useModelsWithLoading(selectedProvider?.id, !!selectedProvider, {
+    onLoadingChange: setLoading,
+    limit: LIMIT,
+    modelName: modelSearch || undefined,
+    initialData: initialModelsData,
+    isActive: true, // Only show active models
+  });
+
+  // Combine and deduplicate models with memoization
+  const models = useMemo(() => {
+    // Skip processing if no data yet
+    if (!modelsData) return [];
+
+    const allModels = modelsData.pages.flatMap((page) => page || []);
+
+    // Only add selectedModel if needed and it exists
+    if (!selectedModelData) return allModels;
+
+    // Check if selected model is already in the list
+    if (allModels.some((m) => m.id === selectedModelData.id)) {
+      return allModels;
+    }
+
+    // Add selected model to the beginning and return
+    return [selectedModelData, ...allModels];
+  }, [modelsData, selectedModelData]);
+
+  // Update seen model IDs when new models are loaded - with optimization
+  useEffect(() => {
+    if (!models.length) return;
+
+    // Only collect IDs that haven't been seen yet
+    const newIds = models.map((model) => model.id).filter((id) => !seenModelIds.has(id));
+
+    if (newIds.length === 0) return;
+
+    setSeenModelIds((prev) => new Set([...prev, ...newIds]));
+  }, [models, seenModelIds]);
 
   // Session update mutation
   const updateSessionMutation = useMutation({
@@ -71,9 +154,12 @@ export default function ProviderModelSelect() {
     },
   });
 
-  // Handle provider change
+  // Handle provider change with improved error handling
   const handleProviderChange = useCallback(
     (providerId: string) => {
+      // Skip if already selected or in updating state
+      if (providerId === selectedProvider?.id || updateSessionMutation.isPending) return;
+
       const provider = providers.find((p) => p.id === providerId);
       if (!provider) {
         toast.error('Invalid provider selected');
@@ -82,14 +168,18 @@ export default function ProviderModelSelect() {
 
       setSelectedProvider(provider);
       setSelectedModel(undefined);
+      setSeenModelIds(new Set()); // Reset seen models when provider changes
+      setModelSearch(''); // Reset model search when provider changes
+      setProviderSearch(''); // Reset provider search when provider is selected
     },
-    [providers, setSelectedProvider, setSelectedModel]
+    [providers, selectedProvider?.id, setSelectedProvider, setSelectedModel, updateSessionMutation.isPending]
   );
 
-  // Handle model change
+  // Handle model change with improved validation
   const handleModelChange = useCallback(
     (modelId: string) => {
-      if (!selectedProvider) return;
+      // Skip if no provider, already selected, or in updating state
+      if (!selectedProvider || modelId === selectedModel?.id || updateSessionMutation.isPending) return;
 
       const model = models.find((m) => m.id === modelId);
       if (!model) {
@@ -98,6 +188,7 @@ export default function ProviderModelSelect() {
       }
 
       setSelectedModel(model);
+      setModelSearch(''); // Reset search when model is selected
 
       // Only update session if it exists and we have both provider and model
       if (sessionId && selectedProvider) {
@@ -109,99 +200,107 @@ export default function ProviderModelSelect() {
         });
       }
     },
-    [sessionId, selectedProvider, models, setSelectedModel, updateSessionMutation]
+    [sessionId, selectedProvider, selectedModel?.id, models, setSelectedModel, updateSessionMutation]
   );
 
-  // Combined error handling
+  // Handle provider search
+  const handleProviderSearch = useCallback((query: string) => {
+    setProviderSearch(query);
+  }, []);
+
+  // Handle model search
+  const handleModelSearch = useCallback((query: string) => {
+    setModelSearch(query);
+  }, []);
+
+  // Combined error handling with more details
   useEffect(() => {
     if (isProvidersError || isModelsError) {
       const error = isProvidersError ? providersError : modelsError;
-      const message = isProvidersError ? 'Failed to load providers' : 'Failed to load models';
+      const message = isProvidersError
+        ? 'Failed to load providers'
+        : `Failed to load models for provider ${selectedProvider?.name || 'unknown'}`;
+
       toast.error(error instanceof Error ? error.message : message);
     }
-  }, [isProvidersError, isModelsError, providersError, modelsError]);
+  }, [isProvidersError, isModelsError, providersError, modelsError, selectedProvider?.name]);
 
   const isUpdating = sessionId ? updateSessionMutation.isPending : false;
 
-  // Initialize to false so the server and initial client render match.
+  // Platform detection for keyboard shortcuts
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
-    // Now that we're on the client, detect macOS.
     setIsMac(/macintosh/i.test(navigator.userAgent));
   }, []);
 
-  // Add global event listener for Command + Option + N (Mac) or Ctrl + Alt + N (Windows/Linux)
+  // Keyboard shortcut for new chat
   useEffect(() => {
     const handleNewChatShortcut = (e: KeyboardEvent) => {
-      if ((isMac ? e.metaKey && e.altKey : e.ctrlKey && e.altKey) && e.key.toLowerCase() === 'n') {
-        e.preventDefault(); // Prevent default
-        router.push('/'); // Navigate to new chat creation page
+      if ((isMac ? e.metaKey && e.shiftKey : e.ctrlKey && e.shiftKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        router.push('/');
       }
     };
 
     document.addEventListener('keydown', handleNewChatShortcut);
-
-    return () => {
-      document.removeEventListener('keydown', handleNewChatShortcut);
-    };
+    return () => document.removeEventListener('keydown', handleNewChatShortcut);
   }, [router, isMac]);
+
+  // Memoize disabled states to avoid recalculations
+  const providerSelectDisabled = isLoadingProviders || isProvidersError || isUpdating;
+  const modelSelectDisabled = !selectedProvider || isLoadingModels || isModelsError || isUpdating;
 
   return (
     <div className="flex w-full items-center justify-between px-4">
       <div className="flex items-center gap-4">
-        <Select
+        <InfiniteScrollSelect
           value={selectedProvider?.id}
           onValueChange={handleProviderChange}
-          disabled={isLoadingProviders || isProvidersError || isUpdating}
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder={isProvidersError ? 'Error loading' : 'Select Provider'} />
-          </SelectTrigger>
-          <SelectContent>
-            {providers.map((provider) => (
-              <SelectItem key={provider.id} value={provider.id}>
-                {provider.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          disabled={providerSelectDisabled}
+          placeholder={isProvidersError ? 'Error loading' : 'Select Provider'}
+          items={providers}
+          itemId="id"
+          itemLabel="name"
+          isLoading={isLoadingProviders}
+          hasMore={!!hasMoreProviders}
+          onLoadMore={fetchNextProviders}
+          onSearch={handleProviderSearch}
+          searchPlaceholder="Search providers..."
+          isSearching={isSearchingProviders}
+        />
 
-        <Select
+        <InfiniteScrollSelect
           value={selectedModel?.id}
           onValueChange={handleModelChange}
-          disabled={!selectedProvider || isLoadingModels || isModelsError || isUpdating}
-        >
-          <SelectTrigger className="w-[250px]">
-            <SelectValue
-              placeholder={
-                !selectedProvider ? 'Select provider first' : isModelsError ? 'Error loading' : 'Select Model'
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {models.map((model) => (
-              <SelectItem key={model.id} value={model.id}>
-                {model.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          disabled={modelSelectDisabled}
+          placeholder={!selectedProvider ? 'Select provider first' : isModelsError ? 'Error loading' : 'Select Model'}
+          items={models}
+          itemId="id"
+          itemLabel="name"
+          isLoading={isLoadingModels || isLoadingSelectedModel}
+          hasMore={!!hasMoreModels}
+          onLoadMore={fetchNextModels}
+          onSearch={handleModelSearch}
+          searchPlaceholder="Search models..."
+          isSearching={isSearchingModels}
+        />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {pathname !== '/' && (
-          <TooltipProvider delayDuration={200} skipDelayDuration={0}>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" className="text-foreground hover:text-foreground" asChild>
-                  <Link href="/" title="">
-                    <MessageSquarePlus className="h-4 w-4" />
-                    New Chat
-                  </Link>
-                </Button>
+                <Link href="/">
+                  <Button variant="ghost" size="icon" aria-label="New Chat">
+                    <MessageSquarePlus className="h-5 w-5" />
+                  </Button>
+                </Link>
               </TooltipTrigger>
-              <TooltipContent side="bottom">New Chat ({isMac ? '⌘ + Option + N' : 'Ctrl + Alt + N'})</TooltipContent>
+              <TooltipContent>
+                <p>New Chat ({isMac ? '⌘' : 'Ctrl'} + Shift + N)</p>
+              </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}

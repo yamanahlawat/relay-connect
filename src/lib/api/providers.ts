@@ -1,11 +1,23 @@
 import client from '@/lib/api/client';
 import { ProviderCreate, ProviderRead, ProviderUpdate } from '@/types/provider';
 
-export const listProviders = async (isActive?: boolean): Promise<ProviderRead[]> => {
+interface ListProvidersParams {
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+  providerName?: string;
+}
+
+export const listProviders = async ({ isActive, limit, offset, providerName }: ListProvidersParams = {}): Promise<
+  ProviderRead[]
+> => {
   const { data, error } = await client.GET('/api/v1/providers/', {
     params: {
       query: {
         ...(typeof isActive === 'boolean' ? { is_active: isActive } : {}),
+        ...(limit ? { limit } : {}),
+        ...(typeof offset === 'number' ? { offset } : {}),
+        ...(providerName ? { provider_name: providerName } : {}),
       },
     },
   });

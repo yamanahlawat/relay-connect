@@ -48,21 +48,6 @@ const modelSchema = z.object({
 
 type ModelFormValues = z.infer<typeof modelSchema>;
 
-// function EmptyState({ onAdd }: { onAdd: () => void }) {
-//   return (
-//     <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-//       <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-//         <h3 className="mt-4 text-lg font-semibold">No models configured</h3>
-//         <p className="mb-4 mt-2 text-sm text-muted-foreground">Add your first model to get started.</p>
-//         <Button onClick={onAdd}>
-//           <PlusCircle className="mr-2 h-4 w-4" />
-//           Add Model
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
 export function ModelSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);

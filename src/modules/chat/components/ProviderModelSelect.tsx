@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { updateChatSession } from '@/lib/api/chatSessions';
 import type { components } from '@/lib/api/schema';
-import { useModel, useModelsWithLoading } from '@/lib/queries/models';
-import { useProvidersWithLoading } from '@/lib/queries/providers';
+import { useModelQuery, useModelsWithLoadingQuery } from '@/lib/queries/models';
+import { useProvidersWithLoadingQuery } from '@/lib/queries/providers';
 import { useProviderModel } from '@/stores/providerModel';
 import { Tooltip } from '@radix-ui/react-tooltip';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -41,7 +41,7 @@ export default function ProviderModelSelect() {
   const LIMIT = 10;
 
   // Fetch selected model if it exists - this will now run on mount if there's a selected model
-  const { data: selectedModelData, isLoading: isLoadingSelectedModel } = useModel(selectedModel?.id);
+  const { data: selectedModelData, isLoading: isLoadingSelectedModel } = useModelQuery(selectedModel?.id);
 
   // Initialize selected model and track initial state for rollback
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function ProviderModelSelect() {
     fetchNextPage: fetchNextProviders,
     hasNextPage: hasMoreProviders,
     isFetching: isSearchingProviders,
-  } = useProvidersWithLoading(true, {
+  } = useProvidersWithLoadingQuery(true, {
     onLoadingChange: setLoading,
     limit: LIMIT,
     providerName: providerSearch || undefined,
@@ -94,7 +94,7 @@ export default function ProviderModelSelect() {
     fetchNextPage: fetchNextModels,
     hasNextPage: hasMoreModels,
     isFetching: isSearchingModels,
-  } = useModelsWithLoading(selectedProvider?.id, !!selectedProvider, {
+  } = useModelsWithLoadingQuery(selectedProvider?.id, !!selectedProvider, {
     onLoadingChange: setLoading,
     limit: LIMIT,
     modelName: modelSearch || undefined,

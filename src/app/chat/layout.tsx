@@ -1,8 +1,8 @@
 import { SidebarToggle } from '@/components/SidebarToggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { prefetchProviders } from '@/lib/queries/providers';
-import { prefetchSessions } from '@/lib/queries/session';
+import { prefetchProvidersQuery } from '@/lib/queries/providers';
+import { prefetchSessionsQuery } from '@/lib/queries/session';
 import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
 import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
@@ -12,9 +12,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   await Promise.all([
     // Prefetch the list of providers
-    prefetchProviders(queryClient, true),
+    prefetchProvidersQuery(queryClient, true),
     // Prefetch the first page of chat sessions
-    prefetchSessions(queryClient),
+    prefetchSessionsQuery(queryClient),
   ]);
 
   return (

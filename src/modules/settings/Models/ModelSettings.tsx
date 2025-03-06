@@ -17,8 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { createModel, deleteModel, updateModel } from '@/lib/api/models';
 import type { components } from '@/lib/api/schema';
-import { useModelsByProvider } from '@/lib/queries/models';
-import { useProviders } from '@/lib/queries/providers';
+import { useModelsByProviderQuery } from '@/lib/queries/models';
+import { useProvidersQuery } from '@/lib/queries/providers';
 import { ModelGroup } from '@/modules/settings/Models/ModelGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -55,10 +55,10 @@ export function ModelSettings() {
   const queryClient = useQueryClient();
 
   // Query for fetching providers (for the Provider select in the form)
-  const { data: providers = [], isLoading: isLoadingProviders } = useProviders();
+  const { data: providers = [], isLoading: isLoadingProviders } = useProvidersQuery();
 
   // Query for fetching all models grouped by provider
-  const { data: modelsByProvider, isLoading: isLoadingModels } = useModelsByProvider();
+  const { data: modelsByProvider, isLoading: isLoadingModels } = useModelsByProviderQuery();
 
   // Use an empty object if no data is available yet
   const groupedModels = modelsByProvider || {};

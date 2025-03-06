@@ -17,7 +17,7 @@ interface UseProvidersOptions {
 }
 
 // Hook for infinite loading in dropdowns
-export function useProvidersWithLoading(enabled = true, options: UseProvidersOptions = {}) {
+export function useProvidersWithLoadingQuery(enabled = true, options: UseProvidersOptions = {}) {
   const { onLoadingChange, limit = 10, providerName, isActive } = options;
 
   return useInfiniteQuery({
@@ -45,7 +45,7 @@ export function useProvidersWithLoading(enabled = true, options: UseProvidersOpt
 }
 
 // Hook for settings view - fetches all providers at once
-export function useProviders(isActive?: boolean) {
+export function useProvidersQuery(isActive?: boolean) {
   return useQuery({
     queryKey: providerKeys.filtered(isActive, undefined, undefined, undefined),
     queryFn: () => listProviders({ isActive, limit: 1000 }), // Fetch all providers at once for settings
@@ -53,7 +53,7 @@ export function useProviders(isActive?: boolean) {
 }
 
 // Prefetch function for infinite loading
-export async function prefetchProviders(queryClient: QueryClient, isActive?: boolean) {
+export async function prefetchProvidersQuery(queryClient: QueryClient, isActive?: boolean) {
   await queryClient.prefetchInfiniteQuery({
     queryKey: ['providers', { limit: 10, providerName: undefined, isActive }],
     queryFn: async ({ pageParam = 0 }) =>

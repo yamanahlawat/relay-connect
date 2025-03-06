@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { createProvider, deleteProvider, updateProvider } from '@/lib/api/providers';
 import type { components } from '@/lib/api/schema';
-import { useProviders } from '@/lib/queries/providers';
+import { useProvidersQuery } from '@/lib/queries/providers';
 import { EmptyState } from '@/modules/settings/EmptyState';
 import { ProviderGroup } from '@/modules/settings/Providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,7 +51,7 @@ export function ProviderSettings() {
   const queryClient = useQueryClient();
 
   // Query for fetching providers
-  const { data: providers = [], isLoading } = useProviders();
+  const { data: providers = [], isLoading } = useProvidersQuery();
 
   // Form setup
   const form = useForm<ProviderFormValues>({

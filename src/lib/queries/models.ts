@@ -21,7 +21,7 @@ interface UseModelsOptions {
 }
 
 // New hook to fetch a single model
-export function useModel(modelId: string | undefined) {
+export function useModelQuery(modelId: string | undefined) {
   return useQuery({
     queryKey: modelKeys.detail(modelId!),
     queryFn: () => getModel(modelId!),
@@ -30,7 +30,11 @@ export function useModel(modelId: string | undefined) {
 }
 
 // Updated query hook with infinite loading for dropdowns
-export function useModelsWithLoading(providerId: string | undefined, enabled = true, options: UseModelsOptions = {}) {
+export function useModelsWithLoadingQuery(
+  providerId: string | undefined,
+  enabled = true,
+  options: UseModelsOptions = {}
+) {
   const { onLoadingChange, limit = 10, modelName, initialData, isActive } = options;
 
   return useInfiniteQuery({
@@ -66,7 +70,7 @@ export function useModelsWithLoading(providerId: string | undefined, enabled = t
 }
 
 // Query hook to fetch models grouped by provider
-export function useModelsByProvider() {
+export function useModelsByProviderQuery() {
   return useQuery({
     queryKey: modelKeys.byProvider,
     queryFn: listModelsByProvider,

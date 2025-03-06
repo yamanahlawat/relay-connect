@@ -2,7 +2,7 @@ import { listChatSessions } from '@/lib/api/chatSessions';
 import { QueryClient } from '@tanstack/react-query';
 
 // Prefetch function for infinite loading
-export async function prefetchSessions(queryClient: QueryClient) {
+export async function prefetchSessionsQuery(queryClient: QueryClient) {
   await queryClient.prefetchInfiniteQuery({
     queryKey: ['chat-sessions', ''],
     queryFn: async ({ pageParam = { limit: 20, offset: 0 } }) => {

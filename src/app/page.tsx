@@ -1,7 +1,7 @@
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { prefetchProviders } from '@/lib/queries/providers';
-import { prefetchSessions } from '@/lib/queries/session';
+import { prefetchProvidersQuery } from '@/lib/queries/providers';
+import { prefetchSessionsQuery } from '@/lib/queries/session';
 import ProviderModelSelect from '@/modules/chat/components/ProviderModelSelect';
 import { AppSidebar } from '@/modules/chat/components/sidebar/AppSidebar';
 import { WelcomeContent } from '@/modules/chat/components/Welcome';
@@ -12,9 +12,9 @@ export default async function Page() {
 
   await Promise.all([
     // Prefetch active providers
-    prefetchProviders(queryClient, true),
+    prefetchProvidersQuery(queryClient, true),
     // Prefetch the first page of chat sessions
-    prefetchSessions(queryClient),
+    prefetchSessionsQuery(queryClient),
   ]);
 
   return (

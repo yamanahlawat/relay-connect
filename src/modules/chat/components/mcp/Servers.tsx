@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useRefreshListMCPServers } from '@/lib/queries/mcp';
+import { useListMCPServersQuery } from '@/lib/queries/mcp';
 import { cn } from '@/lib/utils';
 import { MCPServerTools } from '@/types/mcp';
 import { ChevronDown, CircuitBoard, PocketKnife } from 'lucide-react';
@@ -64,7 +64,7 @@ function ServerStatusIcon({ isLoading, hasServers }: { isLoading: boolean; hasSe
 
 export default function MCPServers() {
   const [openServer, setOpenServer] = useState<string | null>(null);
-  const { data: servers, isLoading } = useRefreshListMCPServers();
+  const { data: servers, isLoading } = useListMCPServersQuery();
   const [contentHeight, setContentHeight] = useState<number>(0);
 
   const hasServers = !!servers && servers.length > 0;

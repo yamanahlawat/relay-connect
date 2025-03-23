@@ -79,11 +79,11 @@ export function analyzeCode(content: string, language?: string): CodeAnalysis {
       // Set properties based on the actual code blocks, not the entire content
       result.hasCode = true;
       result.isMultiLine = hasMultiLineBlock; // Only true if any actual code block has multiple lines
-      result.language = matches[0][1] || language || 'text'; // Use first block's language as default
+      result.language = matches[0] && matches[0][1] ? matches[0][1] : language || 'text'; // Use first block's language as default
 
       // Only check shouldShowCascade if there's actual code
       if (codeBlockCount > 0) {
-        const firstCodeBlock = matches[0][2] || '';
+        const firstCodeBlock = matches[0] && matches[0][2] ? matches[0][2] : '';
         const lines = firstCodeBlock.split('\n').filter((line) => line.trim());
         result.lineCount = lines.length;
 

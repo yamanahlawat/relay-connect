@@ -1,17 +1,10 @@
 import { cn } from '@/lib/utils';
+import { analyzeCode } from '@/modules/chat/utils/codeUtils';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { CodeXml } from 'lucide-react';
 import { useEffect } from 'react';
-import { shouldShowCodeCTA } from '../../utils/codeUtils';
-function CodeBlock({
-  inline,
-  className,
-  children,
-}: {
-  inline: boolean;
-  className?: string;
-  children: React.ReactNode;
-}) {
+
+function CodeBlock({ className, children }: { className?: string; children: React.ReactNode }) {
   const { setActiveCode } = useCodeCascade();
 
   // Extract language from className
@@ -19,30 +12,34 @@ function CodeBlock({
   const lang = match?.[1] || 'text';
   const code = String(children).replace(/\n$/, '');
 
-  // Use our utility to determine if we should show CTA
-  const shouldShowCTA = !inline && shouldShowCodeCTA(code, lang);
+  // Use our comprehensive analysis utility
+  const analysis = analyzeCode(code, lang);
+
+  // Determine if this is inline code - either explicitly passed as inline,
+  // or single-line code with no language class
+  const isInline = !analysis.isMultiLine;
 
   // Store the code without opening the panel
   useEffect(() => {
-    // Only trigger for non-inline code blocks with content
-    if (!inline && code.trim() && shouldShowCTA) {
-      // Just store the code (don't open the panel)
-      setActiveCode(code, lang, false);
+    // Only trigger for multi-line code blocks with content that should show cascade
+    if (!isInline && code.trim() && analysis.shouldShowCascade) {
+      // For multi-line code, automatically open the panel (set third parameter to true)
+      setActiveCode(code, lang, true);
     }
-  }, [code, lang, inline, setActiveCode, shouldShowCTA]);
+  }, [code, lang, isInline, setActiveCode, analysis.shouldShowCascade]);
 
-  // Handle empty or invalid code blocks
+  // Handle empty code blocks
   if (!code.trim()) {
     return null;
   }
 
-  // For inline code or single-word code references
-  if (inline || (code.trim().split(/\s+/).length === 1 && !code.includes('\n'))) {
+  // For inline code or single-line code
+  if (isInline) {
     return <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-sm text-primary">{children}</code>;
   }
 
-  // Only show CTA if code contains actual content and meets our threshold
-  if (!shouldShowCTA) {
+  // For code blocks that shouldn't trigger cascade
+  if (!analysis.shouldShowCascade) {
     return (
       <div className="relative my-4 overflow-x-auto rounded-lg bg-muted p-4">
         <code className="text-sm">{code}</code>
@@ -50,6 +47,7 @@ function CodeBlock({
     );
   }
 
+  // For code blocks that should trigger cascade
   return (
     <div className="my-4 w-full">
       <div
@@ -76,7 +74,7 @@ function CodeBlock({
             <span className="truncate">Click to view in editor</span>
             <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground/30" />
             <span>
-              {code.split('\n').length} {code.split('\n').length === 1 ? 'line' : 'lines'}
+              {analysis.lineCount} {analysis.lineCount === 1 ? 'line' : 'lines'}
             </span>
           </div>
         </div>

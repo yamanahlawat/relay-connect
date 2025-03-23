@@ -1,23 +1,5 @@
 import client from '@/lib/api/client';
-import { CompletionRequest, CompletionResponse, StreamParams } from '@/types/chat';
-
-/**
- * Creates a one-time chat completion
- */
-export async function complete(sessionId: string, request: CompletionRequest): Promise<CompletionResponse> {
-  const { data, error } = await client.POST('/api/v1/chat/complete/{session_id}', {
-    params: {
-      path: { session_id: sessionId },
-    },
-    body: request,
-  });
-
-  if (error) {
-    throw new Error(`Failed to complete chat message. Error: ${error.detail}`);
-  }
-
-  return data;
-}
+import { StreamParams } from '@/types/chat';
 
 /**
  * Streams a chat completion for a given message.

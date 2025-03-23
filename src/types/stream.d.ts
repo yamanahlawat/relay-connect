@@ -95,6 +95,7 @@ export interface StreamingContent {
   content: string;
   index: number;
   is_complete: boolean;
+  stream_index?: number;
 }
 
 // Component props (snake_case since they handle API data)

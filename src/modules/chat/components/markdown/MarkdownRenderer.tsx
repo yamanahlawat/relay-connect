@@ -11,7 +11,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { containsCodeBlocks } from '../../utils/codeUtils';
+import { analyzeCode } from '../../utils/codeUtils';
 
 interface ProcessedContent {
   type: 'regular' | 'think';
@@ -42,15 +42,7 @@ export interface MarkdownRendererProps {
  */
 const markdownComponents: Partial<Components> = {
   code: ({ className, children }) => {
-    const content = String(children).trim();
-    if (content.split('\n').length === 1 && !className) {
-      return <code className="rounded bg-muted px-1 py-0.5 font-mono text-sm">{content}</code>;
-    }
-    return (
-      <CodeBlock inline={false} className={className}>
-        {children}
-      </CodeBlock>
-    );
+    return <CodeBlock className={className}>{children}</CodeBlock>;
   },
 
   a: ({ children, href }) => (
@@ -173,10 +165,11 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
   useEffect(() => {
     if (isStreaming) {
       const contentStr = typeof content === 'string' ? content : '';
-      const hasCodeBlock = containsCodeBlocks(contentStr);
-      setStreaming(hasCodeBlock);
+      const analysis = analyzeCode(contentStr);
+
+      setStreaming(analysis.hasCode, analysis.isMultiLine);
     } else {
-      setStreaming(false);
+      setStreaming(false, false);
     }
   }, [isStreaming, content, setStreaming]);
 

@@ -9,15 +9,18 @@ interface ChatSplitViewProps {
 }
 
 export function ChatSplitView({ children }: ChatSplitViewProps) {
-  const { showCodeView } = useCodeCascade();
+  const { showCodeView, isStreaming, isMultiLine } = useCodeCascade();
+
+  // Show the code view if showCodeView is true or if we're streaming multi-line code
+  const shouldShowCodeView = showCodeView || (isStreaming && isMultiLine);
 
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={showCodeView ? 60 : 100} minSize={30}>
+      <ResizablePanel defaultSize={shouldShowCodeView ? 60 : 100} minSize={30}>
         {children}
       </ResizablePanel>
 
-      {showCodeView && (
+      {shouldShowCodeView && (
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={40} minSize={30} className="slide-in-from-right">

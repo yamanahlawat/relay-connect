@@ -42,7 +42,9 @@ function CodeBlock({ className, children }: { className?: string; children: Reac
   if (!analysis.shouldShowCascade) {
     return (
       <div className="relative my-4 overflow-x-auto rounded-lg bg-muted p-4">
-        <code className="text-sm">{code}</code>
+        <pre className="whitespace-pre-wrap break-words text-sm">
+          <code className="font-mono">{code}</code>
+        </pre>
       </div>
     );
   }

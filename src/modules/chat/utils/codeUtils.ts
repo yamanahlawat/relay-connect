@@ -1,4 +1,4 @@
-// Common programming languages for the cascade
+// Common programming languages that should trigger the code cascade
 const codeLanguages = [
   'javascript',
   'typescript',
@@ -76,10 +76,10 @@ export function analyzeCode(content: string, language?: string): CodeAnalysis {
         }
       }
 
-      // Set properties based on the actual code blocks, not the entire content
+      // Set properties based on the actual code blocks
       result.hasCode = true;
-      result.isMultiLine = hasMultiLineBlock; // Only true if any actual code block has multiple lines
-      result.language = matches[0] && matches[0][1] ? matches[0][1] : language || 'text'; // Use first block's language as default
+      result.isMultiLine = hasMultiLineBlock;
+      result.language = matches[0] && matches[0][1] ? matches[0][1] : language || 'text';
 
       // Only check shouldShowCascade if there's actual code
       if (codeBlockCount > 0) {
@@ -87,14 +87,17 @@ export function analyzeCode(content: string, language?: string): CodeAnalysis {
         const lines = firstCodeBlock.split('\n').filter((line) => line.trim());
         result.lineCount = lines.length;
 
+        // Determine if language is in our supported code languages
         const isCodeLanguage = result.language && codeLanguages.includes(result.language.toLowerCase());
 
-        // Update cascade criteria - notice we're using result.isMultiLine here which is based on actual code blocks
-        result.shouldShowCascade =
-          result.isMultiLine ||
-          (isCodeLanguage && lines.length === 1 && firstCodeBlock.length > 60) ||
-          (!isCodeLanguage && lines.length > 2) ||
-          firstCodeBlock.length > 120;
+        // Only show cascade for recognized code languages
+        if (isCodeLanguage) {
+          // For recognized code languages, apply more detailed criteria
+          result.shouldShowCascade = result.isMultiLine || (lines.length === 1 && firstCodeBlock.length > 60);
+        } else {
+          // For non-code languages, never show cascade
+          result.shouldShowCascade = false;
+        }
       }
 
       return result;
@@ -111,32 +114,31 @@ export function analyzeCode(content: string, language?: string): CodeAnalysis {
     result.lineCount = lines.length;
     result.isMultiLine = lines.length > 1;
 
-    // Inline code should show cascade only if multi-line
-    result.shouldShowCascade = result.isMultiLine;
+    // Only show cascade for multi-line inline code if a language is explicitly provided
+    // and that language is in our supported code languages
+    const isCodeLanguage = language && codeLanguages.includes(language.toLowerCase());
+    result.shouldShowCascade = result.isMultiLine && isCodeLanguage;
 
     return result;
   }
 
-  // For the content itself
+  // For the content itself (not in markdown code blocks)
   const lines = content.split('\n');
   result.lineCount = lines.length;
   result.isMultiLine = lines.length > 1;
 
-  // If the content is directly code (not markdown)
+  // Check if this is a recognized code language
   const isCodeLanguage = language && codeLanguages.includes(language.toLowerCase());
-  if (content.trim()) {
-    // Only set hasCode to true if:
-    // 1. A language parameter was explicitly provided, or
-    // 2. We're operating on a code block (which would have been handled above)
-    result.hasCode = !!language; // Only consider it code if a language was specified
 
-    // Only calculate shouldShowCascade if it's actually code
-    if (result.hasCode) {
-      result.shouldShowCascade =
-        (isCodeLanguage && result.isMultiLine) ||
-        (isCodeLanguage && lines.length === 1 && content.length > 60) ||
-        (!isCodeLanguage && lines.length > 2) ||
-        content.length > 120;
+  if (content.trim()) {
+    // Only set hasCode to true if a language parameter was explicitly provided
+    result.hasCode = !!language;
+
+    // Only show cascade for recognized code languages
+    if (isCodeLanguage) {
+      result.shouldShowCascade = result.isMultiLine || (lines.length === 1 && content.length > 60);
+    } else {
+      result.shouldShowCascade = false;
     }
   }
 

@@ -1,16 +1,26 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useMarkdownComponents } from '@/modules/chat/components/markdown/hooks/useMarkdownComponents';
 import { Brain, ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
+import { getMathPlugins } from './MathRenderer';
 
 interface ThinkBlockProps {
-  children: React.ReactNode;
+  content: string;
   isStreaming?: boolean;
 }
 
-export default function ThinkBlock({ children, isStreaming }: ThinkBlockProps) {
+/**
+ * Component for rendering think blocks with collapsible content
+ */
+export function ThinkBlockRenderer({ content, isStreaming = false }: ThinkBlockProps) {
   // Set initial state based on streaming status
   const [isOpen, setIsOpen] = useState(isStreaming ?? false);
+  const components = useMarkdownComponents();
+  const [remarkPlugins, rehypePlugins] = getMathPlugins();
 
   // Update open state when streaming changes
   useEffect(() => {
@@ -20,6 +30,10 @@ export default function ThinkBlock({ children, isStreaming }: ThinkBlockProps) {
       setIsOpen(false);
     }
   }, [isStreaming]);
+
+  if (!content.trim()) {
+    return null;
+  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="my-3">
@@ -38,7 +52,13 @@ export default function ThinkBlock({ children, isStreaming }: ThinkBlockProps) {
       <CollapsibleContent className="pt-3">
         <div className="rounded-lg border bg-muted/20 p-4 text-sm leading-relaxed text-muted-foreground/90">
           <div className="prose-sm dark:prose-invert max-w-none text-[14px] leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-            {children}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkPlugins]}
+              rehypePlugins={[[rehypeSanitize], rehypePlugins]}
+              components={components}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         </div>
       </CollapsibleContent>

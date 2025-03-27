@@ -3,8 +3,12 @@ import { analyzeCode } from '@/modules/chat/utils/codeUtils';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { CodeXml } from 'lucide-react';
 import { useEffect } from 'react';
+import { CodeBlockProps } from '../types/markdownTypes';
 
-function CodeBlock({ className, children }: { className?: string; children: React.ReactNode }) {
+/**
+ * Component for rendering code blocks with syntax highlighting and interaction
+ */
+function CodeBlock({ className, children }: CodeBlockProps) {
   const { setActiveCode } = useCodeCascade();
 
   // Extract language from className

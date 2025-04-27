@@ -17,21 +17,6 @@ export interface MarkdownNode {
 }
 
 /**
- * Options for KaTeX rendering
- */
-export interface KatexOptions {
-  output: 'html' | 'mathml';
-  throwOnError: boolean;
-  errorColor: string;
-  macros: Record<string, string>;
-  fleqn: boolean;
-  leqno: boolean;
-  strict: boolean;
-  trust: boolean;
-  globalGroup: boolean;
-}
-
-/**
  * Processed content with think blocks
  */
 export interface ProcessedContent {

@@ -1,11 +1,12 @@
 import { cn } from '@/lib/utils';
 import { ContentItem } from '@/types/stream';
-import ReactMarkdown from 'react-markdown';
+import 'katex/dist/contrib/mhchem.js';
+import 'katex/dist/katex.min.css';
+import Markdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
-
-// Import our modular components and hooks
-import { MathContentWrapper, getMathPlugins } from './components/MathRenderer';
+import remarkMath from 'remark-math';
 import { ThinkBlockRenderer } from './components/ThinkBlock';
 import { useContentProcessor } from './hooks/useContentProcessor';
 import { useMarkdownComponents } from './hooks/useMarkdownComponents';
@@ -24,16 +25,12 @@ export interface MarkdownRendererProps {
 
 /**
  * Main markdown renderer component
- * Uses a modular approach with separate processors and component renderers
  */
 export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRendererProps) {
-  // Process the content using our hooks
+  // Process the content using our hooks - only for think blocks
   const processedContent = useContentProcessor(content);
   const markdownComponents = useMarkdownComponents();
   const { isActivelyStreaming } = useStreamingState(content, isStreaming);
-
-  // Get math plugins
-  const [remarkMathPlugin, rehypeKatexPlugin] = getMathPlugins();
 
   return (
     <div
@@ -47,17 +44,17 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         <ThinkBlockRenderer content={processedContent.thinkContent} isStreaming={isActivelyStreaming} />
       )}
 
-      {/* Regular Content */}
+      {/* Regular Content with Math Support - Super Simplified */}
       {processedContent.regularContent && (
-        <MathContentWrapper className={cn(isActivelyStreaming && 'opacity-90')}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMathPlugin]}
-            rehypePlugins={[[rehypeSanitize], rehypeKatexPlugin]}
+        <div className={cn(isActivelyStreaming && 'opacity-90')}>
+          <Markdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeSanitize, rehypeKatex]}
             components={markdownComponents}
           >
             {processedContent.regularContent}
-          </ReactMarkdown>
-        </MathContentWrapper>
+          </Markdown>
+        </div>
       )}
     </div>
   );

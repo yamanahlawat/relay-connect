@@ -1,9 +1,8 @@
 import { ContentItem } from '@/types/stream';
-import { processLatexContent } from './latexProcessor';
 import { ProcessedContent, processThinkBlocks } from './thinkBlockProcessor';
 
 /**
- * Main content processor that combines multiple processing steps
+ * Main content processor that handles think blocks
  * @param content String or ContentItem array to process
  */
 export function processContent(content: string | ContentItem[]): ProcessedContent {
@@ -19,9 +18,6 @@ export function processContent(content: string | ContentItem[]): ProcessedConten
     };
   }
 
-  // First process any LaTeX content
-  const processedMathContent = processLatexContent(contentStr);
-
-  // Then process think blocks
-  return processThinkBlocks(processedMathContent);
+  // Process think blocks - no special LaTeX processing needed
+  return processThinkBlocks(contentStr);
 }

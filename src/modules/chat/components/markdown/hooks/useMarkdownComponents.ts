@@ -1,8 +1,17 @@
-import { MarkdownNode } from '../types/markdownTypes';
 import Image from 'next/image';
 import React, { useMemo } from 'react';
 import { Components } from 'react-markdown';
-import CodeBlock from '../components/CodeBlock';
+import { MarkdownNode } from '../types/markdownTypes';
+// For proper Next.js image imports
+import { StaticImageData } from 'next/image';
+
+// Fix TypeScript interfaces for ReactMarkdown components
+interface CodeProps {
+  className?: string;
+  children?: React.ReactNode;
+  inline?: boolean;
+  node?: MarkdownNode; // More specific type than 'any'
+}
 
 /**
  * Hook to provide customized markdown components
@@ -11,14 +20,17 @@ import CodeBlock from '../components/CodeBlock';
 export function useMarkdownComponents(): Partial<Components> {
   return useMemo(
     () => ({
-      code: ({ className, children }) => {
-        // Skip code block processing for math blocks
-        if (className === 'math math-inline' || className === 'math math-display') {
-          return React.createElement('code', { className }, children);
-        }
-
+      // Standard code component for syntax highlighting
+      code: ({ className, children }: CodeProps) => {
         // Process normal code blocks
-        return React.createElement(CodeBlock, { className }, children);
+        const codeContent = Array.isArray(children) ? children.join('') : String(children || '');
+
+        // Math handling is now done by rehype-katex directly
+        return React.createElement(
+          'pre',
+          { className: 'overflow-auto p-2 rounded-lg' },
+          React.createElement('code', { className }, codeContent)
+        );
       },
 
       a: ({ children, href }) =>
@@ -61,15 +73,19 @@ export function useMarkdownComponents(): Partial<Components> {
           children
         ),
 
-      img: ({ src, alt }) =>
-        React.createElement(Image, {
-          src: src || '',
+      img: ({ src, alt }) => {
+        // Safe handling for Next.js Image src prop
+        const safeImageSrc: string | StaticImageData = typeof src === 'string' ? src : '';
+
+        return React.createElement(Image, {
+          src: safeImageSrc,
           alt: alt || '',
           className: 'rounded-lg border bg-muted',
           loading: 'lazy',
           width: 500,
           height: 300,
-        }),
+        });
+      },
 
       pre: ({ children }) => children,
 

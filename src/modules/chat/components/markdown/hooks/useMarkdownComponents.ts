@@ -1,17 +1,8 @@
-import Image from 'next/image';
+import Image, { StaticImageData } from 'next/image';
 import React, { useMemo } from 'react';
 import { Components } from 'react-markdown';
+import CodeBlock from '../components/CodeBlock';
 import { MarkdownNode } from '../types/markdownTypes';
-// For proper Next.js image imports
-import { StaticImageData } from 'next/image';
-
-// Fix TypeScript interfaces for ReactMarkdown components
-interface CodeProps {
-  className?: string;
-  children?: React.ReactNode;
-  inline?: boolean;
-  node?: MarkdownNode; // More specific type than 'any'
-}
 
 /**
  * Hook to provide customized markdown components
@@ -21,18 +12,10 @@ export function useMarkdownComponents(): Partial<Components> {
   return useMemo(
     () => ({
       // Standard code component for syntax highlighting
-      code: ({ className, children }: CodeProps) => {
-        // Process normal code blocks
-        const codeContent = Array.isArray(children) ? children.join('') : String(children || '');
-
-        // Math handling is now done by rehype-katex directly
-        return React.createElement(
-          'pre',
-          { className: 'overflow-auto p-2 rounded-lg' },
-          React.createElement('code', { className }, codeContent)
-        );
+      code: ({ className, children }) => {
+        // Process all code blocks with CodeBlock component
+        return React.createElement(CodeBlock, { className }, children);
       },
-
       a: ({ children, href }) =>
         React.createElement(
           'a',
@@ -90,50 +73,20 @@ export function useMarkdownComponents(): Partial<Components> {
       pre: ({ children }) => children,
 
       p: ({ children, node }) => {
+        // Check if paragraph contains a code block
         const hasCodeBlock = (node as MarkdownNode)?.children?.some(
           (child) => child.type === 'element' && (child.tagName === 'code' || child.tagName === 'pre')
         );
 
-        // Check for math blocks to avoid treating them as code blocks
-        const hasMathBlock = (node as MarkdownNode)?.children?.some(
-          (child) =>
-            child.type === 'element' &&
-            child.tagName === 'code' &&
-            typeof child.properties?.className === 'string' &&
-            child.properties.className.includes('math')
-        );
-
-        if (hasCodeBlock && !hasMathBlock) {
+        if (hasCodeBlock) {
           return React.createElement('div', { className: 'my-4' }, children);
         }
 
         return React.createElement('p', { className: 'leading-7 [&:not(:first-child)]:mt-4' }, children);
       },
 
-      // Ensure inline math in list items renders properly
-      li: ({ children, node }) => {
-        // Check if this list item contains math expressions
-        const hasMathBlock = (node as MarkdownNode)?.children?.some(
-          (child) =>
-            (child.type === 'element' &&
-              child.tagName === 'code' &&
-              typeof child.properties?.className === 'string' &&
-              child.properties.className.includes('math')) ||
-            (child.type === 'element' &&
-              child.tagName === 'p' &&
-              child.children?.some(
-                (grandchild) =>
-                  grandchild.type === 'element' &&
-                  grandchild.tagName === 'code' &&
-                  typeof grandchild.properties?.className === 'string' &&
-                  grandchild.properties.className.includes('math')
-              ))
-        );
-
-        if (hasMathBlock) {
-          return React.createElement('li', { className: 'math-list-item' }, children);
-        }
-
+      // Simple list item component
+      li: ({ children }) => {
         return React.createElement('li', {}, children);
       },
 

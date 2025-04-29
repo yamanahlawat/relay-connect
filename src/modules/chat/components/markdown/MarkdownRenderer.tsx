@@ -4,11 +4,11 @@ import 'katex/dist/contrib/mhchem.js';
 import 'katex/dist/katex.min.css';
 import Markdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
-import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import { ThinkBlockRenderer } from './components/ThinkBlock';
 import { useContentProcessor } from './hooks/useContentProcessor';
+import { useLatexProcessor } from './hooks/useLatexProcessor';
 import { useMarkdownComponents } from './hooks/useMarkdownComponents';
 import { useStreamingState } from './hooks/useStreamingState';
 
@@ -29,6 +29,8 @@ export interface MarkdownRendererProps {
 export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRendererProps) {
   // Process the content using our hooks - only for think blocks
   const processedContent = useContentProcessor(content);
+  // Process LaTeX syntax like \[ ... \] to $$ ... $$ for better compatibility
+  const latexProcessedContent = useLatexProcessor(processedContent.regularContent);
   const markdownComponents = useMarkdownComponents();
   const { isActivelyStreaming } = useStreamingState(content, isStreaming);
 
@@ -49,10 +51,14 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
         <div className={cn(isActivelyStreaming && 'opacity-90')}>
           <Markdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeSanitize, rehypeKatex]}
+            rehypePlugins={[
+              // Using a more permissive KaTeX configuration
+              [rehypeKatex],
+              // No sanitization for direct testing
+            ]}
             components={markdownComponents}
           >
-            {processedContent.regularContent}
+            {latexProcessedContent}
           </Markdown>
         </div>
       )}

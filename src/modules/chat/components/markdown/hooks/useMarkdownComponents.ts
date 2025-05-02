@@ -49,12 +49,26 @@ export function useMarkdownComponents(): Partial<Components> {
           React.createElement('table', { className: 'w-full border-collapse text-sm' }, children)
         ),
 
-      th: ({ children }) =>
-        React.createElement(
+      th: ({ children }) => {
+        return React.createElement(
           'th',
           { className: 'border-b border-r bg-muted px-4 py-2 text-left font-medium last:border-r-0' },
           children
-        ),
+        );
+      },
+
+      // Handle table data cells
+      td: ({ children }) => {
+        return React.createElement(
+          'td',
+          {
+            className: 'border-b border-r px-4 py-2 text-left last:border-r-0',
+            // Use normal wrapping for table cells to allow LaTeX to render properly
+            style: { whiteSpace: 'normal', verticalAlign: 'middle' },
+          },
+          children
+        );
+      },
 
       img: ({ src, alt }) => {
         // Safe handling for Next.js Image src prop

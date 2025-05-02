@@ -64,9 +64,13 @@ const DELIMITERS: DelimiterMap[] = [
  * @param content The content to process
  * @returns Processed content with standardized math delimiters
  */
+
 /**
  * Process a single content fragment to fix common LaTeX issues
  * that may cause rendering problems
+ *
+ * @param content The LaTeX content to process
+ * @returns Processed LaTeX content with fixed syntax
  */
 function fixLatexContent(content: string): string {
   // Fix common LaTeX issues that might prevent proper rendering
@@ -88,7 +92,61 @@ function fixLatexContent(content: string): string {
       .replace(/\\text\{([^{}]+)\}/g, '\\text{$1}')
       // Fix common operators
       .replace(/\\(sum|prod|int|oint)\b/g, '\\$1')
+      // Preserve chemical equations
+      .replace(/\\ce\{([^{}]+)\}/g, '\\ce{$1}')
   );
+}
+
+/**
+ * Determines if content is likely to be inside a table cell with LaTeX notation
+ *
+ * @param content The content to check
+ * @returns True if the content appears to be LaTeX inside a table cell
+ */
+function isContentLikelyInTable(content: string): boolean {
+  return (
+    /\|.*\\[a-zA-Z]+.*\|/.test(content) || // Pipe characters with LaTeX commands
+    /\\frac\{.*\}\{.*\}/.test(content) || // Fraction notation
+    /\\mathbf\{[a-zA-Z]\}.*\\cdot/.test(content) || // Vector dot product notation
+    /\\left\(.*\\right\)/.test(content) || // Parentheses with left/right commands
+    /\\text\{(comp|proj)\}/.test(content) || // Text commands for projection terminology
+    /\|\\mathbf\{b\}\|/.test(content) || // Vector norm notation
+    /\\frac\{\\mathbf\{a\}.*\\mathbf\{b\}\}/.test(content) // Vector fraction notation
+  );
+}
+
+/**
+ * Processes LaTeX content that isn't already wrapped in math delimiters
+ *
+ * @param content The content to process
+ * @param isInTable Whether the content is likely in a table
+ * @returns Processed content with appropriate math delimiters
+ */
+function processUnwrappedLatexContent(content: string, isInTable: boolean): string {
+  // Handle multi-line or complex equations
+  if (content.includes('\n') || content.length > 50 || content.includes('\\begin{')) {
+    return `$$${content}$$`; // Block math
+  }
+
+  // Handle table content
+  if (isInTable) {
+    // Check if already wrapped in math delimiters
+    const isAlreadyWrapped = /^\s*\$(.*)\$\s*$/.test(content);
+    if (isAlreadyWrapped) {
+      return content; // Already wrapped, return as is
+    }
+
+    // Check if it contains LaTeX notation that needs to be wrapped
+    const containsLatexNotation = /\\frac|\\mathbf|\\left|\\right|\\text\{|\\cdot/.test(content);
+    if (containsLatexNotation) {
+      return `$${content}$`; // Wrap in inline math delimiters
+    }
+
+    return content; // No LaTeX notation, return as is
+  }
+
+  // Simple inline equations
+  return `$${content}$`;
 }
 
 export function useLatexProcessor(content: string): string {
@@ -139,14 +197,13 @@ export function useLatexProcessor(content: string): string {
         });
       }
 
-      // We'll skip the special table cell handling here as it's causing issues with double wrapping
-      // The table cells will be handled by the markdown renderer directly
+      /**
+       * Process raw LaTeX blocks that might not be properly delimited
+       * We look for equation-like content not already in math delimiters
+       * and wrap it appropriately
+       */
 
-      // Handle LaTeX notation that might already be in the content
-      // Convert standard LaTeX notation to KaTeX compatible format
-
-      // Process raw LaTeX blocks that might not be properly delimited
-      // Look for equation-like content not already in math delimiters
+      // Define patterns that indicate LaTeX mathematical notation
       const equationPatterns = [
         // Common equation patterns
         /\\frac\{[^{}]+\}\{[^{}]+\}/,
@@ -164,50 +221,28 @@ export function useLatexProcessor(content: string): string {
         /\\text\{(comp|proj)\}/,
         /\\cdot/,
         /\\mathbf\{[a-zA-Z]\}/,
+        // Chemical equation notation (mhchem)
+        /\\ce\{.*?\}/,
       ];
 
-      // Special handling for table content with LaTeX notation
-      // This regex detects if the content might be inside a table cell with LaTeX
-      const isLikelyInTable =
-        /\|.*\\[a-zA-Z]+.*\|/.test(result) ||
-        /\\frac\{.*\}\{.*\}/.test(result) ||
-        /\\mathbf\{[a-zA-Z]\}.*\\cdot/.test(result) ||
-        /\\left\(.*\\right\)/.test(result) ||
-        /\\text\{(comp|proj)\}/.test(result) ||
-        /\|\\mathbf\{b\}\|/.test(result) ||
-        /\\frac\{\\mathbf\{a\}.*\\mathbf\{b\}\}/.test(result);
+      /**
+       * Special handling for table content with LaTeX notation
+       * This detects if the content might be inside a table cell with LaTeX
+       * by checking for common patterns found in mathematical tables
+       */
+      const isLikelyInTable = isContentLikelyInTable(result);
 
       // Check if content contains LaTeX notation but isn't wrapped in math delimiters
       const hasRawLatex = equationPatterns.some((pattern) => pattern.test(result));
       const isAlreadyInMathDelimiters = /^\s*\$\$|\$/.test(result.trim());
 
       if (hasRawLatex && !isAlreadyInMathDelimiters) {
-        // If we detect LaTeX notation not in math delimiters, wrap it appropriately
-        if (result.includes('\n') || result.length > 50 || result.includes('\\begin{')) {
-          // Multi-line or complex equations should be block math
-          result = `$$${result}$$`;
-        } else if (isLikelyInTable) {
-          // For table content, check if it's already wrapped in math delimiters
-          const isAlreadyWrapped = /^\s*\$(.*)\$\s*$/.test(result);
+        // Process content based on its characteristics
+        result = processUnwrappedLatexContent(result, isLikelyInTable);
 
-          if (isAlreadyWrapped) {
-            // If already wrapped, don't modify it
-            return result;
-          }
-
-          // If not already wrapped, check if it contains LaTeX notation that needs to be wrapped
-          const containsLatexNotation = /\\frac|\\mathbf|\\left|\\right|\\text\{|\\cdot/.test(result);
-
-          if (containsLatexNotation) {
-            // Wrap the entire content in math delimiters
-            result = `$${result}$`;
-          }
-
-          // Return the result without additional processing
+        // If we've already handled table content, return early
+        if (isLikelyInTable) {
           return result;
-        } else {
-          // Simple inline equations
-          result = `$${result}$`;
         }
       }
 

@@ -110,7 +110,6 @@ export function CodeCascadeView() {
               margin: 0,
               fontSize: '13px',
               lineHeight: '1.6',
-              padding: '1rem 1.25rem',
             }}
             codeTagProps={{
               style: {

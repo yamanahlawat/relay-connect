@@ -5,7 +5,17 @@ import CodeBlock from '../components/CodeBlock';
 import { MarkdownNode } from '../types/markdownTypes';
 
 /**
- * Hook to provide customized markdown components
+ * Hook to provide customized markdown components for rendering different elements
+ * in the markdown content, including special handling for LaTeX in tables.
+ *
+ * This hook provides styling and behavior for:
+ * - Code blocks with syntax highlighting
+ * - Links with proper styling and security attributes
+ * - Lists (ordered and unordered)
+ * - Tables with proper LaTeX rendering support
+ * - Images with Next.js Image optimization
+ * - Paragraphs with special handling for code blocks
+ *
  * @returns An object with component definitions for react-markdown
  */
 export function useMarkdownComponents(): Partial<Components> {
@@ -57,7 +67,11 @@ export function useMarkdownComponents(): Partial<Components> {
         );
       },
 
-      // Handle table data cells
+      /**
+       * Table cell component with special handling for LaTeX content
+       * Uses normal text wrapping and vertical alignment to ensure
+       * mathematical expressions render properly in table cells
+       */
       td: ({ children }) => {
         return React.createElement(
           'td',

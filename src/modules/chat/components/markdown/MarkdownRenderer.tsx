@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ContentItem } from '@/types/stream';
-import 'katex/dist/contrib/mhchem.js';
+// Import KaTeX styles and extensions
+import 'katex/dist/contrib/mhchem.js'; // Support for chemical equations
 import 'katex/dist/katex.min.css';
 import Markdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -12,6 +13,121 @@ import { useContentProcessor } from './hooks/useContentProcessor';
 import { useLatexProcessor } from './hooks/useLatexProcessor';
 import { useMarkdownComponents } from './hooks/useMarkdownComponents';
 import { useStreamingState } from './hooks/useStreamingState';
+
+// KaTeX configuration options for math rendering
+const katexOptions = {
+  // Enable all KaTeX features and extensions
+  strict: false,
+  trust: true,
+  macros: {
+    // Common LaTeX macros
+    '\\R': '\\mathbb{R}',
+    '\\N': '\\mathbb{N}',
+    '\\Z': '\\mathbb{Z}',
+    '\\Q': '\\mathbb{Q}',
+    '\\C': '\\mathbb{C}',
+    '\\vec': '\\mathbf',
+    // Additional macros for vector notation and projections
+    '\\norm': '\\lVert#1\\rVert',
+    '\\abs': '\\lvert#1\\rvert',
+    '\\comp': '\\text{comp}',
+    '\\proj': '\\text{proj}',
+    // Chemistry-specific macros
+    '\\ph': '\\text{pH}',
+    '\\reaction': '\\ce{#1}',
+  },
+  throwOnError: false,
+  errorColor: '#FF6188',
+  output: 'html', // Use HTML output for better rendering
+  fleqn: false, // Display math centered (not left-aligned)
+  leqno: false, // Display equation numbers on the right
+  displayMode: undefined, // Let KaTeX decide based on delimiters
+  minRuleThickness: 0.05,
+  maxSize: 10,
+  maxExpand: 1000,
+  globalGroup: true, // Allow macros to persist across math elements
+};
+
+// Sanitization options for HTML content with KaTeX support
+const sanitizeOptions = {
+  attributes: {
+    '*': ['className', 'style'],
+    span: ['className', 'style'],
+    div: ['className', 'style'],
+  },
+  // Allow KaTeX classes
+  clobberPrefix: 'user-content-',
+  tagNames: [
+    // Standard HTML tags
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'p',
+    'a',
+    'img',
+    'hr',
+    'br',
+    'b',
+    'i',
+    'strong',
+    'em',
+    'code',
+    'pre',
+    'ol',
+    'ul',
+    'li',
+    'blockquote',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
+    // KaTeX specific tags
+    'span',
+    'div',
+    'svg',
+    'path',
+    'line',
+    'circle',
+    'rect',
+    'ellipse',
+    'polyline',
+    'polygon',
+    'g',
+    'defs',
+    'use',
+    'foreignObject',
+    'style',
+    'annotation',
+    'semantics',
+    'math',
+    'mrow',
+    'mfrac',
+    'msqrt',
+    'msub',
+    'msup',
+    'msubsup',
+    'munder',
+    'mover',
+    'munderover',
+    'mi',
+    'mn',
+    'mo',
+    'ms',
+    'mtext',
+    'mspace',
+    'mtable',
+    'mtr',
+    'mtd',
+    'mmultiscripts',
+    'mprescripts',
+    'none',
+  ],
+};
 
 export interface MarkdownRendererProps {
   /**
@@ -26,13 +142,25 @@ export interface MarkdownRendererProps {
 
 /**
  * Main markdown renderer component
+ *
+ * Renders markdown content with support for:
+ * - LaTeX mathematical notation (inline and block)
+ * - Code syntax highlighting
+ * - Tables with proper math rendering
+ * - Think blocks for LLM thought processes
+ * - GFM (GitHub Flavored Markdown)
  */
 export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRendererProps) {
-  // Process the content using our hooks - only for think blocks
+  // Process the content to extract think blocks and regular content
   const processedContent = useContentProcessor(content);
-  // Process LaTeX syntax like \[ ... \] to $$ ... $$ for better compatibility
+
+  // Process LaTeX syntax (e.g., \[ ... \] to $$ ... $$) for better compatibility with KaTeX
   const latexProcessedContent = useLatexProcessor(processedContent.regularContent);
+
+  // Get custom markdown components for rendering different elements
   const markdownComponents = useMarkdownComponents();
+
+  // Determine if content is actively streaming for animation effects
   const { isActivelyStreaming } = useStreamingState(content, isStreaming);
 
   return (
@@ -53,122 +181,10 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
           <Markdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[
-              // Using a more permissive KaTeX configuration with all options enabled
-              [
-                rehypeKatex,
-                {
-                  // Enable all KaTeX features and extensions
-                  strict: false,
-                  trust: true,
-                  macros: {
-                    // Common LaTeX macros
-                    '\\R': '\\mathbb{R}',
-                    '\\N': '\\mathbb{N}',
-                    '\\Z': '\\mathbb{Z}',
-                    '\\Q': '\\mathbb{Q}',
-                    '\\C': '\\mathbb{C}',
-                    '\\vec': '\\mathbf',
-                    // Additional macros for vector notation and projections
-                    '\\norm': '\\lVert#1\\rVert',
-                    '\\abs': '\\lvert#1\\rvert',
-                    '\\comp': '\\text{comp}',
-                    '\\proj': '\\text{proj}',
-                  },
-                  throwOnError: false,
-                  errorColor: '#FF6188',
-                  output: 'html', // Use HTML output for better rendering
-                  fleqn: false, // Display math centered (not left-aligned)
-                  leqno: false, // Display equation numbers on the right
-                  displayMode: undefined, // Let KaTeX decide based on delimiters
-                  minRuleThickness: 0.05,
-                  maxSize: 10,
-                  maxExpand: 1000,
-                  globalGroup: true, // Allow macros to persist across math elements
-                },
-              ],
-              // Add sanitization that allows math classes
-              [
-                rehypeSanitize,
-                {
-                  attributes: {
-                    '*': ['className', 'style'],
-                    span: ['className', 'style'],
-                    div: ['className', 'style'],
-                  },
-                  // Allow KaTeX classes
-                  clobberPrefix: 'user-content-',
-                  tagNames: [
-                    // Standard HTML tags
-                    'h1',
-                    'h2',
-                    'h3',
-                    'h4',
-                    'h5',
-                    'h6',
-                    'p',
-                    'a',
-                    'img',
-                    'hr',
-                    'br',
-                    'b',
-                    'i',
-                    'strong',
-                    'em',
-                    'code',
-                    'pre',
-                    'ol',
-                    'ul',
-                    'li',
-                    'blockquote',
-                    'table',
-                    'thead',
-                    'tbody',
-                    'tr',
-                    'th',
-                    'td',
-                    // KaTeX specific tags
-                    'span',
-                    'div',
-                    'svg',
-                    'path',
-                    'line',
-                    'circle',
-                    'rect',
-                    'ellipse',
-                    'polyline',
-                    'polygon',
-                    'g',
-                    'defs',
-                    'use',
-                    'foreignObject',
-                    'style',
-                    'annotation',
-                    'semantics',
-                    'math',
-                    'mrow',
-                    'mfrac',
-                    'msqrt',
-                    'msub',
-                    'msup',
-                    'msubsup',
-                    'munder',
-                    'mover',
-                    'munderover',
-                    'mi',
-                    'mn',
-                    'mo',
-                    'ms',
-                    'mtext',
-                    'mspace',
-                    'mtable',
-                    'mtr',
-                    'mtd',
-                    'mmultiscripts',
-                    'mprescripts',
-                    'none',
-                  ],
-                },
-              ],
+              // Apply KaTeX processing for math rendering
+              [rehypeKatex, katexOptions],
+              // Apply sanitization that allows math classes and elements
+              [rehypeSanitize, sanitizeOptions],
             ]}
             components={markdownComponents}
           >

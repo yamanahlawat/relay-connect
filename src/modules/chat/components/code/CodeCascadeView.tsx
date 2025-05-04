@@ -19,6 +19,7 @@ export function CodeCascadeView() {
   const modifiedStyle = {
     ...baseStyle,
     // Remove any background property to avoid conflicts
+    // update line numbers style to be not italic
     'pre[class*="language-"]': {
       ...baseStyle['pre[class*="language-"]'],
       background: undefined,
@@ -104,10 +105,11 @@ export function CodeCascadeView() {
           <SyntaxHighlighter
             language={language?.toLowerCase() || 'text'}
             style={modifiedStyle}
-            showLineNumbers={false}
+            showLineNumbers={true}
             wrapLines
             customStyle={{
               margin: 0,
+              padding: '1rem 0',
               fontSize: '13px',
               lineHeight: '1.6',
             }}

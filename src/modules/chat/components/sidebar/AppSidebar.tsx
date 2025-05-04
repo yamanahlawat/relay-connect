@@ -33,6 +33,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
   const [searchQuery, setSearchQuery] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [originalTitle, setOriginalTitle] = useState('');
 
   const pathname = usePathname();
   const router = useRouter();
@@ -78,15 +79,24 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
     }
   };
 
-  const handleRenameChat = async (chatId: string, shouldSave: boolean) => {
-    if (!shouldSave || !editValue.trim() || editValue === editingChatId) {
+  const handleRenameChat = async (chatId: string) => {
+    const trimmedValue = editValue.trim();
+
+    if (!trimmedValue) {
+      setEditingChatId(null);
+      setEditValue('');
+      return;
+    }
+
+    // If the new title is the same as the original title, don't make an API call
+    if (trimmedValue === originalTitle) {
       setEditingChatId(null);
       setEditValue('');
       return;
     }
 
     try {
-      await updateChatSession(chatId, { title: editValue.trim() });
+      await updateChatSession(chatId, { title: trimmedValue });
       toast.success('Chat renamed successfully');
       await refetch();
     } catch {
@@ -94,6 +104,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
     } finally {
       setEditingChatId(null);
       setEditValue('');
+      setOriginalTitle('');
     }
   };
 
@@ -156,9 +167,10 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
                           onStartEdit={() => {
                             setEditingChatId(chat.id);
                             setEditValue(chat.title);
+                            setOriginalTitle(chat.title);
                           }}
                           onFinishEdit={() => {
-                            handleRenameChat(chat.id, true);
+                            handleRenameChat(chat.id);
                           }}
                           onDelete={(e: React.MouseEvent) => handleDeleteChat(chat.id, e)}
                           clearCode={clearCode}

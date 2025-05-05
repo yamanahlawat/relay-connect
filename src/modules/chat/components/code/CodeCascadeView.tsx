@@ -104,10 +104,11 @@ export function CodeCascadeView() {
           <SyntaxHighlighter
             language={language?.toLowerCase() || 'text'}
             style={modifiedStyle}
-            showLineNumbers={false}
+            showLineNumbers={true}
             wrapLines
             customStyle={{
               margin: 0,
+              padding: '1rem 0',
               fontSize: '13px',
               lineHeight: '1.6',
             }}

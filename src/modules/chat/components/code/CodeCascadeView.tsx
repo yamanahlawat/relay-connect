@@ -19,7 +19,6 @@ export function CodeCascadeView() {
   const modifiedStyle = {
     ...baseStyle,
     // Remove any background property to avoid conflicts
-    // update line numbers style to be not italic
     'pre[class*="language-"]': {
       ...baseStyle['pre[class*="language-"]'],
       background: undefined,

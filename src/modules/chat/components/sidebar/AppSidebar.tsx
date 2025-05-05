@@ -92,6 +92,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
     if (trimmedValue === originalTitle) {
       setEditingChatId(null);
       setEditValue('');
+      setOriginalTitle('');
       return;
     }
 

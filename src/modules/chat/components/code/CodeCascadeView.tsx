@@ -1,7 +1,6 @@
 import { CopyButton } from '@/components/CopyButton';
 import { Button } from '@/components/ui/button';
 import { useCodeCascade } from '@/stores/codeCascade';
-
 import { Loader2, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef } from 'react';
@@ -108,7 +107,7 @@ export function CodeCascadeView() {
             wrapLines
             customStyle={{
               margin: 0,
-              padding: '1rem 0',
+              padding: '1rem 0.5rem',
               fontSize: '13px',
               lineHeight: '1.6',
             }}

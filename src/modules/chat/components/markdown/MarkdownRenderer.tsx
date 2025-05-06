@@ -1,11 +1,9 @@
 import { cn } from '@/lib/utils';
 import { ContentItem } from '@/types/stream';
-// Import KaTeX styles and extensions
-import 'katex/dist/contrib/mhchem.js'; // Support for chemical equations
+import 'katex/dist/contrib/mhchem.js';
 import 'katex/dist/katex.min.css';
 import Markdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
-import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import { ThinkBlockRenderer } from './components/ThinkBlock';
@@ -46,87 +44,6 @@ const katexOptions = {
   maxSize: 10,
   maxExpand: 1000,
   globalGroup: true, // Allow macros to persist across math elements
-};
-
-// Sanitization options for HTML content with KaTeX support
-const sanitizeOptions = {
-  attributes: {
-    '*': ['className', 'style'],
-    span: ['className', 'style'],
-    div: ['className', 'style'],
-  },
-  // Allow KaTeX classes
-  clobberPrefix: 'user-content-',
-  tagNames: [
-    // Standard HTML tags
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'p',
-    'a',
-    'img',
-    'hr',
-    'br',
-    'b',
-    'i',
-    'strong',
-    'em',
-    'code',
-    'pre',
-    'ol',
-    'ul',
-    'li',
-    'blockquote',
-    'table',
-    'thead',
-    'tbody',
-    'tr',
-    'th',
-    'td',
-    // KaTeX specific tags
-    'span',
-    'div',
-    'svg',
-    'path',
-    'line',
-    'circle',
-    'rect',
-    'ellipse',
-    'polyline',
-    'polygon',
-    'g',
-    'defs',
-    'use',
-    'foreignObject',
-    'style',
-    'annotation',
-    'semantics',
-    'math',
-    'mrow',
-    'mfrac',
-    'msqrt',
-    'msub',
-    'msup',
-    'msubsup',
-    'munder',
-    'mover',
-    'munderover',
-    'mi',
-    'mn',
-    'mo',
-    'ms',
-    'mtext',
-    'mspace',
-    'mtable',
-    'mtr',
-    'mtd',
-    'mmultiscripts',
-    'mprescripts',
-    'none',
-  ],
 };
 
 export interface MarkdownRendererProps {
@@ -183,8 +100,6 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
             rehypePlugins={[
               // Apply KaTeX processing for math rendering
               [rehypeKatex, katexOptions],
-              // Apply sanitization that allows math classes and elements
-              [rehypeSanitize, sanitizeOptions],
             ]}
             components={markdownComponents}
           >

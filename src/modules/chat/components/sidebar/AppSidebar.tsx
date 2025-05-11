@@ -23,7 +23,7 @@ import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Loader, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
@@ -136,7 +136,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
         <ScrollArea className="h-full">
           {isLoading ? (
             <div className="flex justify-center py-1.5 opacity-70">
-              <Loader className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
             </div>
           ) : !hasChats ? (
             <NoResults searchQuery={searchQuery} />
@@ -185,7 +185,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           )}
           {isFetchingNextPage && (
             <div className="flex justify-center py-1.5 opacity-70">
-              <Loader className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
             </div>
           )}
         </ScrollArea>

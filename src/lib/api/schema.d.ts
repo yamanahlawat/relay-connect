@@ -606,18 +606,61 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List Mcp Tools
-     * @description List all available MCP tools grouped by server.
-     *     Returns:
-     *         List of servers and their available tools.
+     * List Mcp Servers
+     * @description ## List All MCP Servers
+     *     List all configured MCP servers with their configurations and statuses.
+     *
+     *     MCP servers are configured via code in the MCP_SERVERS dictionary
+     *     in the initialize.py file. This endpoint provides a view of all configured servers,
+     *     regardless of their running state.
+     *
+     *     ### Parameters
+     *     - **offset**: Number of items to skip (default: 0)
+     *     - **limit**: Maximum number of items to return (default: 10)
+     *
+     *     ### Returns
+     *     List of all MCP server configurations with status and available tools
      */
-    get: operations['list_mcp_tools_api_v1_mcp__get'];
+    get: operations['list_mcp_servers_api_v1_mcp__get'];
     put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/v1/mcp/{server_id}/toggle/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Toggle Mcp Server
+     * @description ## Toggle MCP Server
+     *     Toggle a server's enabled status. This is the only runtime modification supported.
+     *
+     *     All other configuration changes should be made in the DEFAULT_MCP_SERVERS dictionary
+     *     in the initialize.py file.
+     *
+     *     ### Parameters
+     *     - **server_id**: UUID of the MCP server
+     *
+     *     ### Returns
+     *     The toggled server status
+     *
+     *     ### Raises
+     *     - **404**: Server not found
+     */
+    patch: operations['toggle_mcp_server_api_v1_mcp__server_id__toggle__patch'];
     trace?: never;
   };
 }
@@ -667,16 +710,6 @@ export interface components {
      * @enum {string}
      */
     AttachmentType: 'image' | 'video' | 'document' | 'audio';
-    /**
-     * BaseTool
-     * @description Base model for available tool metadata.
-     */
-    BaseTool: {
-      /** Name */
-      name: string;
-      /** Description */
-      description?: string | null;
-    };
     /** Body_upload_attachment_api_v1_attachments__folder___post */
     Body_upload_attachment_api_v1_attachments__folder___post: {
       /**
@@ -731,12 +764,95 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
     };
-    /** MCPServerTools */
-    MCPServerTools: {
+    /**
+     * MCPServerResponse
+     * @description Schema for MCP server response
+     */
+    MCPServerResponse: {
+      /**
+       * Command
+       * @description Command to execute
+       */
+      command: string;
+      /**
+       * Args
+       * @description Arguments passed to command
+       */
+      args: string[];
+      /**
+       * Enabled
+       * @description Whether server is enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Env
+       * @description Environment variables
+       */
+      env?: {
+        [key: string]: string;
+      } | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
       /** Name */
       name: string;
-      /** Tools */
-      tools: components['schemas']['BaseTool'][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * @description Current operational status of the server
+       * @default unknown
+       */
+      status: components['schemas']['ServerStatus'];
+      /**
+       * Available Tools
+       * @description Available tools from this server
+       */
+      available_tools?: components['schemas']['MCPTool'][];
+    };
+    /**
+     * MCPServerToggleResponse
+     * @description Response schema for toggling a server
+     */
+    MCPServerToggleResponse: {
+      /** Name */
+      name: string;
+      /** Enabled */
+      enabled: boolean;
+      /**
+       * @description Current operational status of the server
+       * @default unknown
+       */
+      status: components['schemas']['ServerStatus'];
+    };
+    /**
+     * MCPTool
+     * @description Represents an MCP tool with its metadata.
+     */
+    MCPTool: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Server Name
+       * @description Name of the MCP server providing this tool
+       */
+      server_name: string;
+      /** Input Schema */
+      input_schema: {
+        [key: string]: unknown;
+      };
     };
     /**
      * MessageCreate
@@ -753,7 +869,9 @@ export interface components {
       parent_id?: string | null;
       usage?: components['schemas']['MessageUsage'];
       /** Extra Data */
-      extra_data?: Record<string, never>;
+      extra_data?: {
+        [key: string]: unknown;
+      };
       /**
        * Attachment Ids
        * @description List of attachment IDs already uploaded
@@ -794,7 +912,9 @@ export interface components {
       /** Error Message */
       error_message?: string | null;
       /** Extra Data */
-      extra_data: Record<string, never>;
+      extra_data: {
+        [key: string]: unknown;
+      };
     };
     /**
      * MessageRole
@@ -817,7 +937,9 @@ export interface components {
       content?: string | null;
       status?: components['schemas']['MessageStatus'] | null;
       /** Extra Data */
-      extra_data?: Record<string, never> | null;
+      extra_data?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * MessageUsage
@@ -873,7 +995,9 @@ export interface components {
        */
       top_p: number;
       /** Config */
-      config?: Record<string, never>;
+      config?: {
+        [key: string]: unknown;
+      };
       /**
        * Input Cost Per Token
        * @default 0
@@ -918,7 +1042,9 @@ export interface components {
        */
       top_p: number;
       /** Config */
-      config?: Record<string, never>;
+      config?: {
+        [key: string]: unknown;
+      };
       /**
        * Input Cost Per Token
        * @default 0
@@ -966,7 +1092,9 @@ export interface components {
       /** Top P */
       top_p?: number | null;
       /** Config */
-      config?: Record<string, never> | null;
+      config?: {
+        [key: string]: unknown;
+      } | null;
       /** Input Cost Per Token */
       input_cost_per_token?: number | null;
       /** Output Cost Per Token */
@@ -997,7 +1125,9 @@ export interface components {
       /** Base Url */
       base_url?: string | null;
       /** Config */
-      config?: Record<string, never>;
+      config?: {
+        [key: string]: unknown;
+      };
       /** Api Key */
       api_key?: string | null;
     };
@@ -1017,7 +1147,9 @@ export interface components {
       /** Base Url */
       base_url?: string | null;
       /** Config */
-      config?: Record<string, never>;
+      config?: {
+        [key: string]: unknown;
+      };
       /**
        * Id
        * Format: uuid
@@ -1057,8 +1189,16 @@ export interface components {
       /** Base Url */
       base_url?: string | null;
       /** Config */
-      config?: Record<string, never> | null;
+      config?: {
+        [key: string]: unknown;
+      } | null;
     };
+    /**
+     * ServerStatus
+     * @description Enum representing possible server operational statuses
+     * @enum {string}
+     */
+    ServerStatus: 'running' | 'stopped' | 'disabled' | 'error' | 'unknown';
     /**
      * SessionCreate
      * @description Schema for creating a new chat session
@@ -1079,7 +1219,9 @@ export interface components {
        */
       llm_model_id: string;
       /** Extra Data */
-      extra_data?: Record<string, never>;
+      extra_data?: {
+        [key: string]: unknown;
+      };
     };
     /**
      * SessionRead
@@ -1120,7 +1262,9 @@ export interface components {
       last_message_at: string | null;
       usage?: components['schemas']['ChatUsage'] | null;
       /** Extra Data */
-      extra_data: Record<string, never>;
+      extra_data: {
+        [key: string]: unknown;
+      };
     };
     /**
      * SessionStatus
@@ -1143,7 +1287,9 @@ export interface components {
       /** Llm Model Id */
       llm_model_id?: string | null;
       /** Extra Data */
-      extra_data?: Record<string, never> | null;
+      extra_data?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -2112,9 +2258,12 @@ export interface operations {
       };
     };
   };
-  list_mcp_tools_api_v1_mcp__get: {
+  list_mcp_servers_api_v1_mcp__get: {
     parameters: {
-      query?: never;
+      query?: {
+        offset?: number;
+        limit?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -2127,7 +2276,47 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['MCPServerTools'][];
+          'application/json': components['schemas']['MCPServerResponse'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  toggle_mcp_server_api_v1_mcp__server_id__toggle__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        server_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MCPServerToggleResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

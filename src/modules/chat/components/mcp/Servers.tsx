@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useListMCPServersQuery } from '@/lib/queries/mcp';
+import { Switch } from '@/components/ui/switch';
+import { useListMCPServersQuery, useMCPServerToggleMutation } from '@/lib/queries/mcp';
 import { cn } from '@/lib/utils';
 import { MCPServerTools } from '@/types/mcp';
-import { ChevronDown, CircuitBoard, PocketKnife } from 'lucide-react';
+import { ChevronDown, CircuitBoard, Loader2, PocketKnife } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 // A small helper component to show the "No servers" message
@@ -65,6 +66,7 @@ function ServerStatusIcon({ isLoading, hasServers }: { isLoading: boolean; hasSe
 export default function MCPServers() {
   const [openServer, setOpenServer] = useState<string | null>(null);
   const { data: servers, isLoading } = useListMCPServersQuery();
+  const toggleMutation = useMCPServerToggleMutation();
   const [contentHeight, setContentHeight] = useState<number>(0);
 
   const hasServers = !!servers && servers.length > 0;
@@ -81,7 +83,7 @@ export default function MCPServers() {
 
     // Add height for tools if a server is open
     if (openServer) {
-      const openServerTools = servers.find((s) => s.name === openServer)?.tools.length || 0;
+      const openServerTools = servers.find((s) => s.name === openServer)?.available_tools.length || 0;
       height += openServerTools * 60;
     }
 
@@ -129,9 +131,23 @@ export default function MCPServers() {
                   {servers.map((server: MCPServerTools) => (
                     <div key={server.name}>
                       {/* Server header */}
-                      <div className="flex items-center gap-2 pb-2">
-                        <CircuitBoard className="h-4 w-4 text-foreground" />
-                        <span className="font-medium text-foreground">{server.name}</span>
+                      <div className="flex items-center justify-between pb-2">
+                        <div className="flex items-center gap-2">
+                          <CircuitBoard className="h-4 w-4 text-foreground" />
+                          <span className="font-medium text-foreground">{server.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {toggleMutation.isPending && toggleMutation.variables === server.id && (
+                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                          )}
+                          <Switch
+                            checked={server.enabled}
+                            onCheckedChange={() => toggleMutation.mutate(server.id)}
+                            aria-label={`Toggle ${server.name}`}
+                            disabled={toggleMutation.isPending && toggleMutation.variables === server.id}
+                            className="origin-right scale-75"
+                          />
+                        </div>
                       </div>
 
                       {/* Tools collapsible */}
@@ -142,7 +158,7 @@ export default function MCPServers() {
                         <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors hover:bg-accent">
                           <div className="flex items-center gap-2">
                             <PocketKnife className="h-4 w-4" />
-                            <span className="font-medium">Show Tools ({server.tools.length})</span>
+                            <span className="font-medium">Show Tools ({server.available_tools.length})</span>
                           </div>
                           <ChevronDown
                             className={cn(
@@ -153,7 +169,7 @@ export default function MCPServers() {
                         </CollapsibleTrigger>
 
                         <CollapsibleContent className="space-y-1.5 pt-2">
-                          {server.tools.map((tool, index) => (
+                          {server.available_tools.map((tool, index) => (
                             <ToolCard key={tool.name} tool={tool} index={index} />
                           ))}
                         </CollapsibleContent>

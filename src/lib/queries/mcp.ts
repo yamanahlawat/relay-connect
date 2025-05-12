@@ -1,5 +1,6 @@
+import { MCPServerCreate } from '@/types/mcp';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createMCPServer, deleteMCPServer, listMCPServers, MCPServerCreateParams, updateMCPServer } from '../api/mcp';
+import { createMCPServer, deleteMCPServer, listMCPServers, updateMCPServer } from '../api/mcp';
 
 export function useListMCPServersQuery() {
   return useQuery({
@@ -25,7 +26,7 @@ export function useMCPServerCreateMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: MCPServerCreateParams) => createMCPServer(params),
+    mutationFn: (params: MCPServerCreate) => createMCPServer(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mcp-servers'] });
     },

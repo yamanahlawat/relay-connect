@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { useListMCPServersQuery, useMCPServerToggleMutation } from '@/lib/queries/mcp';
 import { cn } from '@/lib/utils';
-import { MCPServerTools } from '@/types/mcp';
+import { MCPServerTools, MCPTool } from '@/types/mcp';
 import { ChevronDown, CircuitBoard, Loader2, PocketKnife } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -26,7 +26,7 @@ function NoActiveServers() {
   );
 }
 
-function ToolCard({ tool, index }: { tool: { name: string; description?: string | null }; index: number }) {
+function ToolCard({ tool, index }: { tool: MCPTool; index: number }) {
   return (
     <div
       className={cn(
@@ -171,7 +171,7 @@ export default function MCPServers() {
                         </CollapsibleTrigger>
 
                         <CollapsibleContent className="space-y-1.5 pt-2">
-                          {server.available_tools.map((tool, index) => (
+                          {server.available_tools.map((tool: MCPTool, index: number) => (
                             <ToolCard key={tool.name} tool={tool} index={index} />
                           ))}
                         </CollapsibleContent>

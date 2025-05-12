@@ -14,7 +14,9 @@ function CodeBlock({ className, children }: CodeBlockProps) {
   // Extract language from className
   const match = /language-(\w+)/.exec(className || '');
   const lang = match?.[1] || 'text';
-  const code = String(children).replace(/\n$/, '');
+
+  // Handle case where children might be undefined (when passed as third argument to createElement)
+  const code = children ? String(children).replace(/\n$/, '') : '';
 
   // Use our comprehensive analysis utility
   const analysis = analyzeCode(code, lang);

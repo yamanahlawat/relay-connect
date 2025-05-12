@@ -137,14 +137,16 @@ export default function MCPServers() {
                           <span className="font-medium text-foreground">{server.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {toggleMutation.isPending && toggleMutation.variables === server.id && (
+                          {toggleMutation.isPending && toggleMutation.variables?.serverId === server.id && (
                             <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                           )}
                           <Switch
                             checked={server.enabled}
-                            onCheckedChange={() => toggleMutation.mutate(server.id)}
+                            onCheckedChange={(checked) =>
+                              toggleMutation.mutate({ serverId: server.id, enabled: checked })
+                            }
                             aria-label={`Toggle ${server.name}`}
-                            disabled={toggleMutation.isPending && toggleMutation.variables === server.id}
+                            disabled={toggleMutation.isPending && toggleMutation.variables?.serverId === server.id}
                             className="origin-right scale-75"
                           />
                         </div>

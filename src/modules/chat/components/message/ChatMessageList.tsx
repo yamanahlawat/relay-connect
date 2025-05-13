@@ -4,8 +4,6 @@ import { MessageRead, StreamingMessageRead } from '@/types/message';
 import { Loader2 } from 'lucide-react';
 import { memo } from 'react';
 
-type NonEmptyArray<T> = [T, ...T[]];
-
 interface ChatMessageListProps {
   // Accept either MessageRead or StreamingMessageRead arrays
   messageGroups: StreamingMessageRead[][] | MessageRead[][];
@@ -53,17 +51,29 @@ export const ChatMessageList = memo(function ChatMessageList({
         )}
 
         {messageGroups
-          .filter((group): group is NonEmptyArray<StreamingMessageRead | MessageRead> => group.length > 0)
-          .map((group) => (
-            <ChatMessage
-              key={group[0].id}
-              messages={group as StreamingMessageRead[]}
-              role={group[0].role}
-              isStreaming={group.some((msg) => msg.id === streamingMessageId)}
-              onEditClick={group[0]?.role === 'user' ? onEditClick : undefined}
-              editingMessageId={editingMessageId}
-            />
-          ))}
+          .map((group, groupIndex) => {
+            // Skip empty groups
+            if (group.length === 0 || !group[0]) return null;
+
+            const message = group[0];
+            // Skip messages without ID
+            if (!message.id) return null;
+
+            // Default to 'assistant' if role is missing
+            const role = (message.role || 'assistant') as 'system' | 'user' | 'assistant';
+
+            return (
+              <ChatMessage
+                key={message.id || `group-${groupIndex}`}
+                messages={group as StreamingMessageRead[]}
+                role={role}
+                isStreaming={group.some((msg) => msg.id === streamingMessageId)}
+                onEditClick={role === 'user' ? onEditClick : undefined}
+                editingMessageId={editingMessageId}
+              />
+            );
+          })
+          .filter(Boolean)}
 
         <div ref={messagesEndRef} />
       </div>

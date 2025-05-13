@@ -1,7 +1,7 @@
 import client from '@/lib/api/client';
-import { MCPServerCreate, MCPServerTools } from '@/types/mcp';
+import { MCPServerCreate, MCPServerResponse } from '@/types/mcp';
 
-export async function listMCPServers(): Promise<MCPServerTools[]> {
+export async function listMCPServers(): Promise<MCPServerResponse[]> {
   const { data, error } = await client.GET('/api/v1/mcp/');
 
   if (error) {
@@ -10,7 +10,7 @@ export async function listMCPServers(): Promise<MCPServerTools[]> {
   return data;
 }
 
-export async function updateMCPServer(serverId: string, enabled: boolean): Promise<MCPServerTools> {
+export async function updateMCPServer(serverId: string, enabled: boolean): Promise<MCPServerResponse> {
   const { data, error } = await client.PUT('/api/v1/mcp/{server_id}', {
     params: {
       path: {
@@ -28,7 +28,7 @@ export async function updateMCPServer(serverId: string, enabled: boolean): Promi
   return data;
 }
 
-export async function createMCPServer(params: MCPServerCreate): Promise<MCPServerTools> {
+export async function createMCPServer(params: MCPServerCreate): Promise<MCPServerResponse> {
   const { data, error } = await client.POST('/api/v1/mcp/', {
     body: params,
   });

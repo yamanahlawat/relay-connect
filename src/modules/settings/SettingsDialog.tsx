@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { GeneralSettings } from '@/modules/settings/GeneralSettings';
-import { MCPServerSettings } from '@/modules/settings/MCP/MCPServerSettings';
-import { ModelSettings } from '@/modules/settings/Models/ModelSettings';
-import { ProviderSettings } from '@/modules/settings/Providers/ProviderSettings';
+import { MCPServerSettings } from '@/modules/settings/mcp/MCPServerSettings';
+import { ModelSettings } from '@/modules/settings/models/ModelSettings';
+import { ProviderSettings } from '@/modules/settings/providers/ProviderSettings';
 import { Bot, Cloud, Server, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 

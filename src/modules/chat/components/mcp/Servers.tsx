@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { useListMCPServersQuery, useMCPServerToggleMutation } from '@/lib/queries/mcp';
 import { cn } from '@/lib/utils';
-import { MCPServerTools, MCPTool } from '@/types/mcp';
+import { MCPServerResponse, MCPTool } from '@/types/mcp';
 import { ChevronDown, CircuitBoard, Loader2, PocketKnife } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -83,7 +83,7 @@ export default function MCPServers() {
 
     // Add height for tools if a server is open
     if (openServer) {
-      const openServerTools = servers.find((s) => s.name === openServer)?.available_tools.length || 0;
+      const openServerTools = servers.find((s) => s.name === openServer)?.available_tools?.length || 0;
       height += openServerTools * 60;
     }
 
@@ -128,7 +128,7 @@ export default function MCPServers() {
               {/* Server list */}
               {hasServers && (
                 <div className="space-y-4">
-                  {servers.map((server: MCPServerTools) => (
+                  {servers.map((server: MCPServerResponse) => (
                     <div key={server.name}>
                       {/* Server header */}
                       <div className="flex items-center justify-between pb-2">
@@ -160,7 +160,7 @@ export default function MCPServers() {
                         <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors hover:bg-accent">
                           <div className="flex items-center gap-2">
                             <PocketKnife className="h-4 w-4" />
-                            <span className="font-medium">Show Tools ({server.available_tools.length})</span>
+                            <span className="font-medium">Show Tools ({server.available_tools?.length || 0})</span>
                           </div>
                           <ChevronDown
                             className={cn(
@@ -171,7 +171,7 @@ export default function MCPServers() {
                         </CollapsibleTrigger>
 
                         <CollapsibleContent className="space-y-1.5 pt-2">
-                          {server.available_tools.map((tool: MCPTool, index: number) => (
+                          {server.available_tools?.map((tool: MCPTool, index: number) => (
                             <ToolCard key={tool.name} tool={tool} index={index} />
                           ))}
                         </CollapsibleContent>

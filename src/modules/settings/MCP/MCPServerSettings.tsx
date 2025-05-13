@@ -20,7 +20,7 @@ import {
   useMCPServerDeleteMutation,
   useMCPServerToggleMutation,
 } from '@/lib/queries/mcp';
-import { MCPServerTools } from '@/types/mcp';
+import { MCPServerResponse } from '@/types/mcp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -47,7 +47,7 @@ export function MCPServerSettings() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedServer, setSelectedServer] = useState<MCPServerTools | null>(null);
+  const [selectedServer, setSelectedServer] = useState<MCPServerResponse | null>(null);
 
   // Mutations
   const toggleMutation = useMCPServerToggleMutation();
@@ -60,13 +60,13 @@ export function MCPServerSettings() {
   };
 
   // Function to edit a server
-  const handleEditServer = (server: MCPServerTools) => {
+  const handleEditServer = (server: MCPServerResponse) => {
     setSelectedServer(server);
     setIsEditDialogOpen(true);
   };
 
   // Function to delete a server
-  const handleDeleteServer = (server: MCPServerTools) => {
+  const handleDeleteServer = (server: MCPServerResponse) => {
     setSelectedServer(server);
     setIsDeleteDialogOpen(true);
   };
@@ -172,7 +172,7 @@ export function MCPServerSettings() {
 }
 
 interface EditServerDialogProps {
-  server: MCPServerTools;
+  server: MCPServerResponse;
   isOpen: boolean;
   onClose: () => void;
   toggleMutation: ReturnType<typeof useMCPServerToggleMutation>;

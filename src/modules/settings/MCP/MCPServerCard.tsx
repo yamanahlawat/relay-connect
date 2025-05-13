@@ -1,20 +1,20 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { MCPServerTools } from '@/types/mcp';
-import { CircuitBoard, Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { MCPServerResponse } from '@/types/mcp';
+import { CircuitBoard, Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 
 interface MCPServerCardProps {
-  server: MCPServerTools;
+  server: MCPServerResponse;
   onToggle: (serverId: string, enabled: boolean) => void;
-  onEdit: (server: MCPServerTools) => void;
-  onDelete: (server: MCPServerTools) => void;
+  onEdit: (server: MCPServerResponse) => void;
+  onDelete: (server: MCPServerResponse) => void;
   isUpdating: boolean;
   updatingServerId?: string;
 }
@@ -77,7 +77,7 @@ export function MCPServerCard({
           <div className="mt-3 border-t pt-3">
             <h4 className="mb-2 text-xs font-medium text-muted-foreground">Available Tools</h4>
             <div className="flex flex-wrap gap-2">
-              {server.available_tools.map((tool: { name: string; description: string }) => (
+              {server.available_tools.map((tool) => (
                 <div
                   key={tool.name}
                   className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"

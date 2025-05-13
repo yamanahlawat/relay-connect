@@ -1,11 +1,11 @@
-import { MCPServerCard } from '@/modules/settings/MCP/MCPServerCard';
-import { MCPServerTools } from '@/types/mcp';
+import { MCPServerCard } from '@/modules/settings/mcp/MCPServerCard';
+import { MCPServerResponse } from '@/types/mcp';
 
 interface MCPServerGroupProps {
-  servers: MCPServerTools[];
+  servers: MCPServerResponse[];
   onToggle: (serverId: string, enabled: boolean) => void;
-  onEdit: (server: MCPServerTools) => void;
-  onDelete: (server: MCPServerTools) => void;
+  onEdit: (server: MCPServerResponse) => void;
+  onDelete: (server: MCPServerResponse) => void;
   isUpdating: boolean;
   updatingServerId?: string;
 }

@@ -19,7 +19,7 @@ import { createModel, deleteModel, updateModel } from '@/lib/api/models';
 import type { components } from '@/lib/api/schema';
 import { useModelsByProviderQuery } from '@/lib/queries/models';
 import { useProvidersQuery } from '@/lib/queries/providers';
-import { ModelGroup } from '@/modules/settings/Models/ModelGroup';
+import { ModelGroup } from '@/modules/settings/models/ModelGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
@@ -173,7 +173,7 @@ export function ModelSettings() {
       top_p: model.top_p,
       input_cost_per_token: model.input_cost_per_token,
       output_cost_per_token: model.output_cost_per_token,
-      config: model.config || {},
+      config: (model.config as Record<string, never>) || {},
     });
     setIsCreateDialogOpen(true);
   };

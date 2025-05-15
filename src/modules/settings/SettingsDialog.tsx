@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { GeneralSettings } from '@/modules/settings/GeneralSettings';
-import { ModelSettings } from '@/modules/settings/Models/ModelSettings';
-import { ProviderSettings } from '@/modules/settings/Providers/ProviderSettings';
-import { Bot, Cloud, Settings2 } from 'lucide-react';
+import { MCPServerSettings } from '@/modules/settings/mcp/MCPServerSettings';
+import { ModelSettings } from '@/modules/settings/models/ModelSettings';
+import { ProviderSettings } from '@/modules/settings/providers/ProviderSettings';
+import { Bot, Cloud, Server, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
 // Settings Navigation Items
@@ -24,7 +25,13 @@ const settingsNav = [
     id: 'models',
     label: 'Models',
     icon: Bot,
-    description: 'Manager LLM Models and their settings',
+    description: 'Manage LLM Models and their settings',
+  },
+  {
+    id: 'mcp-servers',
+    label: 'MCP Servers',
+    icon: Server,
+    description: 'Manage Model Context Protocol servers',
   },
 ] as const;
 
@@ -67,6 +74,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           {activePage === 'general' && <GeneralSettings />}
           {activePage === 'providers' && <ProviderSettings />}
           {activePage === 'models' && <ModelSettings />}
+          {activePage === 'mcp-servers' && <MCPServerSettings />}
         </div>
       </DialogContent>
     </Dialog>

@@ -116,7 +116,7 @@ export function analyzeCode(content: string, language?: string): CodeAnalysis {
 
     // Only show cascade for multi-line inline code if a language is explicitly provided
     // and that language is in our supported code languages
-    const isCodeLanguage = language && codeLanguages.includes(language.toLowerCase());
+    const isCodeLanguage = language ? codeLanguages.includes(language.toLowerCase()) : false;
     result.shouldShowCascade = result.isMultiLine && isCodeLanguage;
 
     return result;

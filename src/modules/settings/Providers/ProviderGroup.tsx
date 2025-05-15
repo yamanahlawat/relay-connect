@@ -1,5 +1,5 @@
 import { components } from '@/lib/api/schema';
-import { ProviderCard } from '@/modules/settings/Providers/ProviderCard';
+import { ProviderCard } from '@/modules/settings/providers/ProviderCard';
 
 type Provider = components['schemas']['ProviderRead'];
 

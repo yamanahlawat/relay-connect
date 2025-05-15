@@ -610,10 +610,6 @@ export interface paths {
      * @description ## List All MCP Servers
      *     List all configured MCP servers with their configurations and statuses.
      *
-     *     MCP servers are configured via code in the MCP_SERVERS dictionary
-     *     in the initialize.py file. This endpoint provides a view of all configured servers,
-     *     regardless of their running state.
-     *
      *     ### Parameters
      *     - **offset**: Number of items to skip (default: 0)
      *     - **limit**: Maximum number of items to return (default: 10)
@@ -623,14 +619,27 @@ export interface paths {
      */
     get: operations['list_mcp_servers_api_v1_mcp__get'];
     put?: never;
-    post?: never;
+    /**
+     * Create Mcp Server
+     * @description ## Create MCP Server
+     *     Create a new MCP server configuration.
+     *
+     *     This endpoint allows creating new MCP server configurations directly from the frontend.
+     *
+     *     ### Parameters
+     *     - **server**: MCP server configuration
+     *
+     *     ### Returns
+     *     The created MCP server configuration with status
+     */
+    post: operations['create_mcp_server_api_v1_mcp__post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/mcp/{server_id}/toggle/': {
+  '/api/v1/mcp/{server_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -638,29 +647,46 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
     /**
-     * Toggle Mcp Server
-     * @description ## Toggle MCP Server
-     *     Toggle a server's enabled status. This is the only runtime modification supported.
+     * Update Mcp Server
+     * @description ## Update MCP Server
+     *     Update an existing MCP server configuration.
      *
-     *     All other configuration changes should be made in the DEFAULT_MCP_SERVERS dictionary
-     *     in the initialize.py file.
+     *     This endpoint allows updating an existing MCP server configuration directly from the frontend.
      *
      *     ### Parameters
      *     - **server_id**: UUID of the MCP server
+     *     - **server**: MCP server configuration update
      *
      *     ### Returns
-     *     The toggled server status
+     *     The updated MCP server configuration with status
      *
      *     ### Raises
      *     - **404**: Server not found
      */
-    patch: operations['toggle_mcp_server_api_v1_mcp__server_id__toggle__patch'];
+    put: operations['update_mcp_server_api_v1_mcp__server_id__put'];
+    post?: never;
+    /**
+     * Delete Mcp Server
+     * @description ## Delete MCP Server
+     *     Delete an existing MCP server configuration.
+     *
+     *     This endpoint allows deleting an existing MCP server configuration directly from the frontend.
+     *     If the server is running, it will be shut down before deletion.
+     *
+     *     ### Parameters
+     *     - **server_id**: UUID of the MCP server to delete
+     *
+     *     ### Returns
+     *     No content on success
+     *
+     *     ### Raises
+     *     - **404**: Server not found
+     */
+    delete: operations['delete_mcp_server_api_v1_mcp__server_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
 }
@@ -765,6 +791,40 @@ export interface components {
       detail?: components['schemas']['ValidationError'][];
     };
     /**
+     * MCPServerCreate
+     * @description Schema for creating a new MCP server
+     */
+    MCPServerCreate: {
+      /**
+       * Command
+       * @description Command to execute
+       */
+      command: string;
+      /**
+       * Args
+       * @description Arguments passed to command
+       */
+      args: string[];
+      /**
+       * Enabled
+       * @description Whether server is enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Env
+       * @description Environment variables
+       */
+      env?: {
+        [key: string]: string;
+      } | null;
+      /**
+       * Name
+       * @description Unique name for the server
+       */
+      name: string;
+    };
+    /**
      * MCPServerResponse
      * @description Schema for MCP server response
      */
@@ -821,19 +881,32 @@ export interface components {
       available_tools?: components['schemas']['MCPTool'][];
     };
     /**
-     * MCPServerToggleResponse
-     * @description Response schema for toggling a server
+     * MCPServerUpdate
+     * @description Schema for updating an existing MCP server
      */
-    MCPServerToggleResponse: {
-      /** Name */
-      name: string;
-      /** Enabled */
-      enabled: boolean;
+    MCPServerUpdate: {
       /**
-       * @description Current operational status of the server
-       * @default unknown
+       * Command
+       * @description Command to execute
        */
-      status: components['schemas']['ServerStatus'];
+      command?: string | null;
+      /**
+       * Args
+       * @description Arguments passed to command
+       */
+      args?: string[] | null;
+      /**
+       * Enabled
+       * @description Whether server is enabled
+       */
+      enabled?: boolean | null;
+      /**
+       * Env
+       * @description Environment variables
+       */
+      env?: {
+        [key: string]: string;
+      } | null;
     };
     /**
      * MCPTool
@@ -2290,7 +2363,75 @@ export interface operations {
       };
     };
   };
-  toggle_mcp_server_api_v1_mcp__server_id__toggle__patch: {
+  create_mcp_server_api_v1_mcp__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPServerCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MCPServerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_mcp_server_api_v1_mcp__server_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        server_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPServerUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MCPServerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_mcp_server_api_v1_mcp__server_id__delete: {
     parameters: {
       query?: never;
       header?: never;
@@ -2302,13 +2443,11 @@ export interface operations {
     requestBody?: never;
     responses: {
       /** @description Successful Response */
-      200: {
+      204: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          'application/json': components['schemas']['MCPServerToggleResponse'];
-        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

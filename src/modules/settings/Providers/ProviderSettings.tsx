@@ -19,7 +19,7 @@ import { createProvider, deleteProvider, updateProvider } from '@/lib/api/provid
 import type { components } from '@/lib/api/schema';
 import { useProvidersQuery } from '@/lib/queries/providers';
 import { EmptyState } from '@/modules/settings/EmptyState';
-import { ProviderGroup } from '@/modules/settings/Providers/ProviderGroup';
+import { ProviderGroup } from '@/modules/settings/providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, PlusCircle } from 'lucide-react';
@@ -166,7 +166,7 @@ export function ProviderSettings() {
       is_active: provider.is_active,
       base_url: provider.base_url,
       api_key: provider.api_key,
-      config: provider.config || {},
+      config: (provider.config as Record<string, never>) || {},
     });
     setIsCreateDialogOpen(true);
   };

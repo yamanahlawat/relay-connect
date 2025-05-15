@@ -74,6 +74,6 @@ export interface MathRendererProps {
  */
 export interface CodeBlockProps {
   className?: string;
-  children: ReactNode;
+  children?: ReactNode;
   node?: MarkdownNode;
 }

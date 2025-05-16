@@ -130,7 +130,7 @@ export function WelcomeContent() {
       {isDragging && <FileDropOverlay isOver={isDragging} />}
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl space-y-6 transition-all duration-300">
-          <h1 className="text-center text-2xl font-medium text-foreground/90">What can I help you with?</h1>
+          <h1 className="text-foreground/90 text-center text-2xl font-medium">What can I help you with?</h1>
 
           <div className="grid grid-cols-2 gap-2">
             {ALL_SUGGESTIONS.map(({ icon: Icon, text, color }) => (
@@ -139,7 +139,7 @@ export function WelcomeContent() {
                 variant="outline"
                 onClick={() => setMessage(text)}
                 disabled={isSubmitting || !selectedProvider || !selectedModel}
-                className="h-auto justify-start gap-2 p-4 transition-all hover:scale-[1.02] hover:bg-accent/50 active:scale-[0.98]"
+                className="hover:bg-accent/50 h-auto justify-start gap-2 p-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Icon className={`h-4 w-4 shrink-0 ${color}`} />
                 <span className="text-sm font-medium">{text}</span>
@@ -173,22 +173,20 @@ export function WelcomeContent() {
       </div>
 
       {/* Chat Input */}
-      <div className="mt-auto w-full border-t border-border/40">
-        <ChatInput
-          value={message}
-          onChange={setMessage}
-          onSend={handleSendMessage}
-          disabled={isSubmitting || !selectedProvider || !selectedModel}
-          placeholder={
-            !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
-          }
-          settings={chatSettings}
-          onSettingsChange={setChatSettings}
-          systemContext={systemContext}
-          onSystemContextChange={setSystemContext}
-          fileUpload={fileUpload}
-        />
-      </div>
+      <ChatInput
+        value={message}
+        onChange={setMessage}
+        onSend={handleSendMessage}
+        disabled={isSubmitting || !selectedProvider || !selectedModel}
+        placeholder={
+          !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
+        }
+        settings={chatSettings}
+        onSettingsChange={setChatSettings}
+        systemContext={systemContext}
+        onSystemContextChange={setSystemContext}
+        fileUpload={fileUpload}
+      />
     </main>
   );
 }

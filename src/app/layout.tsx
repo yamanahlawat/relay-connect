@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} bg-background text-foreground antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable}`}>
+      <body className="bg-background text-foreground antialiased">
         <ThemeProvider>
           <ReactQueryProvider>{children}</ReactQueryProvider>
         </ThemeProvider>

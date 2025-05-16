@@ -51,7 +51,7 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
           role === 'user' ? 'bg-accent/50' : 'bg-background',
           isStreaming && 'animate-in fade-in-0',
           // Apply special animation for messages that appear right after welcome page transition
-          shouldAnimate && isFirstMessageAfterTransition && 'animate-message-in'
+          shouldAnimate && isFirstMessageAfterTransition && 'animate-in fade-in slide-in-from-left-10 duration-500'
         )}
       >
         {/* Avatar */}
@@ -66,7 +66,7 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
         {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{role === 'user' ? 'You' : 'Assistant'}</span>
+            <span className="text-muted-foreground text-xs font-medium">{role === 'user' ? 'You' : 'Assistant'}</span>
           </div>
 
           {/* Messages */}

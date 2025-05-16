@@ -23,14 +23,14 @@ export default async function Layout({ children }: { children: React.ReactNode }
         <HydrationBoundary state={dehydrate(queryClient)}>
           <AppSidebar />
         </HydrationBoundary>
-        <SidebarInset className="flex min-w-0 flex-1 flex-col">
-          <div className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border/40 bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <SidebarInset>
+          <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4">
             <SidebarToggle className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Separator orientation="vertical" className="bg-muted-foreground/30 mr-2 h-4" />
             <HydrationBoundary state={dehydrate(queryClient)}>
               <ProviderModelSelect />
             </HydrationBoundary>
-          </div>
+          </header>
           <main className="relative flex-1 overflow-hidden">{children}</main>
         </SidebarInset>
       </div>

@@ -141,9 +141,9 @@ export function ChatInput({
   const hasContent = currentValue.trim().length > 0 || files.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="w-full border-t border-border">
+    <form onSubmit={handleSubmit} className="border-border w-full border-t">
       <div className="mx-auto p-4">
-        <div className="relative rounded-lg border border-input bg-background">
+        <div className="border-input bg-background relative rounded-lg border">
           {/* Display file previews if there are files */}
           {files.length > 0 && <FilePreview files={filePreviewData} onRemove={removeFile} showPreview imageSize="sm" />}
 
@@ -185,11 +185,12 @@ export function ChatInput({
               )}
               disabled={disabled || isStreaming}
               rows={1}
+              spellCheck="true"
             />
 
             <div
               className={cn(
-                'absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-200',
+                'absolute top-1/2 right-3 -translate-y-1/2 transition-all duration-200',
                 'flex items-center gap-2'
               )}
             >
@@ -248,7 +249,7 @@ export function ChatInput({
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
                     onMouseDown={(e) => e.preventDefault()}
-                    className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8 rounded-full"
                     disabled={disabled}
                   >
                     <Paperclip className="h-4 w-4" />
@@ -275,7 +276,7 @@ export function ChatInput({
                 hasContent ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0'
               )}
             >
-              <span className="hidden rounded border px-2 py-0.5 text-xs text-muted-foreground/80 sm:inline-block">
+              <span className="text-muted-foreground/80 hidden rounded border px-2 py-0.5 text-xs sm:inline-block">
                 Shift + ⏎ for new line
               </span>
             </div>

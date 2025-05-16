@@ -50,7 +50,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogTitle></DialogTitle>
       <DialogContent className="flex h-[700px] w-[1000px] max-w-4xl gap-0 overflow-hidden p-0">
         {/* Left Navigation */}
-        <div className="flex w-52 flex-col border-r bg-muted/40">
+        <div className="bg-muted/40 flex w-52 flex-col border-r">
           <div className="flex h-14 items-center justify-between border-b px-4 py-3">
             <span className="text-sm font-semibold">Settings</span>
           </div>

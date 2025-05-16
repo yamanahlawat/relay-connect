@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Code } from 'lucide-react';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -46,25 +45,17 @@ export function JsonEditor({ value, onChange, onValidate, schema, minHeight = '2
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-input bg-muted">
+      <div className="border-input bg-muted rounded-md border">
         <Textarea
           value={value}
           onChange={handleChange}
-          className={`w-full resize-none bg-transparent font-mono text-foreground`}
+          className={`text-foreground w-full resize-none bg-transparent font-mono`}
           style={{ minHeight, padding: '1rem' }}
-          spellCheck="false"
+          spellCheck="true"
         />
       </div>
 
-      {error && <div className="text-sm font-medium text-destructive">{error}</div>}
-
-      <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Code className="h-4 w-4" />
-          <span className="font-medium">JSON Configuration Format</span>
-        </div>
-        <p className="mt-1">Configure using JSON format. Make sure to use valid JSON syntax.</p>
-      </div>
+      {error && <div className="text-destructive text-sm font-medium">{error}</div>}
 
       <Button
         type="button"

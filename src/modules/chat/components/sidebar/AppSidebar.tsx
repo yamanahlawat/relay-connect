@@ -10,6 +10,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
@@ -17,13 +18,12 @@ import { deleteChatSession, listChatSessions, updateChatSession } from '@/lib/ap
 import { cn } from '@/lib/utils';
 import { ChatItem } from '@/modules/chat/components/sidebar/ChatItem';
 import { ChatSearch } from '@/modules/chat/components/sidebar/ChatSearch';
-import { NavUser } from '@/modules/chat/components/sidebar/NavUser';
 import { NoResults } from '@/modules/chat/components/sidebar/NoResults';
 import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Settings2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
@@ -119,7 +119,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-1.5">
-              <div className="flex aspect-square h-7 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform hover:scale-105">
+              <div className="bg-primary text-primary-foreground flex aspect-square h-7 items-center justify-center rounded-lg transition-transform hover:scale-105">
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
               <span className="pl-1 font-semibold">Relay</span>
@@ -136,14 +136,14 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
         <ScrollArea className="h-full">
           {isLoading ? (
             <div className="flex justify-center py-1.5 opacity-70">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <Loader2 className="text-muted-foreground h-3.5 w-3.5 animate-spin" />
             </div>
           ) : !hasChats ? (
             <NoResults searchQuery={searchQuery} />
           ) : (
             groups.map((group, groupIndex) => (
               <SidebarGroup key={group.label}>
-                <SidebarGroupLabel className="text-xs font-bold text-muted-foreground">{group.label}</SidebarGroupLabel>
+                <SidebarGroupLabel className="text-muted-foreground text-xs font-bold">{group.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-0.5">
                     {group.chats.map((chat, chatIndex) => (
@@ -155,7 +155,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
                             : undefined
                         }
                         className={cn(
-                          'relative px-0 py-0 [&:hover_.action-menu]:opacity-100 [&:hover_.chat-item]:bg-accent/50',
+                          '[&:hover_.chat-item]:bg-accent/50 relative px-0 py-0 [&:hover_.action-menu]:opacity-100',
                           '[&>.chat-item]:transition-colors'
                         )}
                       >
@@ -185,13 +185,18 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           )}
           {isFetchingNextPage && (
             <div className="flex justify-center py-1.5 opacity-70">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <Loader2 className="text-muted-foreground h-3.5 w-3.5 animate-spin" />
             </div>
           )}
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ name: 'Yaman Ahlawat', email: 'yaman@outlook.com' }} />
+        <Link href="/settings" className="w-full">
+          <SidebarMenuButton className="cursor-pointer">
+            <Settings2 className="h-4 w-4" />
+            <span>Settings</span>
+          </SidebarMenuButton>
+        </Link>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

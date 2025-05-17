@@ -1,3 +1,5 @@
+'use client';
+
 import { JsonEditor } from '@/components/custom/JsonEditor';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +11,7 @@ import { MCPServerCreate } from '@/types/mcp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
@@ -46,7 +48,7 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
 
   // Form state
   const form = useForm<MCPServerFormValues>({
-    resolver: zodResolver(mcpServerSchema),
+    resolver: zodResolver(mcpServerSchema) as unknown as Resolver<MCPServerFormValues, object>, // More specific type
     defaultValues: {
       name: '',
       command: '',
@@ -208,7 +210,7 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
 
         {/* Mode Toggle */}
         <div className="flex items-center justify-end space-x-2">
-          <span className="text-sm text-muted-foreground">JSON Mode</span>
+          <span className="text-muted-foreground text-sm">JSON Mode</span>
           <Switch
             checked={isJsonMode}
             onCheckedChange={(checked) => {
@@ -239,7 +241,7 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
               }}
               schema={mcpServerSchema}
             />
-            {jsonError && <div className="text-sm font-medium text-destructive">{jsonError}</div>}
+            {jsonError && <div className="text-destructive text-sm font-medium">{jsonError}</div>}
             <Button
               type="button"
               className="w-full"

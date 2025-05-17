@@ -1,3 +1,5 @@
+'use client';
+
 import { JsonEditor } from '@/components/custom/JsonEditor';
 import {
   AlertDialog,
@@ -23,8 +25,9 @@ import {
 import { MCPServerResponse } from '@/types/mcp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { EmptyState } from '../EmptyState';
@@ -45,6 +48,14 @@ type MCPServerFormValues = z.infer<typeof mcpServerSchema>;
 export function MCPServerSettings() {
   const { data: servers, isLoading } = useListMCPServersQuery();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Check for add=true query parameter to open the dialog
+  useEffect(() => {
+    if (searchParams?.get('add') === 'true') {
+      setIsAddDialogOpen(true);
+    }
+  }, [searchParams]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState<MCPServerResponse | null>(null);
@@ -88,24 +99,13 @@ export function MCPServerSettings() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4 pr-14">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">MCP Servers</h2>
-          <p className="text-sm text-muted-foreground">Manage Model Context Protocol servers</p>
-        </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="gap-1">
-          <PlusCircle className="h-4 w-4" />
-          Add Server
-        </Button>
-      </div>
+    <div className="space-y-6">
+      {/* Add Server button removed from here - now only in header */}
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="space-y-6">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
           </div>
         ) : !servers || servers.length === 0 ? (
           <EmptyState
@@ -191,7 +191,7 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
 
   // Initialize form with server data
   const form = useForm<MCPServerFormValues>({
-    resolver: zodResolver(mcpServerSchema),
+    resolver: zodResolver(mcpServerSchema) as unknown as Resolver<MCPServerFormValues, object>, // More specific type
     defaultValues: {
       name: server.name,
       command: server.command,
@@ -385,7 +385,7 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
 
         {/* Mode Toggle */}
         <div className="flex items-center justify-end space-x-2">
-          <span className="text-sm text-muted-foreground">JSON Mode</span>
+          <span className="text-muted-foreground text-sm">JSON Mode</span>
           <Switch
             checked={isJsonMode}
             onCheckedChange={(checked) => {
@@ -416,7 +416,7 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
               }}
               schema={mcpServerSchema}
             />
-            {jsonError && <div className="text-sm font-medium text-destructive">{jsonError}</div>}
+            {jsonError && <div className="text-destructive text-sm font-medium">{jsonError}</div>}
             <Button
               type="button"
               className="w-full"

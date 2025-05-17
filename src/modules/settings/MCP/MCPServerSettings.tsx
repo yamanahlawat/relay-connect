@@ -25,7 +25,7 @@ import {
 import { MCPServerResponse } from '@/types/mcp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -49,13 +49,16 @@ export function MCPServerSettings() {
   const { data: servers, isLoading } = useListMCPServersQuery();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Check for add=true query parameter to open the dialog
   useEffect(() => {
     if (searchParams?.get('add') === 'true') {
       setIsAddDialogOpen(true);
+      // Clean the URL to remove query parameters (prevents dialog reopening on refresh)
+      router.replace(window.location.pathname);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState<MCPServerResponse | null>(null);
@@ -100,8 +103,6 @@ export function MCPServerSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Add Server button removed from here - now only in header */}
-
       <div className="space-y-6">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">

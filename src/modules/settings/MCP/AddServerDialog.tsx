@@ -187,12 +187,12 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
         setArgsInput('');
         setEnvKeys([]);
         setJsonConfig(`{
-  "name": "",
-  "command": "",
-  "args": [],
-  "enabled": true,
-  "env": {}
-}`);
+          "name": "",
+          "command": "",
+          "args": [],
+          "enabled": true,
+          "env": {}
+        }`);
         onClose();
       },
       onError: (err) => {

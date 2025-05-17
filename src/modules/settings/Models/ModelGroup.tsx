@@ -14,9 +14,9 @@ export function ModelGroup({ title, models, onEdit, onDelete }: ModelGroupProps)
   if (models.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-      <div className="space-y-2">
+    <div className="p-6">
+      <h3 className="text-muted-foreground mb-4 text-sm font-medium">{title}</h3>
+      <div className="space-y-3">
         {models.map((model) => (
           <ModelCard key={model.id} model={model} onEdit={onEdit} onDelete={onDelete} />
         ))}

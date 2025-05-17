@@ -1,3 +1,5 @@
+'use client';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,9 +23,10 @@ import { useProvidersQuery } from '@/lib/queries/providers';
 import { ModelGroup } from '@/modules/settings/models/ModelGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { EmptyState } from '../EmptyState';
@@ -53,6 +55,19 @@ export function ModelSettings() {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+
+  const router = useRouter();
+
+  // Check for add=true query parameter to open the dialog
+  useEffect(() => {
+    if (searchParams?.get('add') === 'true') {
+      handleAddModel();
+      // Clean the URL to remove query parameters (prevents dialog reopening on refresh)
+      router.replace(window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
 
   // Query for fetching providers (for the Provider select in the form)
   const { data: providers = [], isLoading: isLoadingProviders } = useProvidersQuery();
@@ -65,7 +80,7 @@ export function ModelSettings() {
 
   // Form setup
   const form = useForm<ModelFormValues>({
-    resolver: zodResolver(modelSchema),
+    resolver: zodResolver(modelSchema) as unknown as Resolver<ModelFormValues, object>, // More specific type
     defaultValues: {
       name: '',
       provider_id: '',
@@ -195,70 +210,53 @@ export function ModelSettings() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4 pr-14">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Models</h2>
-          <p className="text-sm text-muted-foreground">Configure and manage your LLM models</p>
+    <div className="space-y-8">
+      {isLoadingProviders || isLoadingModels ? (
+        <div className="flex h-[200px] items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
-        <Button onClick={handleAddModel}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Model
-        </Button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <Card>
-            <CardContent className="p-6">
-              {isLoadingProviders || isLoadingModels ? (
-                <div className="flex h-[200px] items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : Object.keys(groupedModels).length === 0 ? (
-                <EmptyState
-                  title="No models configured"
-                  description="Add your first model to get started."
-                  buttonText="Add Model"
-                  onButtonClick={handleAddModel}
-                />
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(groupedModels).map(([providerName, models]) => (
-                    <ModelGroup
-                      key={providerName}
-                      title={providerName}
-                      models={models}
-                      onEdit={handleEditModel}
-                      onDelete={handleDeleteClick}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      ) : Object.keys(groupedModels).length === 0 ? (
+        <div className="bg-card rounded-lg border p-8">
+          <EmptyState
+            title="No models configured"
+            description="Add your first model to get started."
+            buttonText="Add Model"
+            onButtonClick={handleAddModel}
+          />
         </div>
-      </div>
+      ) : (
+        <div className="bg-card/50 rounded-lg border">
+          {Object.entries(groupedModels).map(([providerName, models], index, array) => (
+            <div key={providerName} className={index < array.length - 1 ? 'border-b' : ''}>
+              <ModelGroup
+                key={providerName}
+                title={providerName}
+                models={models}
+                onEdit={handleEditModel}
+                onDelete={handleDeleteClick}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit Model Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{selectedModel ? 'Edit Model' : 'Add Model'}</DialogTitle>
+            <DialogTitle className="text-xl">{selectedModel ? 'Edit Model' : 'Add Model'}</DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-sm font-medium">Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Model name" {...field} />
+                      <Input placeholder="Enter model name" className="h-9" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -270,10 +268,10 @@ export function ModelSettings() {
                 name="provider_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Provider</FormLabel>
+                    <FormLabel className="text-sm font-medium">Provider</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select a provider" />
                         </SelectTrigger>
                       </FormControl>
@@ -296,13 +294,14 @@ export function ModelSettings() {
                   name="max_tokens"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Tokens</FormLabel>
+                      <FormLabel className="text-sm font-medium">Max Tokens</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={1}
                           step={1}
                           placeholder="4096"
+                          className="h-9"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
@@ -317,7 +316,7 @@ export function ModelSettings() {
                   name="temperature"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Temperature</FormLabel>
+                      <FormLabel className="text-sm font-medium">Temperature</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -325,6 +324,7 @@ export function ModelSettings() {
                           max={2}
                           step={0.1}
                           placeholder="0.7"
+                          className="h-9"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
@@ -341,7 +341,7 @@ export function ModelSettings() {
                   name="top_p"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Top P</FormLabel>
+                      <FormLabel className="text-sm font-medium">Top P</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -349,6 +349,7 @@ export function ModelSettings() {
                           max={1}
                           step={0.05}
                           placeholder="0.9"
+                          className="h-9"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
@@ -363,13 +364,14 @@ export function ModelSettings() {
                   name="input_cost_per_token"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Input Cost per 1M Tokens</FormLabel>
+                      <FormLabel className="text-sm font-medium">Input Cost per 1M Tokens</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
                           step="any"
                           placeholder="0.0"
+                          className="h-9"
                           value={field.value * 1000000}
                           onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
                         />
@@ -385,13 +387,14 @@ export function ModelSettings() {
                 name="output_cost_per_token"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Output Cost per 1M Tokens</FormLabel>
+                    <FormLabel className="text-sm font-medium">Output Cost per 1M Tokens</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min={0}
                         step="any"
                         placeholder="0.0"
+                        className="h-9"
                         value={field.value * 1000000}
                         onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
                       />
@@ -405,10 +408,10 @@ export function ModelSettings() {
                 control={form.control}
                 name="is_active"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                  <FormItem className="bg-card/50 flex items-center justify-between rounded-md border p-3">
                     <div className="space-y-0.5">
-                      <FormLabel>Active</FormLabel>
-                      <div className="text-sm text-muted-foreground">Disable to temporarily deactivate this model</div>
+                      <FormLabel className="font-medium">Active</FormLabel>
+                      <div className="text-muted-foreground text-xs">Disable to temporarily deactivate this model</div>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -417,13 +420,13 @@ export function ModelSettings() {
                 )}
               />
 
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={handleDialogClose}>
+              <DialogFooter className="pt-2">
+                <Button variant="outline" type="button" size="sm" onClick={handleDialogClose}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button type="submit" size="sm" disabled={createMutation.isPending || updateMutation.isPending}>
                   {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                   )}
                   {selectedModel ? 'Update Model' : 'Add Model'}
                 </Button>

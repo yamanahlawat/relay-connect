@@ -22,48 +22,48 @@ export function ProviderCard({ provider, onEdit, onDelete }: ProviderCardProps) 
   const Icon = providerIcons[provider.type];
 
   return (
-    <div className="group flex items-center justify-between rounded-lg border bg-card/50 p-4 transition-all hover:bg-accent/5">
-      <div className="flex items-center gap-4">
+    <div className="group bg-card hover:bg-muted/30 flex items-center justify-between rounded-md border p-3 transition-colors">
+      <div className="flex items-center gap-3">
         {/* Icon */}
         <div
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg',
-            provider.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+            'flex h-8 w-8 items-center justify-center rounded-md border',
+            provider.is_active ? 'bg-background text-foreground' : 'bg-muted text-muted-foreground'
           )}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4" />
         </div>
 
         {/* Info */}
         <div>
-          <h4 className="font-medium">{provider.name}</h4>
+          <h4 className="text-sm font-medium">{provider.name}</h4>
         </div>
 
         {/* Status Badge */}
         {!provider.is_active && (
-          <span className="ml-3 rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+          <span className="ml-2 rounded-full bg-yellow-100/50 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
             Inactive
           </span>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex opacity-80 group-hover:opacity-100">
         <Button
           variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          size="sm"
+          className="text-muted-foreground hover:bg-background hover:text-foreground h-7 w-7 p-0"
           onClick={() => onEdit(provider)}
         >
-          <Settings2 className="h-4 w-4" />
+          <Settings2 className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          size="sm"
+          className="text-muted-foreground hover:bg-background hover:text-foreground h-7 w-7 p-0"
           onClick={() => onDelete(provider)}
         >
-          <Trash className="h-4 w-4" />
+          <Trash className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,9 +23,10 @@ import { EmptyState } from '@/modules/settings/EmptyState';
 import { ProviderGroup } from '@/modules/settings/providers/ProviderGroup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, PlusCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
@@ -49,13 +51,26 @@ export function ProviderSettings() {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [providerToDelete, setProviderToDelete] = useState<Provider | null>(null);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+
+  const router = useRouter();
+
+  // Check for add=true query parameter to open the dialog
+  useEffect(() => {
+    if (searchParams?.get('add') === 'true') {
+      handleAddProvider();
+      // Clean the URL to remove query parameters (prevents dialog reopening on refresh)
+      router.replace(window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
 
   // Query for fetching providers
   const { data: providers = [], isLoading } = useProvidersQuery();
 
   // Form setup
   const form = useForm<ProviderFormValues>({
-    resolver: zodResolver(providerSchema),
+    resolver: zodResolver(providerSchema) as unknown as Resolver<ProviderFormValues, object>, // More specific type
     defaultValues: {
       name: '',
       type: 'anthropic',
@@ -201,70 +216,52 @@ export function ProviderSettings() {
   }, [providers]);
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4 pr-14">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Providers</h2>
-          <p className="text-sm text-muted-foreground">Configure and manage your LLM providers</p>
+    <div className="space-y-8">
+      {isLoading ? (
+        <div className="flex h-[200px] items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
-        <Button onClick={handleAddProvider}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Provider
-        </Button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <Card>
-            <CardContent className="p-6">
-              {isLoading ? (
-                <div className="flex h-[200px] items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : providers.length === 0 ? (
-                <EmptyState
-                  title="No providers configured"
-                  description="Add your first provider to get started with models."
-                  buttonText="Add Provider"
-                  onButtonClick={handleAddProvider}
-                />
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(groupedProviders).map(([type, providers]) => (
-                    <ProviderGroup
-                      key={type}
-                      title={`${type.charAt(0).toUpperCase()}${type.slice(1)}`}
-                      providers={providers}
-                      onEdit={handleEditProvider}
-                      onDelete={handleDeleteClick}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      ) : providers.length === 0 ? (
+        <div className="bg-card rounded-lg border p-8">
+          <EmptyState
+            title="No providers configured"
+            description="Add your first provider to get started with models."
+            buttonText="Add Provider"
+            onButtonClick={handleAddProvider}
+          />
         </div>
-      </div>
+      ) : (
+        <div className="bg-card/50 rounded-lg border">
+          {Object.entries(groupedProviders).map(([type, providers], index, array) => (
+            <div key={type} className={index < array.length - 1 ? 'border-b' : ''}>
+              <ProviderGroup
+                title={`${type.charAt(0).toUpperCase()}${type.slice(1)}`}
+                providers={providers}
+                onEdit={handleEditProvider}
+                onDelete={handleDeleteClick}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit Provider Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{selectedProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
+            <DialogTitle className="text-xl">{selectedProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-sm font-medium">Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Provider name" {...field} />
+                      <Input placeholder="Enter provider name" className="h-9" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -276,10 +273,10 @@ export function ProviderSettings() {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel className="text-sm font-medium">Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select a provider type" />
                         </SelectTrigger>
                       </FormControl>
@@ -300,9 +297,15 @@ export function ProviderSettings() {
                 name="api_key"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>API Key</FormLabel>
+                    <FormLabel className="text-sm font-medium">API Key</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="API Key" {...field} value={field.value ?? ''} />
+                      <Input
+                        type="password"
+                        placeholder="Enter API key"
+                        className="h-9"
+                        {...field}
+                        value={field.value ?? ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -314,9 +317,14 @@ export function ProviderSettings() {
                 name="base_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Base URL</FormLabel>
+                    <FormLabel className="text-sm font-medium">Base URL</FormLabel>
                     <FormControl>
-                      <Input placeholder="Base URL (optional)" {...field} value={field.value ?? ''} />
+                      <Input
+                        placeholder="https://api.example.com"
+                        className="h-9"
+                        {...field}
+                        value={field.value ?? ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -327,10 +335,10 @@ export function ProviderSettings() {
                 control={form.control}
                 name="is_active"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                  <FormItem className="bg-card/50 flex items-center justify-between rounded-md border p-3">
                     <div className="space-y-0.5">
-                      <FormLabel>Active</FormLabel>
-                      <div className="text-sm text-muted-foreground">
+                      <FormLabel className="font-medium">Active</FormLabel>
+                      <div className="text-muted-foreground text-xs">
                         Disable to temporarily deactivate this provider
                       </div>
                     </div>
@@ -341,13 +349,13 @@ export function ProviderSettings() {
                 )}
               />
 
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={handleDialogClose}>
+              <DialogFooter className="pt-2">
+                <Button variant="outline" type="button" size="sm" onClick={handleDialogClose}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button type="submit" size="sm" disabled={createMutation.isPending || updateMutation.isPending}>
                   {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                   )}
                   {selectedProvider ? 'Update Provider' : 'Add Provider'}
                 </Button>

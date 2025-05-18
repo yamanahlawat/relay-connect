@@ -179,7 +179,7 @@ export function WelcomeContent() {
         onSend={handleSendMessage}
         disabled={isSubmitting || !selectedProvider || !selectedModel}
         placeholder={
-          !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
+          !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Ask me anything...'
         }
         settings={chatSettings}
         onSettingsChange={setChatSettings}

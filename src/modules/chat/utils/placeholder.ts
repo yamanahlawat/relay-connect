@@ -12,6 +12,6 @@ export function getInputPlaceholder(
   streamingMessageId: string | null
 ): string {
   if (!selectedProvider || !selectedModel) return 'Select a provider and model to start...';
-  if (streamingMessageId) return 'Please wait for the response...';
-  return 'Type your message...';
+  if (streamingMessageId) return 'Type your next message while response is generating...';
+  return 'Ask me anything...';
 }

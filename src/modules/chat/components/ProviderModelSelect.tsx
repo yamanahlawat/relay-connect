@@ -1,6 +1,7 @@
 'use client';
 
 import { InfiniteScrollSelect } from '@/components/custom/InfiniteScrollSelect';
+import { SettingsButton } from '@/components/SettingsButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -287,7 +288,7 @@ export default function ProviderModelSelect() {
         />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1">
         {pathname !== '/' && (
           <TooltipProvider>
             <Tooltip>
@@ -305,6 +306,7 @@ export default function ProviderModelSelect() {
           </TooltipProvider>
         )}
         <ThemeToggle />
+        <SettingsButton />
       </div>
     </div>
   );

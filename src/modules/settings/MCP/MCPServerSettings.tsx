@@ -104,7 +104,7 @@ export function MCPServerSettings() {
   return (
     <div className="space-y-8">
       {isLoading ? (
-        <div className="flex h-[200px] items-center justify-center">
+        <div className="flex min-h-[200px] items-center justify-center">
           <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
       ) : !servers || servers.length === 0 ? (

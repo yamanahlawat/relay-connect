@@ -212,7 +212,7 @@ export function ModelSettings() {
   return (
     <div className="space-y-8">
       {isLoadingProviders || isLoadingModels ? (
-        <div className="flex h-[200px] items-center justify-center">
+        <div className="flex min-h-[200px] items-center justify-center">
           <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
       ) : Object.keys(groupedModels).length === 0 ? (

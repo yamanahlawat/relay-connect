@@ -102,13 +102,13 @@ export function MCPServerSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-          </div>
-        ) : !servers || servers.length === 0 ? (
+    <div className="space-y-8">
+      {isLoading ? (
+        <div className="flex min-h-[200px] items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+        </div>
+      ) : !servers || servers.length === 0 ? (
+        <div className="bg-card rounded-lg border p-8">
           <EmptyState
             title="No MCP Servers"
             description="You haven't added any MCP servers yet. Add one to get started."
@@ -116,19 +116,19 @@ export function MCPServerSettings() {
             onButtonClick={() => setIsAddDialogOpen(true)}
             Icon={PlusCircle}
           />
-        ) : (
-          <div className="space-y-6">
-            <MCPServerGroup
-              servers={servers}
-              onToggle={handleToggleServer}
-              onEdit={handleEditServer}
-              onDelete={handleDeleteServer}
-              isUpdating={toggleMutation.isPending}
-              updatingServerId={toggleMutation.variables?.serverId}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-card/50 rounded-lg border">
+          <MCPServerGroup
+            servers={servers}
+            onToggle={handleToggleServer}
+            onEdit={handleEditServer}
+            onDelete={handleDeleteServer}
+            isUpdating={toggleMutation.isPending}
+            updatingServerId={toggleMutation.variables?.serverId}
+          />
+        </div>
+      )}
 
       {/* Add Server Dialog */}
       <AddServerDialog

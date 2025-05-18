@@ -4,13 +4,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
@@ -23,7 +21,7 @@ import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Loader2, Settings2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
@@ -190,14 +188,7 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           )}
         </ScrollArea>
       </SidebarContent>
-      <SidebarFooter>
-        <Link href="/settings" className="w-full">
-          <SidebarMenuButton className="cursor-pointer">
-            <Settings2 className="h-4 w-4" />
-            <span>Settings</span>
-          </SidebarMenuButton>
-        </Link>
-      </SidebarFooter>
+      {/* Footer removed - Settings button moved to top-right header */}
       <SidebarRail />
     </Sidebar>
   );

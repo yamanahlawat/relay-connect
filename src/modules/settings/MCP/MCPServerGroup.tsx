@@ -19,9 +19,9 @@ export function MCPServerGroup({
   updatingServerId,
 }: MCPServerGroupProps) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-medium">Available Servers</h3>
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="p-6">
+      <h3 className="text-muted-foreground mb-4 text-sm font-medium">Available Servers</h3>
+      <div className="space-y-3">
         {servers.map((server) => (
           <MCPServerCard
             key={server.id}

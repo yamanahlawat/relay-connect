@@ -188,7 +188,6 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
           )}
         </ScrollArea>
       </SidebarContent>
-      {/* Footer removed - Settings button moved to top-right header */}
       <SidebarRail />
     </Sidebar>
   );

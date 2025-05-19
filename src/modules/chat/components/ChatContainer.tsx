@@ -404,8 +404,7 @@ export default function ChatContainer() {
             disabled={!selectedProvider || !selectedModel}
             placeholder={getInputPlaceholder(
               selectedProvider ? { id: selectedProvider.id } : null,
-              selectedModel ? { id: selectedModel.id } : null,
-              chatState.streamingMessageId
+              selectedModel ? { id: selectedModel.id } : null
             )}
             settings={chatSettings}
             onSettingsChange={setChatSettings}

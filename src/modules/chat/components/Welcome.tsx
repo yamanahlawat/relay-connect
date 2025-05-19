@@ -9,6 +9,7 @@ import { GENERIC_SYSTEM_CONTEXT } from '@/lib/prompts';
 import { ChatInput } from '@/modules/chat/components/input/ChatInput';
 import { FileDropOverlay } from '@/modules/chat/components/input/FileDropOverlay';
 import { useFileDrag } from '@/modules/chat/hooks/useFileDrag';
+import { getInputPlaceholder } from '@/modules/chat/utils/placeholder';
 import { useChatSettings } from '@/stores/chatSettings';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useMessageStreamingStore } from '@/stores/messageStreaming';
@@ -178,9 +179,10 @@ export function WelcomeContent() {
         onChange={setMessage}
         onSend={handleSendMessage}
         disabled={isSubmitting || !selectedProvider || !selectedModel}
-        placeholder={
-          !selectedProvider || !selectedModel ? 'Select a provider and model to start...' : 'Type your message...'
-        }
+        placeholder={getInputPlaceholder(
+          selectedProvider ? { id: selectedProvider.id } : null,
+          selectedModel ? { id: selectedModel.id } : null
+        )}
         settings={chatSettings}
         onSettingsChange={setChatSettings}
         systemContext={systemContext}

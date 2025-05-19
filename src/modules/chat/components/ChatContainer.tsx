@@ -401,11 +401,10 @@ export default function ChatContainer() {
         <div ref={chatInputContainerRef}>
           <ChatInput
             onSend={handleSendMessage}
-            disabled={!selectedProvider || !selectedModel || !!chatState.streamingMessageId}
+            disabled={!selectedProvider || !selectedModel}
             placeholder={getInputPlaceholder(
               selectedProvider ? { id: selectedProvider.id } : null,
-              selectedModel ? { id: selectedModel.id } : null,
-              chatState.streamingMessageId
+              selectedModel ? { id: selectedModel.id } : null
             )}
             settings={chatSettings}
             onSettingsChange={setChatSettings}

@@ -183,7 +183,7 @@ export function ChatInput({
                 disabled && 'opacity-50',
                 isEditing && 'border-t border-orange-200 dark:border-orange-900'
               )}
-              disabled={disabled || isStreaming}
+              disabled={disabled}
               rows={1}
               spellCheck="true"
             />

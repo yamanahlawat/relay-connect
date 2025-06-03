@@ -32,10 +32,10 @@ function SliderSetting({
   return (
     <div className="grid gap-2">
       {showValue && (
-        <p className="text-xs text-muted-foreground">Current: {valueFormat ? valueFormat(value) : value}</p>
+        <p className="text-muted-foreground text-xs">Current: {valueFormat ? valueFormat(value) : value}</p>
       )}
       <Slider value={[value]} min={min} max={max} step={step} onValueChange={([val = 0]) => onChange(val)} />
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="text-muted-foreground flex justify-between text-xs">
         <span>{leftLabel}</span>
         <span>{rightLabel}</span>
       </div>
@@ -65,7 +65,7 @@ export function AdvancedSettings({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer rounded-full"
           disabled={disabled}
         >
           <Settings2 className="h-4 w-4" />
@@ -75,8 +75,8 @@ export function AdvancedSettings({
       <PopoverContent className="w-80" align="start">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium leading-none">Response Settings</h4>
-            <p className="text-xs text-muted-foreground">Customize how the AI generates responses.</p>
+            <h4 className="leading-none font-medium">Response Settings</h4>
+            <p className="text-muted-foreground text-xs">Customize how the AI generates responses.</p>
           </div>
 
           <div className="grid gap-6">

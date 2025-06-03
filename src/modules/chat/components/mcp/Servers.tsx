@@ -15,9 +15,9 @@ function NoActiveServers() {
     <div className="flex h-full min-h-[200px] items-center justify-center">
       <div className="rounded-md border border-dashed p-6">
         <div className="flex flex-col items-center justify-center text-center">
-          <PocketKnife className="h-8 w-8 text-muted-foreground/60" />
+          <PocketKnife className="text-muted-foreground/60 h-8 w-8" />
           <h3 className="mt-3 text-sm font-medium">No Active MCP Servers</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-xs">
             No servers are currently connected. Connect or start a server.
           </p>
         </div>
@@ -30,15 +30,15 @@ function ToolCard({ tool, index }: { tool: MCPTool; index: number }) {
   return (
     <div
       className={cn(
-        'group rounded-md border border-input/80 p-3 text-sm transition-colors',
+        'group border-input/80 rounded-md border p-3 text-sm transition-colors',
         'hover:border-accent hover:bg-accent/40',
         index % 2 === 0 ? 'bg-muted/30' : 'bg-muted/50'
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="font-medium text-foreground/90">{tool.name}</span>
+        <span className="text-foreground/90 font-medium">{tool.name}</span>
       </div>
-      {tool.description && <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{tool.description}</div>}
+      {tool.description && <div className="text-muted-foreground mt-1 text-xs leading-relaxed">{tool.description}</div>}
     </div>
   );
 }
@@ -46,15 +46,15 @@ function ToolCard({ tool, index }: { tool: MCPTool; index: number }) {
 // Status indicator component
 function ServerStatusIcon({ isLoading, hasServers }: { isLoading: boolean; hasServers: boolean }) {
   if (isLoading) {
-    return <CircuitBoard className="h-4 w-4 animate-pulse text-muted-foreground" />;
+    return <CircuitBoard className="text-muted-foreground h-4 w-4 animate-pulse" />;
   }
 
   return (
     <div className="relative">
-      <CircuitBoard className="h-4 w-4 text-muted-foreground" />
+      <CircuitBoard className="text-muted-foreground h-4 w-4" />
       <span
         className={cn(
-          'absolute -right-0.5 -top-0.5 block h-1.5 w-1.5 rounded-full',
+          'absolute -top-0.5 -right-0.5 block h-1.5 w-1.5 rounded-full',
           'transition-colors duration-300',
           hasServers ? 'bg-green-500' : 'bg-red-500'
         )}
@@ -98,7 +98,7 @@ export default function MCPServers() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer rounded-full"
         >
           <ServerStatusIcon isLoading={isLoading} hasServers={hasServers} />
           <span className="sr-only">MCP Servers</span>
@@ -109,8 +109,8 @@ export default function MCPServers() {
         <div className="grid gap-4">
           {/* Header with count */}
           <div className="space-y-2">
-            <h4 className="font-medium leading-none">MCP Servers ({servers?.length ?? 0})</h4>
-            <p className="text-xs text-muted-foreground">Active MCP servers and their available tools.</p>
+            <h4 className="leading-none font-medium">MCP Servers ({servers?.length ?? 0})</h4>
+            <p className="text-muted-foreground text-xs">Active MCP servers and their available tools.</p>
           </div>
 
           <div style={{ height: contentHeight }} className="transition-all duration-300">
@@ -118,7 +118,7 @@ export default function MCPServers() {
               {/* Loading state */}
               {isLoading && (
                 <div className="flex h-full items-center justify-center">
-                  <div className="text-sm text-muted-foreground">Loading MCP servers...</div>
+                  <div className="text-muted-foreground text-sm">Loading MCP servers...</div>
                 </div>
               )}
 
@@ -133,12 +133,12 @@ export default function MCPServers() {
                       {/* Server header */}
                       <div className="flex items-center justify-between pb-2">
                         <div className="flex items-center gap-2">
-                          <CircuitBoard className="h-4 w-4 text-foreground" />
-                          <span className="font-medium text-foreground">{server.name}</span>
+                          <CircuitBoard className="text-foreground h-4 w-4" />
+                          <span className="text-foreground font-medium">{server.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {toggleMutation.isPending && toggleMutation.variables?.serverId === server.id && (
-                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                            <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
                           )}
                           <Switch
                             checked={server.enabled}
@@ -147,7 +147,7 @@ export default function MCPServers() {
                             }
                             aria-label={`Toggle ${server.name}`}
                             disabled={toggleMutation.isPending && toggleMutation.variables?.serverId === server.id}
-                            className="origin-right scale-75"
+                            className="origin-right scale-75 cursor-pointer"
                           />
                         </div>
                       </div>
@@ -157,14 +157,14 @@ export default function MCPServers() {
                         open={openServer === server.name}
                         onOpenChange={(isOpen) => setOpenServer(isOpen ? server.name : null)}
                       >
-                        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors hover:bg-accent">
+                        <CollapsibleTrigger className="border-input hover:bg-accent flex w-full items-center justify-between rounded-md border bg-transparent px-3 py-2 text-sm transition-colors">
                           <div className="flex items-center gap-2">
                             <PocketKnife className="h-4 w-4" />
                             <span className="font-medium">Show Tools ({server.available_tools?.length || 0})</span>
                           </div>
                           <ChevronDown
                             className={cn(
-                              'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                              'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
                               openServer === server.name && 'rotate-180'
                             )}
                           />

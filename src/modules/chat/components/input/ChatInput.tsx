@@ -249,7 +249,7 @@ export function ChatInput({
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
                     onMouseDown={(e) => e.preventDefault()}
-                    className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8 rounded-full"
+                    className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer rounded-full"
                     disabled={disabled}
                   >
                     <Paperclip className="h-4 w-4" />

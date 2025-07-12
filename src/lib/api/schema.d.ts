@@ -4,230 +4,7 @@
  */
 
 export interface paths {
-  '/api/v1/providers/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Providers
-     * @description ## List All LLM Providers
-     *
-     *     Retrieves a paginated list of all language model providers.
-     *
-     *     ### Parameters
-     *     - **is_active** (optional): Filter by active status
-     *     - **provider_name** (optional): Filter providers by name
-     *     - **offset** (optional): Number of records to skip (default: 0)
-     *     - **limit** (optional): Maximum number of records to return (default: 10)
-     *
-     *     ### Returns
-     *     List of provider configurations with their details
-     */
-    get: operations['list_providers_api_v1_providers__get'];
-    put?: never;
-    /**
-     * Create Provider
-     * @description ## Create a New LLM Provider
-     *
-     *     Creates a new language model provider configuration. Each provider must have a unique name.
-     *
-     *     ### Parameters
-     *     - **provider_in**: Provider creation parameters containing:
-     *     - **name**: Name of the provider (must be unique)
-     *     - **config**: Provider-specific configuration parameters
-     *     - **is_active**: Whether the provider is active (default: True)
-     *
-     *     ### Returns
-     *     The created provider configuration
-     */
-    post: operations['create_provider_api_v1_providers__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/providers/{provider_id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Provider
-     * @description ## Get a Specific LLM Provider
-     *
-     *     Retrieves detailed information about a specific language model provider by its ID.
-     *
-     *     ### Parameters
-     *     - **provider_id**: UUID of the provider to retrieve
-     *
-     *     ### Returns
-     *     Detailed provider configuration information
-     */
-    get: operations['get_provider_api_v1_providers__provider_id___get'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete Provider
-     * @description ## Delete a Specific LLM Provider
-     *
-     *     Permanently removes a language model provider configuration from the system.
-     *
-     *     ### Parameters
-     *     - **provider_id**: UUID of the provider to delete
-     *
-     *     ### Returns
-     *     No content on successful deletion
-     */
-    delete: operations['delete_provider_api_v1_providers__provider_id___delete'];
-    options?: never;
-    head?: never;
-    /**
-     * Update Provider
-     * @description ## Update a Specific LLM Provider
-     *
-     *     Updates the configuration of an existing language model provider.
-     *
-     *     ### Parameters
-     *     - **provider_id**: UUID of the provider to update
-     *     - **provider_in**: Provider update parameters containing:
-     *     - **name** (optional): New name for the provider
-     *     - **config** (optional): Updated provider configuration
-     *     - **is_active** (optional): Updated active status
-     *
-     *     ### Returns
-     *     Updated provider configuration
-     */
-    patch: operations['update_provider_api_v1_providers__provider_id___patch'];
-    trace?: never;
-  };
-  '/api/v1/models/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Models
-     * @description ## List All LLM Models
-     *
-     *     Retrieves a paginated list of all language models, with optional filtering by provider.
-     *
-     *     ### Parameters
-     *     - **provider_id** (optional): Filter models by provider UUID
-     *     - **is_active** (optional): Filter by active status
-     *     - **model_name** (optional): Filter models by name
-     *     - **offset** (optional): Number of records to skip (default: 0)
-     *     - **limit** (optional): Maximum number of records to return (default: 10)
-     *
-     *     ### Returns
-     *     List of model configurations with their details
-     */
-    get: operations['list_models_api_v1_models__get'];
-    put?: never;
-    /**
-     * Create Model
-     * @description ## Create a New LLM Model Configuration
-     *
-     *     Creates a new language model configuration for a specific provider. Each model must have a unique name within its provider.
-     *
-     *     ### Parameters
-     *     - **model_in**: Model creation parameters containing:
-     *     - **name**: Name of the model (must be unique per provider)
-     *     - **provider_id**: UUID of the provider this model belongs to
-     *     - **config**: Model-specific configuration parameters
-     *     - **is_active**: Whether the model is active (default: True)
-     */
-    post: operations['create_model_api_v1_models__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/models/all/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Models By Provider
-     * @description Retrieves all models across all providers in a single request
-     */
-    get: operations['list_models_by_provider_api_v1_models_all__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/models/{llm_model_id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Model
-     * @description ## Get a Specific LLM Model
-     *
-     *     Retrieves detailed information about a specific language model by its ID.
-     *
-     *     ### Parameters
-     *     - **llm_model_id**: UUID of the model to retrieve
-     *
-     *     ### Returns
-     *     Detailed model configuration information
-     */
-    get: operations['get_model_api_v1_models__llm_model_id___get'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete Model
-     * @description ## Delete a Specific LLM Model Configuration
-     *
-     *     Permanently removes a language model configuration from the system.
-     *
-     *     ### Parameters
-     *     - **llm_model_id**: UUID of the model to delete
-     *
-     *     ### Returns
-     *     No content on successful deletion
-     */
-    delete: operations['delete_model_api_v1_models__llm_model_id___delete'];
-    options?: never;
-    head?: never;
-    /**
-     * Update Model
-     * @description ## Update a Specific LLM Model Configuration
-     *
-     *     Updates the configuration of an existing language model.
-     *
-     *     ### Parameters
-     *     - **llm_model_id**: UUID of the model to update
-     *     - **model_in**: Model update parameters containing:
-     *     - **name** (optional): New name for the model
-     *     - **config** (optional): Updated model configuration
-     *     - **is_active** (optional): Updated active status
-     *
-     *     ### Returns
-     *     Updated model configuration
-     */
-    patch: operations['update_model_api_v1_models__llm_model_id___patch'];
-    trace?: never;
-  };
-  '/api/v1/chat/complete/{session_id}/{message_id}/stream': {
+  '/api/v1/ai/complete/{session_id}/{message_id}/stream': {
     parameters: {
       query?: never;
       header?: never;
@@ -243,9 +20,7 @@ export interface paths {
      *     ### Parameters
      *     - **session_id**: UUID of the chat session
      *     - **message_id**: UUID of the message to generate completion for
-     *     - **params**: Generation parameters:
-     *     - **max_tokens**: Maximum tokens to generate (default: 1024)
-     *     - **temperature**: Temperature for generation (default: 0.7)
+     *     - **params**: Generation parameters (temperature, max_tokens)
      *
      *     ### Returns
      *     Server-sent events stream of the generated completion
@@ -253,9 +28,9 @@ export interface paths {
      *     ### Raises
      *     - **404**: Session, message or model not found
      *     - **429**: Rate limit exceeded
-     *     - **503**: Provider service unavailable
+     *     - **503**: AI service unavailable
      */
-    get: operations['stream_completion_api_v1_chat_complete__session_id___message_id__stream_get'];
+    get: operations['stream_completion_api_v1_ai_complete__session_id___message_id__stream_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -264,7 +39,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/chat/complete/{session_id}/stop': {
+  '/api/v1/ai/complete/{session_id}/stop': {
     parameters: {
       query?: never;
       header?: never;
@@ -278,7 +53,7 @@ export interface paths {
      * @description ## Stop Chat Completion Stream
      *
      *     Stops an ongoing streaming completion for the specified session.
-     *     Also cancels any ongoing API calls to the provider.
+     *     Uses Redis-based cancellation to stop the stream across distributed instances.
      *
      *     ### Parameters
      *     - **session_id**: UUID of the chat session to stop streaming
@@ -289,7 +64,7 @@ export interface paths {
      *     ### Raises
      *     - **404**: Session not found
      */
-    post: operations['stop_completion_api_v1_chat_complete__session_id__stop_post'];
+    post: operations['stop_completion_api_v1_ai_complete__session_id__stop_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -336,8 +111,7 @@ export interface paths {
      *     The created chat session
      *
      *     ### Raises
-     *     - **404**: Provider or model not found
-     *     - **400**: Invalid provider/model combination
+     *     - **404**: Session not found
      */
     post: operations['create_chat_session_api_v1_sessions__post'];
     delete?: never;
@@ -596,6 +370,242 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/v1/providers/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Providers
+     * @description ## List All LLM Providers
+     *
+     *     Retrieves a paginated list of all language model providers.
+     *
+     *     ### Parameters
+     *     - **is_active** (optional): Filter by active status
+     *     - **provider_name** (optional): Filter providers by name
+     *     - **offset** (optional): Number of records to skip (default: 0)
+     *     - **limit** (optional): Maximum number of records to return (default: 10)
+     *
+     *     ### Returns
+     *     List of provider configurations with their details
+     */
+    get: operations['list_providers_api_v1_providers__get'];
+    put?: never;
+    /**
+     * Create Provider
+     * @description ## Create a New LLM Provider
+     *
+     *     Creates a new language model provider configuration. Each provider must have a unique name.
+     *
+     *     ### Parameters
+     *     - **provider_in**: Provider creation parameters containing:
+     *     - **name**: Name of the provider (must be unique)
+     *     - **type**: Type of provider (openai, anthropic, etc.)
+     *     - **api_key**: API key for the provider (optional)
+     *     - **base_url**: Custom base URL (optional)
+     *     - **is_active**: Whether the provider is active (default: True)
+     *
+     *     ### Returns
+     *     The created provider configuration
+     */
+    post: operations['create_provider_api_v1_providers__post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/providers/{provider_id}/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Provider
+     * @description ## Get a Specific LLM Provider
+     *
+     *     Retrieves detailed information about a specific language model provider by its ID.
+     *
+     *     ### Parameters
+     *     - **provider_id**: UUID of the provider to retrieve
+     *
+     *     ### Returns
+     *     Detailed provider configuration information
+     */
+    get: operations['get_provider_api_v1_providers__provider_id___get'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Provider
+     * @description ## Delete a Specific LLM Provider
+     *
+     *     Permanently removes a language model provider configuration from the system.
+     *
+     *     ### Parameters
+     *     - **provider_id**: UUID of the provider to delete
+     *
+     *     ### Returns
+     *     No content on successful deletion
+     */
+    delete: operations['delete_provider_api_v1_providers__provider_id___delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Provider
+     * @description ## Update a Specific LLM Provider
+     *
+     *     Updates the configuration of an existing language model provider.
+     *
+     *     ### Parameters
+     *     - **provider_id**: UUID of the provider to update
+     *     - **provider_in**: Provider update parameters containing:
+     *     - **name** (optional): New name for the provider
+     *     - **type** (optional): Updated provider type
+     *     - **api_key** (optional): Updated API key
+     *     - **base_url** (optional): Updated base URL
+     *     - **is_active** (optional): Updated active status
+     *
+     *     ### Returns
+     *     Updated provider configuration
+     */
+    patch: operations['update_provider_api_v1_providers__provider_id___patch'];
+    trace?: never;
+  };
+  '/api/v1/models/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Models
+     * @description ## List All LLM Models
+     *
+     *     Retrieves a paginated list of all language models, with optional filtering by provider.
+     *
+     *     ### Parameters
+     *     - **provider_id** (optional): Filter models by provider UUID
+     *     - **is_active** (optional): Filter by active status
+     *     - **model_name** (optional): Filter models by name
+     *     - **offset** (optional): Number of records to skip (default: 0)
+     *     - **limit** (optional): Maximum number of records to return (default: 10)
+     *
+     *     ### Returns
+     *     List of model configurations with their details
+     */
+    get: operations['list_models_api_v1_models__get'];
+    put?: never;
+    /**
+     * Create Model
+     * @description ## Create a New LLM Model Configuration
+     *
+     *     Creates a new language model configuration for a specific provider. Each model must have a unique name within its provider.
+     *
+     *     ### Parameters
+     *     - **model_in**: Model creation parameters containing:
+     *     - **name**: Name of the model (must be unique per provider)
+     *     - **provider_id**: UUID of the provider this model belongs to
+     *     - **default_temperature**: Default temperature setting
+     *     - **default_max_tokens**: Default max tokens setting
+     *     - **default_top_p**: Default top_p setting
+     *     - **is_active**: Whether the model is active (default: True)
+     */
+    post: operations['create_model_api_v1_models__post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/models/all/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Models By Provider
+     * @description ## List All Models Grouped by Provider
+     *
+     *     Retrieves all models across all providers in a single request, grouped by provider name.
+     *
+     *     ### Returns
+     *     Dictionary with provider names as keys and lists of their models as values
+     */
+    get: operations['list_models_by_provider_api_v1_models_all__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/models/{llm_model_id}/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Model
+     * @description ## Get a Specific LLM Model
+     *
+     *     Retrieves detailed information about a specific language model by its ID.
+     *
+     *     ### Parameters
+     *     - **llm_model_id**: UUID of the model to retrieve
+     *
+     *     ### Returns
+     *     Detailed model configuration information
+     */
+    get: operations['get_model_api_v1_models__llm_model_id___get'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Model
+     * @description ## Delete a Specific LLM Model Configuration
+     *
+     *     Permanently removes a language model configuration from the system.
+     *
+     *     ### Parameters
+     *     - **llm_model_id**: UUID of the model to delete
+     *
+     *     ### Returns
+     *     No content on successful deletion
+     */
+    delete: operations['delete_model_api_v1_models__llm_model_id___delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Model
+     * @description ## Update a Specific LLM Model Configuration
+     *
+     *     Updates the configuration of an existing language model.
+     *
+     *     ### Parameters
+     *     - **llm_model_id**: UUID of the model to update
+     *     - **model_in**: Model update parameters containing:
+     *     - **name** (optional): New name for the model
+     *     - **default_temperature** (optional): Updated default temperature
+     *     - **default_max_tokens** (optional): Updated default max tokens
+     *     - **default_top_p** (optional): Updated default top_p
+     *     - **is_active** (optional): Updated active status
+     *
+     *     ### Returns
+     *     Updated model configuration
+     */
+    patch: operations['update_model_api_v1_models__llm_model_id___patch'];
     trace?: never;
   };
   '/api/v1/mcp/': {
@@ -1053,34 +1063,20 @@ export interface components {
        */
       is_active: boolean;
       /**
-       * Max Tokens
+       * Default Max Tokens
        * @default 4096
        */
-      max_tokens: number;
+      default_max_tokens: number;
       /**
-       * Temperature
+       * Default Temperature
        * @default 0.7
        */
-      temperature: number;
+      default_temperature: number;
       /**
-       * Top P
+       * Default Top P
        * @default 0.9
        */
-      top_p: number;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      };
-      /**
-       * Input Cost Per Token
-       * @default 0
-       */
-      input_cost_per_token: number;
-      /**
-       * Output Cost Per Token
-       * @default 0
-       */
-      output_cost_per_token: number;
+      default_top_p: number;
       /**
        * Provider Id
        * Format: uuid
@@ -1100,34 +1096,20 @@ export interface components {
        */
       is_active: boolean;
       /**
-       * Max Tokens
+       * Default Max Tokens
        * @default 4096
        */
-      max_tokens: number;
+      default_max_tokens: number;
       /**
-       * Temperature
+       * Default Temperature
        * @default 0.7
        */
-      temperature: number;
+      default_temperature: number;
       /**
-       * Top P
+       * Default Top P
        * @default 0.9
        */
-      top_p: number;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      };
-      /**
-       * Input Cost Per Token
-       * @default 0
-       */
-      input_cost_per_token: number;
-      /**
-       * Output Cost Per Token
-       * @default 0
-       */
-      output_cost_per_token: number;
+      default_top_p: number;
       /**
        * Id
        * Format: uuid
@@ -1158,20 +1140,12 @@ export interface components {
       name?: string | null;
       /** Is Active */
       is_active?: boolean | null;
-      /** Max Tokens */
-      max_tokens?: number | null;
-      /** Temperature */
-      temperature?: number | null;
-      /** Top P */
-      top_p?: number | null;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      } | null;
-      /** Input Cost Per Token */
-      input_cost_per_token?: number | null;
-      /** Output Cost Per Token */
-      output_cost_per_token?: number | null;
+      /** Default Max Tokens */
+      default_max_tokens?: number | null;
+      /** Default Temperature */
+      default_temperature?: number | null;
+      /** Default Top P */
+      default_top_p?: number | null;
     };
     /**
      * ModelsByProvider
@@ -1197,10 +1171,6 @@ export interface components {
       is_active: boolean;
       /** Base Url */
       base_url?: string | null;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      };
       /** Api Key */
       api_key?: string | null;
     };
@@ -1219,10 +1189,6 @@ export interface components {
       is_active: boolean;
       /** Base Url */
       base_url?: string | null;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      };
       /**
        * Id
        * Format: uuid
@@ -1243,10 +1209,13 @@ export interface components {
     };
     /**
      * ProviderType
-     * @description Supported LLM providers
+     * @description Supported LLM provider types based on pydantic_ai documentation.
+     *
+     *     This enum defines the provider types that users can select from when
+     *     configuring their LLM providers in the UI.
      * @enum {string}
      */
-    ProviderType: 'anthropic' | 'openai' | 'ollama';
+    ProviderType: 'openai' | 'anthropic' | 'gemini' | 'groq' | 'mistral' | 'cohere' | 'bedrock';
     /**
      * ProviderUpdate
      * @description Schema for updating a provider.
@@ -1261,10 +1230,6 @@ export interface components {
       api_key?: string | null;
       /** Base Url */
       base_url?: string | null;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      } | null;
     };
     /**
      * ServerStatus
@@ -1382,433 +1347,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  list_providers_api_v1_providers__get: {
-    parameters: {
-      query?: {
-        is_active?: boolean | null;
-        provider_name?: string | null;
-        offset?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successfully retrieved list of providers */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProviderRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_provider_api_v1_providers__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProviderCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProviderRead'];
-        };
-      };
-      /** @description Provider already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_provider_api_v1_providers__provider_id___get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        provider_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProviderRead'];
-        };
-      };
-      /** @description Provider not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_provider_api_v1_providers__provider_id___delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        provider_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Provider not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_provider_api_v1_providers__provider_id___patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        provider_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProviderUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProviderRead'];
-        };
-      };
-      /** @description Provider not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_models_api_v1_models__get: {
-    parameters: {
-      query?: {
-        provider_id?: string | null;
-        is_active?: boolean | null;
-        model_name?: string | null;
-        offset?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successfully retrieved list of models */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ModelRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_model_api_v1_models__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ModelCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ModelRead'];
-        };
-      };
-      /** @description Provider not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Model already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_models_by_provider_api_v1_models_all__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ModelsByProvider'];
-        };
-      };
-    };
-  };
-  get_model_api_v1_models__llm_model_id___get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        llm_model_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ModelRead'];
-        };
-      };
-      /** @description Model not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_model_api_v1_models__llm_model_id___delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        llm_model_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Model not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_model_api_v1_models__llm_model_id___patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        llm_model_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ModelUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ModelRead'];
-        };
-      };
-      /** @description Model not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponseModel'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  stream_completion_api_v1_chat_complete__session_id___message_id__stream_get: {
+  stream_completion_api_v1_ai_complete__session_id___message_id__stream_get: {
     parameters: {
       query?: {
         max_tokens?: number;
@@ -1858,7 +1397,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponseModel'];
         };
       };
-      /** @description Provider service unavailable */
+      /** @description AI service unavailable */
       503: {
         headers: {
           [name: string]: unknown;
@@ -1869,7 +1408,7 @@ export interface operations {
       };
     };
   };
-  stop_completion_api_v1_chat_complete__session_id__stop_post: {
+  stop_completion_api_v1_ai_complete__session_id__stop_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -2319,6 +1858,432 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_providers_api_v1_providers__get: {
+    parameters: {
+      query?: {
+        is_active?: boolean | null;
+        provider_name?: string | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully retrieved list of providers */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderRead'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_provider_api_v1_providers__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProviderCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderRead'];
+        };
+      };
+      /** @description Provider already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_provider_api_v1_providers__provider_id___get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderRead'];
+        };
+      };
+      /** @description Provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_provider_api_v1_providers__provider_id___delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_provider_api_v1_providers__provider_id___patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProviderUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderRead'];
+        };
+      };
+      /** @description Provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_models_api_v1_models__get: {
+    parameters: {
+      query?: {
+        provider_id?: string | null;
+        is_active?: boolean | null;
+        model_name?: string | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully retrieved list of models */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelRead'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_model_api_v1_models__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ModelCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelRead'];
+        };
+      };
+      /** @description Provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Model already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_models_by_provider_api_v1_models_all__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelsByProvider'];
+        };
+      };
+    };
+  };
+  get_model_api_v1_models__llm_model_id___get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        llm_model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelRead'];
+        };
+      };
+      /** @description Model not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_model_api_v1_models__llm_model_id___delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        llm_model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Model not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_model_api_v1_models__llm_model_id___patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        llm_model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ModelUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelRead'];
+        };
+      };
+      /** @description Model not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponseModel'];
+        };
       };
       /** @description Validation Error */
       422: {

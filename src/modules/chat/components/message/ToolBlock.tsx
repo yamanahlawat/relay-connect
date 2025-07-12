@@ -2,7 +2,7 @@ import JsonCodeBlock from '@/components/JsonCodeBlock';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
-import type { ContentItem, StreamBlockType, TextContent } from '@/types/stream';
+import type { ContentItem, ProgressiveToolArgs, StreamBlockType, TextContent } from '@/types/stream';
 import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Terminal } from 'lucide-react';
 import { useState } from 'react';
 import StreamingIndicator from './StreamingIndicator';
@@ -17,6 +17,7 @@ interface ToolBlockProps {
   error_message?: string | null;
   next_block_type?: StreamBlockType;
   on_collapse?: (is_open: boolean) => void;
+  progressive_args?: ProgressiveToolArgs | null;
 }
 
 export default function ToolBlock({
@@ -29,6 +30,7 @@ export default function ToolBlock({
   error_message,
   next_block_type,
   on_collapse,
+  progressive_args,
 }: ToolBlockProps) {
   const [is_open, setIsOpen] = useState(false);
 
@@ -114,7 +116,8 @@ export default function ToolBlock({
   // Determine if there's extra detail to show in the collapsible
   // e.g. 'tool_call' with arguments, or 'tool_result' with some text or an error
   const has_extra_detail =
-    (type === 'tool_call' && tool_args) || (type === 'tool_result' && (result_as_content_items.length > 0 || is_error));
+    (type === 'tool_call' && (tool_args || progressive_args)) ||
+    (type === 'tool_result' && (result_as_content_items.length > 0 || is_error));
 
   // Renders the content in the collapsible body
   const render_content = () => {
@@ -127,14 +130,34 @@ export default function ToolBlock({
       );
     }
 
-    if (type === 'tool_call' && tool_args) {
-      // Show arguments as JSON
-      return (
-        <div className="rounded-md font-mono text-sm">
-          <div className="mb-1 text-xs text-muted-foreground">Arguments:</div>
-          <JsonCodeBlock data={tool_args} />
-        </div>
-      );
+    if (type === 'tool_call') {
+      // Show progressive args if streaming, otherwise show complete args
+      if (progressive_args && !progressive_args.is_complete) {
+        return (
+          <div className="rounded-md font-mono text-sm">
+            <div className="text-muted-foreground mb-1 text-xs">Building arguments...</div>
+            <div className="bg-muted/30 rounded-md p-3 text-xs">
+              <div className="break-words whitespace-pre-wrap">
+                {progressive_args.accumulated_args}
+                {is_streaming && <span className="ml-1 animate-pulse">|</span>}
+              </div>
+              {progressive_args.accumulated_args && (
+                <div className="text-muted-foreground mt-2 text-xs">
+                  {progressive_args.is_valid_json ? '✓ Valid JSON' : '⚠ Building JSON...'}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      } else if (tool_args) {
+        // Show complete arguments as JSON
+        return (
+          <div className="rounded-md font-mono text-sm">
+            <div className="text-muted-foreground mb-1 text-xs">Arguments:</div>
+            <JsonCodeBlock data={tool_args} />
+          </div>
+        );
+      }
     }
 
     if (type === 'tool_result') {
@@ -161,7 +184,7 @@ export default function ToolBlock({
     <Collapsible open={is_open} onOpenChange={handleCollapseChange}>
       <div className="relative pl-5">
         {/* Vertical line for styling */}
-        <div className="absolute left-2 top-0 h-full w-px bg-border" />
+        <div className="bg-border absolute top-0 left-2 h-full w-px" />
 
         {/* If there's no detail, we skip the collapsible trigger and just show an inline row */}
         {!has_extra_detail ? (
@@ -177,7 +200,7 @@ export default function ToolBlock({
           </div>
         ) : (
           <>
-            <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md py-1 text-sm hover:text-foreground">
+            <CollapsibleTrigger className="group hover:text-foreground flex w-full items-center gap-2 rounded-md py-1 text-sm">
               <div className={cn('flex h-4 w-4 items-center justify-center rounded-full', bg_color)}>
                 {is_streaming ? (
                   <Loader2 className={cn('h-3 w-3', icon_color, 'animate-spin')} />
@@ -191,13 +214,13 @@ export default function ToolBlock({
               {tool_name_or_indicator}
             </CollapsibleTrigger>
 
-            <CollapsibleContent className="pb-4 pt-2">
+            <CollapsibleContent className="pt-2 pb-4">
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold">Tool Execution Details</h4>
                 <div
                   className={cn(
-                    'overflow-x-auto rounded-lg border bg-muted/20 p-4',
-                    'text-sm leading-relaxed text-muted-foreground/90',
+                    'bg-muted/20 overflow-x-auto rounded-lg border p-4',
+                    'text-muted-foreground/90 text-sm leading-relaxed',
                     is_error && 'border-red-500/30 bg-red-500/5'
                   )}
                 >

@@ -1,8 +1,8 @@
 import { streamCompletion } from '@/lib/api/chat';
-import { parseStream } from '@/modules/chat/utils/stream';
+import { parseStream, ProgressiveToolArgsManager } from '@/modules/chat/utils/stream';
 import type { ChatState, StreamParams } from '@/types/chat';
 import type { MessageRead, StreamingMessageRead } from '@/types/message';
-import type { StreamBlock, StreamState } from '@/types/stream';
+import type { ProgressiveToolArgs, StreamBlock, StreamState } from '@/types/stream';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -91,6 +91,9 @@ function getAllBlocks(streamState: StreamState): StreamBlock[] {
     tool_result: null,
     error_type: null,
     error_detail: null,
+    message: null,
+    usage: null,
+    timestamp: null,
     extra_data: null,
     stream_index: content.streamIndex,
   }));
@@ -120,6 +123,7 @@ export function useChat(sessionId: string) {
   // Use ref for stream state to avoid recreation
   const streamStateRef = useRef<UIStreamState | null>(null);
   const assistantMessageIdRef = useRef<string | null>(null);
+  const progressiveToolArgsManager = useRef<ProgressiveToolArgsManager>(new ProgressiveToolArgsManager());
 
   // Memoized update function at hook level
   const updateAssistantMessage = useCallback(
@@ -154,6 +158,17 @@ export function useChat(sessionId: string) {
         // Get the existing extra_data with fallback
         const existingExtraData = existingMessage.extra_data || {};
 
+        // Get progressive tool args for all current tool calls
+        const progressiveToolArgsMap = new Map<string, ProgressiveToolArgs>();
+        currentStreamBlocks.forEach((block) => {
+          if (block.tool_call_id) {
+            const progressiveArgs = progressiveToolArgsManager.current.getProgressiveArgs(block.tool_call_id);
+            if (progressiveArgs) {
+              progressiveToolArgsMap.set(block.tool_call_id, progressiveArgs);
+            }
+          }
+        });
+
         // Update the message - ensure we have all required fields
         newMessages[idx] = {
           ...existingMessage,
@@ -166,6 +181,7 @@ export function useChat(sessionId: string) {
             stream_blocks: currentStreamBlocks,
             thinking: streamStateRef.current?.thinking || existingExtraData.thinking,
             error: streamStateRef.current?.error || existingExtraData.error,
+            progressive_tool_args: progressiveToolArgsMap,
           },
         } as StreamingMessageRead;
 
@@ -199,7 +215,7 @@ export function useChat(sessionId: string) {
       const assistantMessageId = `assistant-${userMessage.id}`;
       assistantMessageIdRef.current = assistantMessageId;
 
-      // Initialize stream state
+      // Initialize stream state and clear progressive tool args
       streamStateRef.current = {
         contentSections: [],
         toolBlocks: [],
@@ -210,6 +226,7 @@ export function useChat(sessionId: string) {
         },
         error: undefined,
       };
+      progressiveToolArgsManager.current.clearAll();
 
       // Batch initial message setup
       setChatState((prev) => {
@@ -322,6 +339,11 @@ export function useChat(sessionId: string) {
                 currentSection = null;
               }
 
+              // Process progressive tool args for tool_call blocks
+              if (blockWithIndex.type === 'tool_call') {
+                progressiveToolArgsManager.current.processToolCallBlock(blockWithIndex);
+              }
+
               // Store the original stream index with the tool block
               streamStateRef.current.toolBlocks.push({
                 ...blockWithIndex,
@@ -351,6 +373,12 @@ export function useChat(sessionId: string) {
             case 'done':
               streamCompleted = true;
 
+              // Add done block to stream blocks so UI can detect completion
+              streamStateRef.current?.toolBlocks.push({
+                ...blockWithIndex,
+                streamIndex: streamIndex - 1,
+              });
+
               // Complete any in-progress sections
               if (currentSection) {
                 currentSection.isComplete = true;
@@ -364,7 +392,7 @@ export function useChat(sessionId: string) {
                   return;
                 }
 
-                // @ts-expect-error - Accessing property that's not in the type definition
+                // Access the final message from the block
                 const finalMessage = blockWithIndex.message;
 
                 // Get current stream blocks with proper order
@@ -378,9 +406,55 @@ export function useChat(sessionId: string) {
                 // Process the final message with usage information
                 if (finalMessage && typeof finalMessage === 'object') {
                   // Extract usage information and other metadata - with null safety
-                  const usage = finalMessage.usage;
-                  const status = finalMessage.status;
-                  const content = finalMessage.content;
+                  const messageObj = finalMessage as Record<string, unknown>;
+
+                  // Check for usage in the done block itself first, then in the message
+                  const blockUsage = blockWithIndex.usage;
+                  let usage: {
+                    input_tokens: number;
+                    output_tokens: number;
+                    input_cost: number;
+                    output_cost: number;
+                    total_cost: number;
+                  } | null = null;
+
+                  if (blockUsage && typeof blockUsage === 'object') {
+                    const bu = blockUsage as Record<string, unknown>;
+                    usage = {
+                      input_tokens: typeof bu.input_tokens === 'number' ? bu.input_tokens : 0,
+                      output_tokens: typeof bu.output_tokens === 'number' ? bu.output_tokens : 0,
+                      input_cost: typeof bu.input_cost === 'number' ? bu.input_cost : 0,
+                      output_cost: typeof bu.output_cost === 'number' ? bu.output_cost : 0,
+                      total_cost:
+                        typeof bu.total_cost === 'number'
+                          ? bu.total_cost
+                          : (typeof bu.input_cost === 'number' ? bu.input_cost : 0) +
+                            (typeof bu.output_cost === 'number' ? bu.output_cost : 0),
+                    };
+                  } else {
+                    const messageUsage = messageObj.usage;
+                    if (messageUsage && typeof messageUsage === 'object') {
+                      const mu = messageUsage as Record<string, unknown>;
+                      usage = {
+                        input_tokens: typeof mu.input_tokens === 'number' ? mu.input_tokens : 0,
+                        output_tokens: typeof mu.output_tokens === 'number' ? mu.output_tokens : 0,
+                        input_cost: typeof mu.input_cost === 'number' ? mu.input_cost : 0,
+                        output_cost: typeof mu.output_cost === 'number' ? mu.output_cost : 0,
+                        total_cost:
+                          typeof mu.total_cost === 'number'
+                            ? mu.total_cost
+                            : (typeof mu.input_cost === 'number' ? mu.input_cost : 0) +
+                              (typeof mu.output_cost === 'number' ? mu.output_cost : 0),
+                      };
+                    }
+                  }
+
+                  const status =
+                    typeof messageObj.status === 'string' &&
+                    ['pending', 'processing', 'completed', 'failed'].includes(messageObj.status)
+                      ? (messageObj.status as 'pending' | 'processing' | 'completed' | 'failed')
+                      : 'completed';
+                  const content = typeof messageObj.content === 'string' ? messageObj.content : null;
 
                   // First update chat state to mark streaming as completed
                   setChatState((prev) => {
@@ -399,8 +473,8 @@ export function useChat(sessionId: string) {
                     // Create a copy of the message with updated information
                     const updatedMessage: StreamingMessageRead = {
                       ...existingMessage,
-                      status: status || 'completed',
-                      usage, // Add usage information
+                      status: status,
+                      usage: usage,
                       content: content || existingMessage.content || '',
                       // Extra data with safety checks
                       extra_data: {

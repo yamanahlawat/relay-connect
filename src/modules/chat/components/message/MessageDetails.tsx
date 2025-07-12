@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 import ToolBlock from '../message/ToolBlock';
+import ThinkingBlock from './ThinkingBlock';
 
 import type { StreamBlock } from '@/types/stream';
 
@@ -20,11 +21,15 @@ const MessageDetails = memo(function MessageDetails({ blocks }: MessageDetailsPr
           );
         }
 
+        if (block.type === 'thinking') {
+          return <ThinkingBlock key={`thinking-${index}`} content={block.content as string} is_streaming={false} />;
+        }
+
         switch (block.type) {
           case 'tool_start':
             return (
               <div key={`${block.tool_call_id}-start`}>
-                <ToolBlock type="tool_start" tool_name={block.tool_name} is_streaming={false} />
+                <ToolBlock type="tool_start" tool_name={block.tool_name} is_streaming={false} progressive_args={null} />
               </div>
             );
 
@@ -36,6 +41,7 @@ const MessageDetails = memo(function MessageDetails({ blocks }: MessageDetailsPr
                   tool_name={block.tool_name}
                   tool_args={block.tool_args}
                   is_streaming={false}
+                  progressive_args={null}
                 />
               </div>
             );
@@ -49,6 +55,7 @@ const MessageDetails = memo(function MessageDetails({ blocks }: MessageDetailsPr
                   tool_result={block.tool_result}
                   is_error={false}
                   is_streaming={false}
+                  progressive_args={null}
                 />
               </div>
             );

@@ -1,5 +1,5 @@
 import type { components } from '@/lib/api/schema';
-import type { StreamBlock } from '@/types/stream';
+import type { ProgressiveToolArgs, StreamBlock } from '@/types/stream';
 
 type MessageRead = components['schemas']['MessageRead'];
 type MessageUpdate = components['schemas']['MessageUpdate'];
@@ -18,6 +18,7 @@ interface StreamingExtraData {
     type: string;
     detail: string;
   };
+  progressive_tool_args?: Map<string, ProgressiveToolArgs>;
   // Add index signature to make it compatible with Record<string, never>
   [key: string]: unknown; // Using unknown instead of any
 }

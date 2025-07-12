@@ -23,7 +23,7 @@ export async function streamCompletion(
   messageId: string,
   params?: StreamParams
 ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
-  const { response } = await client.GET('/api/v1/chat/complete/{session_id}/{message_id}/stream', {
+  const { response } = await client.GET('/api/v1/ai/complete/{session_id}/{message_id}/stream', {
     params: {
       path: {
         session_id: sessionId,
@@ -50,7 +50,7 @@ export async function streamCompletion(
  * Stops an ongoing chat completion for a session
  */
 export async function stopChatCompletion(sessionId: string): Promise<void> {
-  const { error } = await client.POST('/api/v1/chat/complete/{session_id}/stop', {
+  const { error } = await client.POST('/api/v1/ai/complete/{session_id}/stop', {
     params: {
       path: {
         session_id: sessionId,

@@ -18,12 +18,22 @@ export interface EmbeddedResource {
 
 export type ContentItem = TextContent | ImageContent | EmbeddedResource;
 
-// Block types
+// Block types - expanded to include new streaming types
 export type StreamBlockType = 'content' | 'thinking' | 'tool_start' | 'tool_call' | 'tool_result' | 'done' | 'error';
 
 // Tool execution states
 export type ToolExecutionStatus = 'starting' | 'calling' | 'completed' | 'error';
 export type ToolActivityStatus = 'starting' | 'calling' | 'processing';
+
+// Progressive tool args accumulation
+export interface ProgressiveToolArgs {
+  tool_call_id: string;
+  tool_name: string;
+  accumulated_args: string;
+  parsed_args: Record<string, unknown> | null;
+  is_complete: boolean;
+  is_valid_json: boolean;
+}
 
 // Tool execution tracking
 interface ToolExecution {
@@ -61,7 +71,7 @@ export interface StreamBlockExtraData {
   error_detail?: string;
 }
 
-// Stream block with improved typing
+// Stream block with improved typing for new streaming format
 export interface StreamBlock {
   type: StreamBlockType;
   content: string | ContentItem[] | null;
@@ -72,6 +82,9 @@ export interface StreamBlock {
   tool_result: ContentItem[] | null;
   error_type: string | null;
   error_detail: string | null;
+  message: string | null;
+  usage: Record<string, unknown> | null;
+  timestamp: string | null;
   extra_data: object | null;
   stream_index?: number;
 }
@@ -105,6 +118,8 @@ export interface StreamingMessageProps {
     is_thinking: boolean;
     content?: string;
   };
+  progressive_tool_args?: Map<string, ProgressiveToolArgs>;
+  message?: import('@/types/message').StreamingMessageRead;
 }
 
 // Streaming state management

@@ -1,149 +1,100 @@
-import type { ProcessedStreamBlock, StreamBlock, StreamingMessageProps } from '@/types/stream';
-import { memo, useEffect, useMemo, useRef } from 'react';
+import type { StreamingMessageProps } from '@/types/stream';
+import { memo, useEffect, useMemo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
-import StreamingIndicator from '../message/StreamingIndicator';
-import ToolBlock from '../message/ToolBlock';
+import StreamingIndicator from './StreamingIndicator';
+import { groupBlocksContextually, useToggleSection } from './shared/MessageUtils';
+import ToolGroup from './shared/ToolGroup';
 
-// Extracted Content Block Component
-const ContentBlock = memo(function ContentBlock({
-  block,
-  is_streaming,
-}: {
-  block: ProcessedStreamBlock;
-  is_streaming: boolean;
-}) {
-  const contentString = typeof block.content === 'string' ? block.content : '';
+const StreamingMessage = memo(function StreamingMessage({
+  blocks,
+  thinking,
+  progressive_tool_args,
+  message,
+}: StreamingMessageProps) {
+  const { openSections, toggleSection, setOpenSections } = useToggleSection();
+  const isStreaming = !blocks.some((block) => block.type === 'done');
 
-  // Use a ref to track if this block was rendered with streaming
-  const wasStreamingRef = useRef(is_streaming);
+  // Use contextual grouping (excludes thinking blocks)
+  const contextualGroups = useMemo(() => groupBlocksContextually(blocks), [blocks]);
 
-  // If the block was streaming before, keep it as streaming for visual consistency
+  // Auto-open sections with progressive args
   useEffect(() => {
-    if (is_streaming) {
-      wasStreamingRef.current = true;
+    if (!progressive_tool_args?.size) return;
+
+    const sectionsToOpen = Array.from(progressive_tool_args.values())
+      .filter((args) => !args.is_complete && args.accumulated_args)
+      .map((args) => `tool-${args.tool_name || 'Unknown Tool'}`);
+
+    if (sectionsToOpen.length > 0) {
+      setOpenSections((prev) => new Set([...prev, ...sectionsToOpen]));
     }
-  }, [is_streaming]);
-
-  // Check the content length to determine if we should keep streaming effect
-  const hasEnoughContentForStreaming = contentString.length > 3;
-
-  // Determine if we should show the streaming effect
-  const showStreamingEffect = is_streaming || (wasStreamingRef.current && hasEnoughContentForStreaming);
+  }, [progressive_tool_args, setOpenSections]);
 
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none ${showStreamingEffect ? 'typing-effect' : ''}`}>
-      <MarkdownRenderer content={contentString} isStreaming={showStreamingEffect} />
-      {showStreamingEffect && <span className="typing-cursor" />}
-    </div>
-  );
-});
-
-// Extracted Tool Block Component
-const ToolBlockWrapper = memo(function ToolBlockWrapper({ block }: { block: ProcessedStreamBlock }) {
-  return (
-    <div className="mt-2">
-      <ToolBlock
-        type={block.type}
-        tool_name={block.tool_name}
-        tool_args={block.type === 'tool_call' ? block.tool_args : undefined}
-        tool_result={block.type === 'tool_result' ? block.tool_result : undefined}
-        is_streaming={!block.next_block_type}
-        next_block_type={block.next_block_type}
-      />
-    </div>
-  );
-});
-
-const StreamingMessage = memo(function StreamingMessage({ blocks, thinking }: StreamingMessageProps) {
-  const prevBlocksRef = useRef<StreamBlock[]>([]);
-  const isStreamingRef = useRef(true);
-
-  // Check if we have new content to show streaming effect for
-  useEffect(() => {
-    // Don't reset streaming state if blocks are the same
-    if (blocks.length === prevBlocksRef.current.length) return;
-
-    // Check if we have a done block
-    const doneBlock = blocks.find((block) => block.type === 'done');
-
-    if (doneBlock) {
-      // If we have a done block, mark as not streaming after a short delay
-      setTimeout(() => {
-        isStreamingRef.current = false;
-      }, 100);
-    } else {
-      // If no done block, we're still streaming
-      isStreamingRef.current = true;
-    }
-
-    prevBlocksRef.current = [...blocks];
-  }, [blocks]);
-
-  // Process all blocks to maintain order and streaming state
-  const orderedBlocks = useMemo(() => {
-    // Create a map to track unique content blocks by their content
-    const uniqueContentMap = new Map<string, boolean>();
-
-    // Process blocks while preserving original order from the stream
-    const processedBlocks = blocks
-      .filter((block) => block.type !== 'done' && block.type !== 'thinking') // Filter out non-display blocks
-      .map((block, index) => {
-        // For content blocks, check for duplicates
-        if (block.type === 'content') {
-          const content = block.content as string;
-          // If we've already seen this content, skip it
-          if (content && uniqueContentMap.has(content)) {
-            return null;
-          }
-          // Mark this content as seen
-          if (content) {
-            uniqueContentMap.set(content, true);
-          }
-        }
-
-        // Include this block with its original stream index
-        return { ...block, index };
-      })
-      .filter(Boolean) as Array<StreamBlock & { index: number }>;
-
-    // Add next_block_type information (for tool blocks to know what comes next)
-    return processedBlocks.map((block, idx) => ({
-      ...block,
-      next_block_type: idx < processedBlocks.length - 1 ? processedBlocks[idx + 1]?.type : undefined,
-    })) as ProcessedStreamBlock[];
-  }, [blocks]);
-
-  return (
-    <div className="space-y-2">
-      {/* Always show thinking at the top if present */}
-      {thinking?.is_thinking && (
-        <div className="duration-300 animate-in fade-in-0">
-          <StreamingIndicator type="thinking" text={thinking.content} />
-        </div>
+    <div className="space-y-4">
+      {/* Show thinking indicator during streaming only */}
+      {thinking?.is_thinking && thinking.content && isStreaming && (
+        <StreamingIndicator
+          type="thinking"
+          text={thinking.content.length > 100 ? `${thinking.content.substring(0, 100)}...` : thinking.content}
+        />
       )}
 
-      {/* Show accumulated content and tool blocks in their original order */}
-      {orderedBlocks.map((block) => {
-        if (block.type === 'content') {
+      {/* Render contextual groups (no thinking groups since they're excluded) */}
+      {contextualGroups.map((group) => {
+        const sectionId = group.id;
+
+        if (group.type === 'tool_group') {
+          // Tool group with multiple tools
           return (
-            <ContentBlock
-              key={`content-${block.index}`}
-              block={block}
-              // A block is streaming if it's the last content block and we're still streaming
-              is_streaming={
-                block.index === Math.max(...orderedBlocks.filter((b) => b.type === 'content').map((b) => b.index)) &&
-                isStreamingRef.current
-              }
+            <ToolGroup
+              key={sectionId}
+              toolBlocks={group.blocks}
+              isOpen={openSections.has(sectionId)}
+              onToggle={() => toggleSection(sectionId)}
+              progressive_tool_args={progressive_tool_args}
+              isStreaming={isStreaming}
             />
           );
         }
 
-        if (['tool_start', 'tool_call', 'tool_result'].includes(block.type)) {
-          return <ToolBlockWrapper key={`tool-${block.index}-${block.tool_call_id}`} block={block} />;
+        if (group.type === 'content') {
+          // Content blocks with streaming cursor
+          return (
+            <div key={sectionId} className="prose prose-sm dark:prose-invert max-w-none">
+              {group.blocks.map((block, index) => (
+                <MarkdownRenderer
+                  key={`${sectionId}-${index}`}
+                  content={block.content as string}
+                  isStreaming={isStreaming}
+                />
+              ))}
+              {isStreaming && <span className="ml-1 inline-block h-5 w-2 animate-pulse bg-current" />}
+            </div>
+          );
+        }
+
+        if (group.type === 'done') {
+          // Done blocks (final response)
+          return (
+            <div key={sectionId} className="prose prose-sm dark:prose-invert max-w-none">
+              {group.blocks.map((block, index) => (
+                <MarkdownRenderer key={`${sectionId}-${index}`} content={block.content as string} isStreaming={false} />
+              ))}
+            </div>
+          );
         }
 
         return null;
       })}
+
+      {/* Fallback message content if no contextual groups have content */}
+      {!contextualGroups.some((group) => group.type === 'done' || group.type === 'content') &&
+        message?.content?.trim() && (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <MarkdownRenderer content={message.content} isStreaming={false} />
+          </div>
+        )}
     </div>
   );
 });

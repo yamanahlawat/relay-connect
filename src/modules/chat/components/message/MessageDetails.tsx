@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 import ToolBlock from '../message/ToolBlock';
-import ThinkingBlock from './ThinkingBlock';
 
 import type { StreamBlock } from '@/types/stream';
 
@@ -22,7 +21,13 @@ const MessageDetails = memo(function MessageDetails({ blocks }: MessageDetailsPr
         }
 
         if (block.type === 'thinking') {
-          return <ThinkingBlock key={`thinking-${index}`} content={block.content as string} is_streaming={false} />;
+          return (
+            <div key={`thinking-${index}`} className="text-muted-foreground flex items-center gap-2">
+              <div className="flex items-center rounded-md px-3 py-2">
+                <span className="flex text-sm">Thinking...</span>
+              </div>
+            </div>
+          );
         }
 
         switch (block.type) {

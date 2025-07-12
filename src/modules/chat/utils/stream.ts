@@ -65,6 +65,7 @@ export async function* parseStream(
       tool_call_id: null,
       tool_status: null,
       tool_result: null,
+      args_delta: null,
       error_type: 'stream_error',
       error_detail: error instanceof Error ? error.message : 'Unknown error',
       message: null,
@@ -113,6 +114,7 @@ function parseLine(line: string): StreamBlock | null {
           tool_call_id: 'tool_call_id' in parsed ? parsed.tool_call_id : null,
           tool_status: 'tool_status' in parsed ? parsed.tool_status : null,
           tool_result: 'tool_result' in parsed ? parsed.tool_result : null,
+          args_delta: 'args_delta' in parsed ? parsed.args_delta : null,
           error_type: 'error_type' in parsed ? parsed.error_type : null,
           error_detail: 'error_detail' in parsed ? parsed.error_detail : null,
           message: 'message' in parsed ? parsed.message : null,
@@ -136,53 +138,43 @@ function parseLine(line: string): StreamBlock | null {
 }
 
 /**
- * Utility functions for handling progressive tool args accumulation
+ * Simple progressive tool args manager for streaming UX
  */
 export class ProgressiveToolArgsManager {
   private argsMap = new Map<string, ProgressiveToolArgs>();
 
   /**
-   * Process a tool_call block and accumulate args
+   * Add args_delta to accumulation
    */
-  processToolCallBlock(block: StreamBlock): ProgressiveToolArgs | null {
-    if (block.type !== 'tool_call' || !block.tool_call_id) {
-      return null;
-    }
+  addArgsDelta(toolCallId: string, argsDelta: string, toolName?: string): ProgressiveToolArgs {
+    const existing = this.argsMap.get(toolCallId);
 
-    const existing = this.argsMap.get(block.tool_call_id);
-    const contentDelta = (block.content as string) || '';
-
-    // Initialize or update the progressive args
     const progressiveArgs: ProgressiveToolArgs = {
-      tool_call_id: block.tool_call_id,
-      tool_name: block.tool_name || existing?.tool_name || '',
-      accumulated_args: (existing?.accumulated_args || '') + contentDelta,
-      parsed_args: block.tool_args || existing?.parsed_args || null,
-      is_complete: !!block.tool_args, // Complete when tool_args is present
-      is_valid_json: false,
+      tool_call_id: toolCallId,
+      tool_name: toolName || existing?.tool_name || '',
+      accumulated_args: (existing?.accumulated_args || '') + argsDelta,
     };
 
-    // Try to parse the accumulated args as JSON
-    try {
-      if (progressiveArgs.accumulated_args.trim()) {
-        JSON.parse(progressiveArgs.accumulated_args);
-        progressiveArgs.is_valid_json = true;
-      }
-    } catch {
-      progressiveArgs.is_valid_json = false;
-    }
-
-    // Update the map
-    this.argsMap.set(block.tool_call_id, progressiveArgs);
-
+    this.argsMap.set(toolCallId, progressiveArgs);
     return progressiveArgs;
   }
 
   /**
-   * Get current progressive args for a tool call
+   * Get progressive args for a tool call
    */
   getProgressiveArgs(toolCallId: string): ProgressiveToolArgs | null {
     return this.argsMap.get(toolCallId) || null;
+  }
+
+  /**
+   * Process tool_call block for streaming
+   */
+  processToolCallBlock(block: StreamBlock): ProgressiveToolArgs | null {
+    if (block.type !== 'tool_call' || !block.tool_call_id || !block.args_delta) {
+      return null;
+    }
+
+    return this.addArgsDelta(block.tool_call_id, block.args_delta, block.tool_name || undefined);
   }
 
   /**

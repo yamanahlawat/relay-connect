@@ -339,9 +339,13 @@ export function useChat(sessionId: string) {
                 currentSection = null;
               }
 
-              // Process progressive tool args for tool_call blocks
-              if (blockWithIndex.type === 'tool_call') {
-                progressiveToolArgsManager.current.processToolCallBlock(blockWithIndex);
+              // Process progressive tool args for tool_call blocks with args_delta
+              if (blockWithIndex.type === 'tool_call' && blockWithIndex.args_delta && blockWithIndex.tool_call_id) {
+                progressiveToolArgsManager.current.addArgsDelta(
+                  blockWithIndex.tool_call_id,
+                  blockWithIndex.args_delta,
+                  blockWithIndex.tool_name || undefined
+                );
               }
 
               // Store the original stream index with the tool block

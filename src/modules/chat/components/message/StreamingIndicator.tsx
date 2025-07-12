@@ -9,7 +9,7 @@ export default function StreamingIndicator({ type, text, className }: StreamingI
     const displayText = text || 'Thinking...';
 
     return (
-      <div className={`flex items-center gap-2 text-muted-foreground ${className ?? ''}`}>
+      <div className={`text-muted-foreground flex items-center gap-2 ${className ?? ''}`}>
         <div className="flex items-center rounded-md px-3 py-2">
           <span className="flex text-sm" aria-label={displayText}>
             {displayText.split('').map((char, i) => (

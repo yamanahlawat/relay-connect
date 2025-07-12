@@ -21,11 +21,16 @@ const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, is_stre
     content: thinkingState?.content,
   };
 
-  // If we have message content but no stream blocks, show the final message content
+  // If we have message content but no stream blocks, show the final message content with markdown
   if ((!streamBlocks || streamBlocks.length === 0) && message.content && message.content.trim()) {
     return (
       <div className="prose prose-sm dark:prose-invert max-w-none">
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        <StreamingMessage
+          blocks={[]}
+          thinking={thinking}
+          progressive_tool_args={progressiveToolArgs}
+          message={message}
+        />
       </div>
     );
   }

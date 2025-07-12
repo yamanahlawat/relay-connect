@@ -807,14 +807,21 @@ export interface components {
     MCPServerCreate: {
       /**
        * Command
-       * @description Command to execute
+       * @description Command to execute or URL for HTTP servers
        */
       command: string;
       /**
-       * Args
-       * @description Arguments passed to command
+       * @description Type of MCP server
+       * @default stdio
        */
-      args: string[];
+      server_type: components['schemas']['ServerType'];
+      /**
+       * Config
+       * @description Server configuration
+       */
+      config?: {
+        [key: string]: unknown;
+      };
       /**
        * Enabled
        * @description Whether server is enabled
@@ -841,14 +848,21 @@ export interface components {
     MCPServerResponse: {
       /**
        * Command
-       * @description Command to execute
+       * @description Command to execute or URL for HTTP servers
        */
       command: string;
       /**
-       * Args
-       * @description Arguments passed to command
+       * @description Type of MCP server
+       * @default stdio
        */
-      args: string[];
+      server_type: components['schemas']['ServerType'];
+      /**
+       * Config
+       * @description Server configuration
+       */
+      config?: {
+        [key: string]: unknown;
+      };
       /**
        * Enabled
        * @description Whether server is enabled
@@ -897,14 +911,18 @@ export interface components {
     MCPServerUpdate: {
       /**
        * Command
-       * @description Command to execute
+       * @description Command to execute or URL for HTTP servers
        */
       command?: string | null;
+      /** @description Type of MCP server */
+      server_type?: components['schemas']['ServerType'] | null;
       /**
-       * Args
-       * @description Arguments passed to command
+       * Config
+       * @description Server configuration
        */
-      args?: string[] | null;
+      config?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Enabled
        * @description Whether server is enabled
@@ -1237,6 +1255,12 @@ export interface components {
      * @enum {string}
      */
     ServerStatus: 'running' | 'stopped' | 'disabled' | 'error' | 'unknown';
+    /**
+     * ServerType
+     * @description Supported MCP server types.
+     * @enum {string}
+     */
+    ServerType: 'stdio' | 'sse' | 'streamable_http';
     /**
      * SessionCreate
      * @description Schema for creating a new chat session

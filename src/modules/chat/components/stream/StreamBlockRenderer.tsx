@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
 import type { StreamingMessageRead } from '@/types/message';
-import MessageDetails from '../message/MessageDetails';
+import ListingMessage from '../message/ListingMessage';
 import StreamingMessage from '../message/StreamingMessage';
 
 interface StreamBlockRendererProps {
@@ -9,9 +9,11 @@ interface StreamBlockRendererProps {
   is_streaming: boolean;
 }
 
-const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, is_streaming }: StreamBlockRendererProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, is_streaming: _ }: StreamBlockRendererProps) {
   const streamBlocks = message.extra_data.stream_blocks ?? [];
   const thinkingState = message.extra_data.thinking;
+  const progressiveToolArgs = message.extra_data.progressive_tool_args;
 
   // Convert thinking state to match StreamingMessageProps type
   const thinking = {
@@ -19,11 +21,30 @@ const StreamBlockRenderer = memo(function StreamBlockRenderer({ message, is_stre
     content: thinkingState?.content,
   };
 
-  if (is_streaming) {
-    return <StreamingMessage blocks={streamBlocks} thinking={thinking} />;
+  // If we have message content but no stream blocks, show the final message content
+  if ((!streamBlocks || streamBlocks.length === 0) && message.content && message.content.trim()) {
+    return (
+      <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="whitespace-pre-wrap">{message.content}</div>
+      </div>
+    );
   }
 
-  return <MessageDetails blocks={streamBlocks} />;
+  // If we have stream blocks, always use the StreamingMessage component
+  // It will handle both streaming and completed states internally
+  if (streamBlocks.length > 0) {
+    return (
+      <StreamingMessage
+        blocks={streamBlocks}
+        thinking={thinking}
+        progressive_tool_args={progressiveToolArgs}
+        message={message}
+      />
+    );
+  }
+
+  // Fallback to listing message if no stream blocks but we have thinking or other data
+  return <ListingMessage blocks={streamBlocks} thinking={thinking} message={message} />;
 });
 
 export default StreamBlockRenderer;

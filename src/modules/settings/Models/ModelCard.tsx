@@ -37,9 +37,9 @@ export function ModelCard({ model, onEdit, onDelete }: ModelCardProps) {
         <div>
           <h4 className="text-sm font-medium">{model.name}</h4>
           <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
-            <span>{model.max_tokens.toLocaleString()} tokens</span>
+            <span>{model.default_max_tokens.toLocaleString()} tokens</span>
             <span className="bg-border inline-block h-1 w-1 rounded-full" />
-            <span>Temperature: {model.temperature}</span>
+            <span>Temperature: {model.default_temperature}</span>
           </div>
         </div>
 

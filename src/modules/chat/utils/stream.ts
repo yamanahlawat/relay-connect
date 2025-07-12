@@ -1,4 +1,4 @@
-import type { StreamBlock } from '@/types/stream';
+import type { ProgressiveToolArgs, StreamBlock } from '@/types/stream';
 
 export async function* parseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
@@ -67,6 +67,9 @@ export async function* parseStream(
       tool_result: null,
       error_type: 'stream_error',
       error_detail: error instanceof Error ? error.message : 'Unknown error',
+      message: null,
+      usage: null,
+      timestamp: null,
       extra_data: null,
       stream_index: streamIndex++,
     };
@@ -112,6 +115,9 @@ function parseLine(line: string): StreamBlock | null {
           tool_result: 'tool_result' in parsed ? parsed.tool_result : null,
           error_type: 'error_type' in parsed ? parsed.error_type : null,
           error_detail: 'error_detail' in parsed ? parsed.error_detail : null,
+          message: 'message' in parsed ? parsed.message : null,
+          usage: 'usage' in parsed ? parsed.usage : null,
+          timestamp: 'timestamp' in parsed ? parsed.timestamp : null,
           extra_data: 'extra_data' in parsed ? parsed.extra_data : null,
           // Add any additional fields from the original object
           ...parsed,
@@ -126,5 +132,70 @@ function parseLine(line: string): StreamBlock | null {
   } catch (error) {
     console.warn('Error parsing stream block:', error, '\nLine:', trimmedLine);
     return null;
+  }
+}
+
+/**
+ * Utility functions for handling progressive tool args accumulation
+ */
+export class ProgressiveToolArgsManager {
+  private argsMap = new Map<string, ProgressiveToolArgs>();
+
+  /**
+   * Process a tool_call block and accumulate args
+   */
+  processToolCallBlock(block: StreamBlock): ProgressiveToolArgs | null {
+    if (block.type !== 'tool_call' || !block.tool_call_id) {
+      return null;
+    }
+
+    const existing = this.argsMap.get(block.tool_call_id);
+    const contentDelta = (block.content as string) || '';
+
+    // Initialize or update the progressive args
+    const progressiveArgs: ProgressiveToolArgs = {
+      tool_call_id: block.tool_call_id,
+      tool_name: block.tool_name || existing?.tool_name || '',
+      accumulated_args: (existing?.accumulated_args || '') + contentDelta,
+      parsed_args: block.tool_args || existing?.parsed_args || null,
+      is_complete: !!block.tool_args, // Complete when tool_args is present
+      is_valid_json: false,
+    };
+
+    // Try to parse the accumulated args as JSON
+    try {
+      if (progressiveArgs.accumulated_args.trim()) {
+        JSON.parse(progressiveArgs.accumulated_args);
+        progressiveArgs.is_valid_json = true;
+      }
+    } catch {
+      progressiveArgs.is_valid_json = false;
+    }
+
+    // Update the map
+    this.argsMap.set(block.tool_call_id, progressiveArgs);
+
+    return progressiveArgs;
+  }
+
+  /**
+   * Get current progressive args for a tool call
+   */
+  getProgressiveArgs(toolCallId: string): ProgressiveToolArgs | null {
+    return this.argsMap.get(toolCallId) || null;
+  }
+
+  /**
+   * Clear progressive args for a tool call
+   */
+  clearProgressiveArgs(toolCallId: string): void {
+    this.argsMap.delete(toolCallId);
+  }
+
+  /**
+   * Clear all progressive args
+   */
+  clearAll(): void {
+    this.argsMap.clear();
   }
 }

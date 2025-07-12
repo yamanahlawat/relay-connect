@@ -3,9 +3,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/modules/chat/components/markdown/MarkdownRenderer';
 import type { ContentItem, ProgressiveToolArgs, StreamBlockType, TextContent } from '@/types/stream';
-import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Terminal } from 'lucide-react';
+import { ChevronDown, Terminal } from 'lucide-react';
 import { useState } from 'react';
-import StreamingIndicator from './StreamingIndicator';
 
 interface ToolBlockProps {
   type: StreamBlockType;
@@ -49,195 +48,115 @@ export default function ToolBlock({
       ? [{ type: 'text', text: tool_result }]
       : [];
 
-  const get_type_metadata = (): TypeMetadata => {
-    const base_metadata = {
-      icon_classes: is_streaming ? 'animate-spin' : '',
-    };
+  // Determine if we have meaningful content to show
+  const hasRequest = tool_args || progressive_args?.accumulated_args;
+  const hasResponse = result_as_content_items.length > 0;
 
-    switch (type) {
-      case 'tool_start':
-        return {
-          ...base_metadata,
-          icon: is_block_streaming ? Loader2 : Terminal,
-          icon_color: 'text-blue-500',
-          bg_color: 'bg-blue-500/10',
-        };
+  // Don't render if no meaningful data
+  if (!hasRequest && !hasResponse && !is_error) return null;
 
-      case 'tool_call':
-        return {
-          ...base_metadata,
-          icon: is_block_streaming ? Loader2 : Terminal,
-          icon_color: 'text-amber-500',
-          bg_color: 'bg-amber-500/10',
-        };
-
-      case 'tool_result':
-        return {
-          ...base_metadata,
-          icon: is_error ? AlertCircle : is_block_streaming ? Loader2 : CheckCircle2,
-          icon_color: is_error ? 'text-red-500' : is_block_streaming ? 'text-blue-500' : 'text-green-500',
-          bg_color: is_error ? 'bg-red-500/10' : is_block_streaming ? 'bg-blue-500/10' : 'bg-green-500/10',
-        };
-
-      default:
-        return {
-          icon: Terminal,
-          icon_color: 'text-primary',
-          bg_color: 'bg-primary/10',
-          icon_classes: '',
-        };
-    }
-  };
-
-  const { icon: Icon, icon_color, bg_color, icon_classes } = get_type_metadata();
-
-  const get_display_title = () => {
-    switch (type) {
-      case 'tool_start':
-        return `Starting ${tool_name}...`;
-      case 'tool_call':
-        return `Executing ${tool_name}`;
-      case 'tool_result':
-        return `Results from ${tool_name}`;
-      default:
-        return tool_name || 'Tool Execution';
-    }
-  };
-
-  const display_title = get_display_title();
-
-  // If this block is streaming, show a spinner next to the text
-  const tool_name_or_indicator = is_block_streaming ? (
-    <StreamingIndicator type="thinking" text={display_title} className="ml-2" />
-  ) : (
-    <span className="font-medium">{display_title}</span>
-  );
-
-  // Determine if there's extra detail to show in the collapsible
-  // e.g. 'tool_call' with arguments, or 'tool_result' with some text or an error
-  const has_extra_detail =
-    (type === 'tool_call' && (tool_args || progressive_args)) ||
-    (type === 'tool_result' && (result_as_content_items.length > 0 || is_error));
-
-  // Renders the content in the collapsible body
-  const render_content = () => {
-    if (is_error) {
-      return (
-        <div className="text-red-500">
-          <p className="font-medium">Error executing tool</p>
-          <p className="text-sm opacity-90">{error_message}</p>
-        </div>
-      );
-    }
-
-    if (type === 'tool_call') {
-      // Show progressive args if streaming, otherwise show complete args
-      if (progressive_args && !progressive_args.is_complete) {
-        return (
-          <div className="rounded-md font-mono text-sm">
-            <div className="text-muted-foreground mb-1 text-xs">Building arguments...</div>
-            <div className="bg-muted/30 rounded-md p-3 text-xs">
-              <div className="break-words whitespace-pre-wrap">
-                {progressive_args.accumulated_args}
-                {is_streaming && <span className="ml-1 animate-pulse">|</span>}
-              </div>
-              {progressive_args.accumulated_args && (
-                <div className="text-muted-foreground mt-2 text-xs">
-                  {progressive_args.is_valid_json ? '✓ Valid JSON' : '⚠ Building JSON...'}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      } else if (tool_args) {
-        // Show complete arguments as JSON
-        return (
-          <div className="rounded-md font-mono text-sm">
-            <div className="text-muted-foreground mb-1 text-xs">Arguments:</div>
-            <JsonCodeBlock data={tool_args} />
-          </div>
-        );
-      }
-    }
-
-    if (type === 'tool_result') {
-      // Filter for text content items and extract their text
-      const merged_text = result_as_content_items
-        .filter((item): item is TextContent => item.type === 'text')
-        .map((item) => item.text)
-        .join('\n\n');
-      return (
-        <div className="space-y-4">
-          <div className="max-w-full break-words">
-            <div className="prose prose-sm dark:prose-invert prose-pre:whitespace-pre-wrap max-w-none">
-              <MarkdownRenderer content={merged_text} isStreaming={is_streaming} />
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
+  // Determine status for better UX
+  const isCompleted = type === 'tool_result' && !is_error;
+  const isExecuting = type === 'tool_call' || (type === 'tool_result' && is_block_streaming);
 
   return (
-    <Collapsible open={is_open} onOpenChange={handleCollapseChange}>
-      <div className="relative pl-5">
-        {/* Vertical line for styling */}
-        <div className="bg-border absolute top-0 left-2 h-full w-px" />
-
-        {/* If there's no detail, we skip the collapsible trigger and just show an inline row */}
-        {!has_extra_detail ? (
-          <div className="flex items-center gap-2 py-1 text-sm">
-            <div className={cn('flex h-4 w-4 items-center justify-center rounded-full', bg_color)}>
-              {is_streaming ? (
-                <Loader2 className={cn('h-3 w-3', icon_color, 'animate-spin')} />
-              ) : (
-                <Icon className={cn('h-3 w-3', icon_color, icon_classes)} />
-              )}
+    <div
+      className={cn(
+        'rounded-lg border transition-all duration-200',
+        is_open && 'bg-muted/30 border-blue-500/30 ring-2 ring-blue-500/20',
+        !is_open && 'hover:bg-muted/20'
+      )}
+    >
+      <Collapsible open={is_open} onOpenChange={handleCollapseChange}>
+        <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10">
+              <Terminal className="h-4 w-4 text-blue-500" />
             </div>
-            {tool_name_or_indicator}
-          </div>
-        ) : (
-          <>
-            <CollapsibleTrigger className="group hover:text-foreground flex w-full items-center gap-2 rounded-md py-1 text-sm">
-              <div className={cn('flex h-4 w-4 items-center justify-center rounded-full', bg_color)}>
-                {is_streaming ? (
-                  <Loader2 className={cn('h-3 w-3', icon_color, 'animate-spin')} />
-                ) : (
-                  <Icon className={cn('h-3 w-3', icon_color, icon_classes)} />
-                )}
+            <div>
+              <div className="text-sm font-medium">{tool_name || 'Tool'}</div>
+              <div className="text-muted-foreground flex items-center text-xs">
+                {isCompleted ? 'completed' : isExecuting ? 'executing' : 'starting'}
+                {is_block_streaming && '...'}
               </div>
-              <ChevronDown
-                className={cn('h-4 w-4 shrink-0 transition-transform duration-200', !is_open && '-rotate-90')}
-              />
-              {tool_name_or_indicator}
-            </CollapsibleTrigger>
+            </div>
+          </div>
+          <ChevronDown
+            className={cn('text-muted-foreground h-4 w-4 transition-transform duration-200', is_open && 'rotate-180')}
+          />
+        </CollapsibleTrigger>
 
-            <CollapsibleContent className="pt-2 pb-4">
+        <CollapsibleContent>
+          <div className="space-y-4 px-4 pb-4">
+            {/* Request Section */}
+            {hasRequest && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Tool Execution Details</h4>
-                <div
-                  className={cn(
-                    'bg-muted/20 overflow-x-auto rounded-lg border p-4',
-                    'text-muted-foreground/90 text-sm leading-relaxed',
-                    is_error && 'border-red-500/30 bg-red-500/5'
-                  )}
-                >
-                  {render_content()}
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium">Request</div>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+                <div className="bg-muted/40 max-h-60 overflow-y-auto rounded-lg border">
+                  <div className="p-3">
+                    {tool_args ? (
+                      <JsonCodeBlock data={tool_args} />
+                    ) : progressive_args?.accumulated_args ? (
+                      <div className="space-y-2">
+                        <div className="text-muted-foreground text-xs">Building arguments...</div>
+                        <div className="font-mono text-sm whitespace-pre-wrap text-amber-600 dark:text-amber-400">
+                          {progressive_args.accumulated_args}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-            </CollapsibleContent>
-          </>
-        )}
-      </div>
-    </Collapsible>
-  );
-}
+            )}
 
-interface TypeMetadata {
-  icon: typeof Terminal | typeof Loader2 | typeof CheckCircle2 | typeof AlertCircle;
-  icon_color: string;
-  bg_color: string;
-  icon_classes: string;
+            {/* Response Section */}
+            {hasResponse && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium">Response</div>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+                <div className="bg-muted/40 max-h-60 overflow-y-auto rounded-lg border">
+                  <div className="p-3">
+                    {result_as_content_items.length > 0 && (
+                      <div className="space-y-2">
+                        {result_as_content_items
+                          .filter((item): item is TextContent => item.type === 'text')
+                          .map((item, index) => (
+                            <div key={index} className="prose prose-sm dark:prose-invert max-w-none">
+                              <MarkdownRenderer content={item.text} isStreaming={false} />
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error Section */}
+            {is_error && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium text-red-500">Error</div>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10">
+                  <div className="p-3">
+                    <div className="text-red-500">
+                      <p className="font-medium">Error executing tool</p>
+                      {error_message && <p className="text-sm opacity-90">{error_message}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
 }

@@ -21,54 +21,11 @@ export type ContentItem = TextContent | ImageContent | EmbeddedResource;
 // Block types - expanded to include new streaming types
 export type StreamBlockType = 'content' | 'thinking' | 'tool_start' | 'tool_call' | 'tool_result' | 'done' | 'error';
 
-// Tool execution states
-export type ToolExecutionStatus = 'starting' | 'calling' | 'completed' | 'error';
-export type ToolActivityStatus = 'starting' | 'calling' | 'processing';
-
-// Progressive tool args accumulation
+// Progressive tool args - simplified for streaming UX only
 export interface ProgressiveToolArgs {
   tool_call_id: string;
   tool_name: string;
   accumulated_args: string;
-  parsed_args: Record<string, unknown> | null;
-  is_complete: boolean;
-  is_valid_json: boolean;
-}
-
-// Tool execution tracking
-interface ToolExecution {
-  id: string;
-  name: string;
-  status: ToolExecutionStatus;
-  arguments?: Record<string, unknown>;
-  tool_result?: ContentItem[];
-  error?: string;
-  timestamp: string;
-}
-
-// Active tool state
-export interface ActiveTool {
-  id: string;
-  name: string;
-  status: ToolActivityStatus;
-  arguments?: Record<string, unknown>;
-}
-
-// Extra data for stream blocks
-export interface StreamBlockExtraData {
-  completed_tools: ToolExecution[];
-  active_tool: ActiveTool | null;
-  accumulated_content: string;
-  completion_timestamp?: string;
-  // Added fields to match usage in useChat
-  type?: StreamBlockType;
-  content?: string;
-  tool_name?: string;
-  tool_args?: Record<string, unknown>;
-  tool_call_id?: string;
-  thinking_text?: string;
-  error_type?: string;
-  error_detail?: string;
 }
 
 // Stream block with improved typing for new streaming format
@@ -80,6 +37,7 @@ export interface StreamBlock {
   tool_call_id: string | null;
   tool_status: string | null;
   tool_result: ContentItem[] | null;
+  args_delta: string | null;
   error_type: string | null;
   error_detail: string | null;
   message: string | null;
@@ -120,19 +78,6 @@ export interface StreamingMessageProps {
   };
   progressive_tool_args?: Map<string, ProgressiveToolArgs>;
   message?: import('@/types/message').StreamingMessageRead;
-}
-
-// Streaming state management
-export interface StreamingState {
-  content: string;
-  completed_tools: ToolExecution[];
-  active_tools: ActiveTool[];
-  is_thinking: boolean;
-  thinking_text?: string;
-  error?: {
-    type: string;
-    detail: string;
-  };
 }
 
 export interface ProcessedStreamBlock extends StreamBlock {

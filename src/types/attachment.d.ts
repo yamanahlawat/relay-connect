@@ -13,6 +13,9 @@ export interface FilePreviewData {
   status: 'uploading' | 'success' | 'error';
 }
 
+// Alias for FilePreviewData to maintain compatibility
+export type FileMetadata = FilePreviewData;
+
 export interface FilePreviewProps {
   files: FilePreviewData[];
   onRemove?: (metadata: FileMetadata) => void;

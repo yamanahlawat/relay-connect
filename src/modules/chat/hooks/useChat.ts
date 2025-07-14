@@ -89,6 +89,7 @@ function getAllBlocks(streamState: StreamState): StreamBlock[] {
     tool_call_id: null,
     tool_status: null,
     tool_result: null,
+    args_delta: null,
     error_type: null,
     error_detail: null,
     message: null,
@@ -362,17 +363,27 @@ export function useChat(sessionId: string) {
               if (currentSection) {
                 currentSection.isComplete = true;
               }
+
+              // Clear thinking state when error occurs
+              streamStateRef.current.thinking.isThinking = false;
+
+              // Use the error message directly - backend provides clean, user-friendly messages
+              const errorMessage = blockWithIndex.message || blockWithIndex.error_detail || 'An unknown error occurred';
+
               streamStateRef.current.error = {
                 type: blockWithIndex.error_type || 'UnknownError',
-                detail: blockWithIndex.error_detail || 'An unknown error occurred',
+                detail: errorMessage,
               };
               streamErrored = true;
 
-              // Update UI for error state
-              updateAssistantMessage({ status: 'failed' });
+              // Show error toast with the message from backend
+              toast.error(errorMessage);
 
-              // Handle potential null error_detail
-              throw new Error(blockWithIndex.error_detail || 'Unknown error');
+              // Update UI for error state and clear streaming
+              updateAssistantMessage({ status: 'failed' }, { streamingMessageId: null });
+
+              // Don't throw error - just mark as errored and break
+              break;
 
             case 'done':
               streamCompleted = true;

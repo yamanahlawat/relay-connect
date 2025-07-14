@@ -55,7 +55,6 @@ export function WelcomeContent() {
         fileUpload.uploadFiles(files);
       }
     },
-    fileTypes: ['image/'],
   });
 
   const mutations = {

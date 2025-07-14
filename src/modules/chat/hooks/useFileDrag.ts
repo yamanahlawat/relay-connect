@@ -5,7 +5,7 @@ interface UseFileDragProps {
   fileTypes?: string[]; // Optional: Allow filtering file types
 }
 
-export function useFileDrag({ onDrop, fileTypes = ['image/'] }: UseFileDragProps) {
+export function useFileDrag({ onDrop, fileTypes = [] }: UseFileDragProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -39,7 +39,9 @@ export function useFileDrag({ onDrop, fileTypes = ['image/'] }: UseFileDragProps
       if (!dt) return;
 
       // Filter files by allowed types
-      const droppedFiles = Array.from(dt.files).filter((file) => fileTypes.some((type) => file.type.startsWith(type)));
+      const droppedFiles = Array.from(dt.files).filter(
+        (file) => fileTypes.length === 0 || fileTypes.some((type) => file.type.startsWith(type))
+      );
 
       if (droppedFiles.length > 0) {
         onDrop(droppedFiles);

@@ -1,6 +1,7 @@
 import FilePreviewItem from '@/components/FilePreview/FilePreviewItem';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { canPreviewFile, getFileCategory } from '@/lib/fileUtils';
 import type { FilePreviewProps } from '@/types/attachment';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -48,9 +49,14 @@ const FilePreview = React.memo(function FilePreview({
   const remainingCount = showOverlay ? files.length - maxVisible : 0;
 
   const handlePreviewOpen = (index: number) => {
-    if (showPreview) {
-      setSelectedIndex(index);
-      setPreviewOpen(true);
+    if (showPreview && files[index]) {
+      const file = files[index];
+      const category = getFileCategory(file.file_name);
+      // Only open preview dialog for images
+      if (canPreviewFile(category)) {
+        setSelectedIndex(index);
+        setPreviewOpen(true);
+      }
     }
   };
 
@@ -124,7 +130,7 @@ const FilePreview = React.memo(function FilePreview({
                 )}
               </div>
               {currentFile && (
-                <p className="mt-2 break-words px-4 text-center text-xs font-medium text-foreground">
+                <p className="text-foreground mt-2 px-4 text-center text-xs font-medium break-words">
                   {currentFile.file_name}
                 </p>
               )}

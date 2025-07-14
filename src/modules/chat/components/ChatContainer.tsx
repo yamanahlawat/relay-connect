@@ -122,7 +122,6 @@ export default function ChatContainer() {
         fileUpload.uploadFiles(files);
       }
     },
-    fileTypes: ['image/'],
   });
 
   // Update messages from query data

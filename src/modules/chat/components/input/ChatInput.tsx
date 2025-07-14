@@ -70,9 +70,12 @@ export function ChatInput({
 
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
-      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-      if (imageFiles.length > 0) {
-        uploadFiles(imageFiles);
+      const validFiles = Array.from(files).filter((file) => {
+        // Accept all file types that are supported by the file upload hook
+        return file.size <= 20 * 1024 * 1024; // 20MB limit
+      });
+      if (validFiles.length > 0) {
+        uploadFiles(validFiles);
       }
     },
     [uploadFiles]
@@ -80,18 +83,18 @@ export function ChatInput({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = Array.from(e.clipboardData.items);
-    const imageFiles: File[] = [];
+    const files: File[] = [];
 
     for (const item of items) {
-      if (item?.type.startsWith('image/')) {
+      if (item.kind === 'file') {
         const file = item.getAsFile();
-        if (file) imageFiles.push(file);
+        if (file) files.push(file);
       }
     }
 
-    if (imageFiles.length > 0) {
+    if (files.length > 0) {
       e.preventDefault();
-      handleFiles(imageFiles);
+      handleFiles(files);
     }
   };
 
@@ -285,7 +288,7 @@ export function ChatInput({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.json,.html,.css,.js,.xml"
           multiple
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}

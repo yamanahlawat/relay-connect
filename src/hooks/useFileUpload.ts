@@ -6,13 +6,45 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // Constants for file validation
 export const FILE_CONFIG = {
   MAX_SIZE: 20 * 1024 * 1024, // 20MB
-  ACCEPTED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  ACCEPTED_TYPES: {
+    image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+    video: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
+    audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/m4a'],
+    document: [
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/csv',
+      'application/json',
+      'text/html',
+      'text/css',
+      'text/javascript',
+      'application/javascript',
+      'text/xml',
+      'application/xml',
+    ],
+  },
   ERROR_MESSAGES: {
     SIZE: 'File size should be less than 20MB',
-    TYPE: 'Only images are allowed (JPG, PNG, GIF, WEBP)',
+    TYPE: 'File type not supported',
     GENERIC: 'Failed to upload file',
   },
 } as const;
+
+// Helper function to determine file type category
+export const getFileTypeCategory = (mimeType: string): 'image' | 'video' | 'audio' | 'document' | null => {
+  for (const [category, types] of Object.entries(FILE_CONFIG.ACCEPTED_TYPES)) {
+    if ((types as readonly string[]).includes(mimeType)) {
+      return category as 'image' | 'video' | 'audio' | 'document';
+    }
+  }
+  return null;
+};
 
 interface UseFileUploadOptions {
   onError?: (error: Error) => void;
@@ -38,7 +70,8 @@ interface InternalFileData extends FilePreviewData {
 
 // A helper to validate files
 const validateFile = (file: File): string | null => {
-  if (!FILE_CONFIG.ACCEPTED_TYPES.includes(file.type as (typeof FILE_CONFIG.ACCEPTED_TYPES)[number])) {
+  const fileCategory = getFileTypeCategory(file.type);
+  if (!fileCategory) {
     return FILE_CONFIG.ERROR_MESSAGES.TYPE;
   }
   if (file.size > FILE_CONFIG.MAX_SIZE) {

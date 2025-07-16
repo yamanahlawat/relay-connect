@@ -43,8 +43,6 @@ const modelSchema = z.object({
   max_tokens: z.number().min(1).default(4096),
   temperature: z.number().min(0).max(2).default(0.7),
   top_p: z.number().min(0).max(1).default(0.9),
-  input_cost_per_token: z.number().min(0).default(0),
-  output_cost_per_token: z.number().min(0).default(0),
   config: z.record(z.never()).optional(),
 });
 
@@ -88,8 +86,6 @@ export function ModelSettings() {
       max_tokens: 4096,
       temperature: 0.7,
       top_p: 0.9,
-      input_cost_per_token: 0,
-      output_cost_per_token: 0,
       config: {},
     },
   });
@@ -186,8 +182,6 @@ export function ModelSettings() {
       max_tokens: model.max_tokens,
       temperature: model.temperature,
       top_p: model.top_p,
-      input_cost_per_token: model.input_cost_per_token,
-      output_cost_per_token: model.output_cost_per_token,
       config: (model.config as Record<string, never>) || {},
     });
     setIsCreateDialogOpen(true);
@@ -202,8 +196,6 @@ export function ModelSettings() {
       max_tokens: 4096,
       temperature: 0.7,
       top_p: 0.9,
-      input_cost_per_token: 0,
-      output_cost_per_token: 0,
       config: {},
     });
     setIsCreateDialogOpen(true);
@@ -358,51 +350,7 @@ export function ModelSettings() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="input_cost_per_token"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Input Cost per 1M Tokens</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="any"
-                          placeholder="0.0"
-                          className="h-9"
-                          value={field.value * 1000000}
-                          onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
-
-              <FormField
-                control={form.control}
-                name="output_cost_per_token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Output Cost per 1M Tokens</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="any"
-                        placeholder="0.0"
-                        className="h-9"
-                        value={field.value * 1000000}
-                        onChange={(e) => field.onChange(Number(e.target.value) / 1000000)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

@@ -817,7 +817,7 @@ export interface components {
       server_type: components['schemas']['ServerType'];
       /**
        * Config
-       * @description Server configuration
+       * @description Server configuration (validated by pydantic-ai when creating server instances)
        */
       config?: {
         [key: string]: unknown;
@@ -858,7 +858,7 @@ export interface components {
       server_type: components['schemas']['ServerType'];
       /**
        * Config
-       * @description Server configuration
+       * @description Server configuration (validated by pydantic-ai when creating server instances)
        */
       config?: {
         [key: string]: unknown;
@@ -1260,7 +1260,7 @@ export interface components {
      * @description Supported MCP server types.
      * @enum {string}
      */
-    ServerType: 'stdio' | 'sse' | 'streamable_http';
+    ServerType: 'stdio' | 'streamable_http';
     /**
      * SessionCreate
      * @description Schema for creating a new chat session

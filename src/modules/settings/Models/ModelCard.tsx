@@ -1,9 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { components } from '@/lib/api/schema';
 import { cn } from '@/lib/utils';
+import type { ModelRead } from '@/types/model';
 import { Bot, Code2, Cpu, Settings2, Trash } from 'lucide-react';
-
-type Model = components['schemas']['ModelRead'];
 
 const modelIcons = {
   completion: Bot,
@@ -12,9 +10,9 @@ const modelIcons = {
 } as const;
 
 interface ModelCardProps {
-  model: Model;
-  onEdit: (model: Model) => void;
-  onDelete: (model: Model) => void;
+  model: ModelRead;
+  onEdit: (model: ModelRead) => void;
+  onDelete: (model: ModelRead) => void;
 }
 
 export function ModelCard({ model, onEdit, onDelete }: ModelCardProps) {

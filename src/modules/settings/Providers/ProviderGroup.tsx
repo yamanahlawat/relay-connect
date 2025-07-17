@@ -1,13 +1,11 @@
-import { components } from '@/lib/api/schema';
 import { ProviderCard } from '@/modules/settings/providers/ProviderCard';
-
-type Provider = components['schemas']['ProviderRead'];
+import type { ProviderRead } from '@/types/provider';
 
 interface ProviderGroupProps {
   title: string;
-  providers: Provider[];
-  onEdit: (provider: Provider) => void;
-  onDelete: (provider: Provider) => void;
+  providers: ProviderRead[];
+  onEdit: (provider: ProviderRead) => void;
+  onDelete: (provider: ProviderRead) => void;
 }
 
 export function ProviderGroup({ title, providers, onEdit, onDelete }: ProviderGroupProps) {

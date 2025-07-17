@@ -703,17 +703,15 @@ function HTTPStreamableFields({ form }: HTTPStreamableFieldsProps) {
             />
           </div>
 
-          {/* SSE Read Timeout */}
+          {/* Request Timeout */}
           <div>
-            <FormLabel className="text-sm font-medium">SSE Read Timeout (seconds)</FormLabel>
+            <FormLabel className="text-sm font-medium">Request Timeout (seconds)</FormLabel>
             <Input
               type="number"
-              placeholder="60"
+              placeholder="30"
               className="mt-1"
-              value={getConfigValue('sse_read_timeout') as string}
-              onChange={(e) =>
-                setConfigValue('sse_read_timeout', e.target.value ? parseInt(e.target.value) : undefined)
-              }
+              value={getConfigValue('request_timeout') as string}
+              onChange={(e) => setConfigValue('request_timeout', e.target.value ? parseInt(e.target.value) : undefined)}
             />
           </div>
 

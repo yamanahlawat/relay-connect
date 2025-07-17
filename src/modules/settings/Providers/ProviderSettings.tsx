@@ -26,22 +26,36 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
 type Provider = components['schemas']['ProviderRead'];
 type ProviderCreate = components['schemas']['ProviderCreate'];
 type ProviderUpdate = components['schemas']['ProviderUpdate'];
+type ProviderType = components['schemas']['ProviderType'];
 
-// Form schema for provider creation/update
+// Extract provider types from schema for form validation
+const providerTypes: ProviderType[] = ['openai', 'anthropic', 'gemini', 'groq', 'mistral', 'cohere', 'bedrock'];
+
+// Provider display names mapping
+const providerDisplayNames: Record<ProviderType, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  gemini: 'Gemini',
+  groq: 'Groq',
+  mistral: 'Mistral',
+  cohere: 'Cohere',
+  bedrock: 'Bedrock',
+};
+
+// Form schema for provider creation/update - matching backend schema
 const providerSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  type: z.enum(['anthropic', 'openai', 'ollama'] as const),
-  is_active: z.boolean().default(true),
-  base_url: z.string().nullable().optional(),
-  api_key: z.string().nullable().optional(),
-  config: z.record(z.never()).optional(),
+  name: z.string().min(1, 'Provider name is required'),
+  type: z.enum(providerTypes as [ProviderType, ...ProviderType[]]),
+  is_active: z.boolean(),
+  base_url: z.string().optional().or(z.literal('')),
+  api_key: z.string().optional().or(z.literal('')),
 });
 
 type ProviderFormValues = z.infer<typeof providerSchema>;
@@ -70,14 +84,13 @@ export function ProviderSettings() {
 
   // Form setup
   const form = useForm<ProviderFormValues>({
-    resolver: zodResolver(providerSchema) as unknown as Resolver<ProviderFormValues, object>, // More specific type
+    resolver: zodResolver(providerSchema),
     defaultValues: {
       name: '',
       type: 'anthropic',
       is_active: true,
-      base_url: null,
-      api_key: null,
-      config: {},
+      base_url: '',
+      api_key: '',
     },
   });
 
@@ -90,9 +103,8 @@ export function ProviderSettings() {
       name: '',
       type: 'anthropic',
       is_active: true,
-      base_url: null,
-      api_key: null,
-      config: {},
+      base_url: '',
+      api_key: '',
     });
   };
 
@@ -165,8 +177,11 @@ export function ProviderSettings() {
       }
     } else {
       const createData: ProviderCreate = {
-        ...values,
-        config: values.config || {},
+        name: values.name,
+        type: values.type,
+        is_active: values.is_active,
+        ...(values.base_url && { base_url: values.base_url }),
+        ...(values.api_key && { api_key: values.api_key }),
       };
       createMutation.mutate(createData);
     }
@@ -179,9 +194,8 @@ export function ProviderSettings() {
       name: provider.name,
       type: provider.type,
       is_active: provider.is_active,
-      base_url: provider.base_url,
-      api_key: provider.api_key,
-      config: (provider.config as Record<string, never>) || {},
+      base_url: provider.base_url || '',
+      api_key: provider.api_key || '',
     });
     setIsCreateDialogOpen(true);
   };
@@ -193,9 +207,8 @@ export function ProviderSettings() {
       name: '',
       type: 'anthropic',
       is_active: true,
-      base_url: null,
-      api_key: null,
-      config: {},
+      base_url: '',
+      api_key: '',
     });
     setIsCreateDialogOpen(true);
   };
@@ -281,10 +294,11 @@ export function ProviderSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="anthropic">Anthropic</SelectItem>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="ollama">Ollama</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        {providerTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {providerDisplayNames[type]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

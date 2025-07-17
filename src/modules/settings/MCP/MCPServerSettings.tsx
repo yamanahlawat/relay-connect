@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   useListMCPServersQuery,
@@ -35,12 +36,14 @@ import { AddServerDialog } from './AddServerDialog';
 import { MCPServerGroup } from './MCPServerGroup';
 
 // Form schema for MCP server creation/update
+// Uses ServerType from schema: components['schemas']['ServerType']
 const mcpServerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  command: z.string().min(1, 'Command is required'),
-  args: z.array(z.string()).default([]),
+  command: z.string().min(1, 'Command/URL is required'),
+  server_type: z.enum(['stdio', 'streamable_http'] as const).default('stdio'),
   enabled: z.boolean().default(true),
   env: z.record(z.string()).optional(),
+  config: z.record(z.unknown()).optional(),
 });
 
 type MCPServerFormValues = z.infer<typeof mcpServerSchema>;
@@ -196,18 +199,25 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
     defaultValues: {
       name: server.name,
       command: server.command,
-      args: server.args,
+      server_type: server.server_type,
       enabled: server.enabled,
       env: server.env || {},
+      config: server.config || {},
     },
   });
 
   // Initialize environment variables and arguments when the dialog opens
   useEffect(() => {
     if (isOpen && server) {
-      // Set args input
-      const argsString = server.args.join(' ');
-      setArgsInput(argsString);
+      // Set args input from config.args if available
+      if (server.config && typeof server.config === 'object' && 'args' in server.config) {
+        const configArgs = server.config.args as string[];
+        if (Array.isArray(configArgs)) {
+          setArgsInput(configArgs.join(' '));
+        }
+      } else {
+        setArgsInput('');
+      }
 
       // Set env keys
       if (server.env) {
@@ -220,9 +230,10 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
       form.reset({
         name: server.name,
         command: server.command,
-        args: server.args,
+        server_type: server.server_type,
         enabled: server.enabled,
         env: server.env || {},
+        config: server.config || {},
       });
 
       // Initialize JSON config
@@ -231,9 +242,10 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
           {
             name: server.name,
             command: server.command,
-            args: server.args,
+            server_type: server.server_type,
             enabled: server.enabled,
             env: server.env || {},
+            config: server.config || {},
           },
           null,
           2
@@ -325,9 +337,11 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
       // Update form values
       form.reset(parsedJson);
 
-      // Update UI state
-      if (parsedJson.args && Array.isArray(parsedJson.args)) {
-        setArgsInput(parsedJson.args.join(' '));
+      // Update UI state - check for args in config
+      if (parsedJson.config && parsedJson.config.args && Array.isArray(parsedJson.config.args)) {
+        setArgsInput(parsedJson.config.args.join(' '));
+      } else {
+        setArgsInput('');
       }
 
       if (parsedJson.env && typeof parsedJson.env === 'object') {
@@ -354,11 +368,6 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
     } else {
       // In form mode, use the form data
       submitData = { ...data };
-
-      // Convert argsInput string to array if needed
-      if (argsInput && !submitData.args.length) {
-        submitData.args = argsInput.split(' ').filter((arg) => arg.trim() !== '');
-      }
     }
 
     // For now, we can only update the enabled state through the API
@@ -451,35 +460,114 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
                   </FormItem>
                 )}
               />
+
+              {/* Server Type Selection */}
+              <FormField
+                control={form.control}
+                name="server_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Server Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select server type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="stdio">Standard I/O</SelectItem>
+                        <SelectItem value="streamable_http">HTTP Streamable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="command"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Command</FormLabel>
+                    <FormLabel>{form.watch('server_type') === 'streamable_http' ? 'Server URL' : 'Command'}</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        {...field}
+                        placeholder={
+                          form.watch('server_type') === 'streamable_http'
+                            ? 'https://your-server.com/mcp'
+                            : 'path/to/executable'
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormItem>
-                <FormLabel>Arguments (space-separated)</FormLabel>
-                <FormControl>
-                  <Input
-                    value={argsInput}
-                    onChange={(e) => {
-                      setArgsInput(e.target.value);
-                      form.setValue(
-                        'args',
-                        e.target.value.split(' ').filter((arg) => arg.trim() !== '')
-                      );
-                    }}
-                    placeholder="e.g., --port 8000 --debug"
-                  />
-                </FormControl>
-              </FormItem>
+
+              {/* Conditional Fields Based on Server Type */}
+              {form.watch('server_type') === 'stdio' && (
+                <>
+                  <FormItem>
+                    <FormLabel>Arguments (space-separated)</FormLabel>
+                    <FormControl>
+                      <Input
+                        value={argsInput}
+                        onChange={(e) => {
+                          setArgsInput(e.target.value);
+                          // Store args in config.args as array
+                          const args = e.target.value.split(' ').filter((arg) => arg.trim() !== '');
+                          const currentConfig = form.getValues('config') || {};
+                          form.setValue('config', { ...currentConfig, args });
+                        }}
+                        placeholder="e.g., -y tavily-mcp@0.1.3"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  {/* Environment Variables - Only for stdio */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Environment Variables</FormLabel>
+                      <Button type="button" variant="outline" size="sm" onClick={addEnvKey} className="h-8">
+                        <PlusCircle className="mr-1 h-3 w-3" />
+                        Add
+                      </Button>
+                    </div>
+
+                    {envKeys.map((key, index) => (
+                      <div key={`env-${index}`} className="flex items-center gap-2">
+                        <Input
+                          className="flex-1"
+                          placeholder="Key"
+                          defaultValue={key}
+                          onChange={(e) => handleEnvKeyChange(index, e.target.value)}
+                        />
+                        <Input
+                          className="flex-1"
+                          placeholder="Value"
+                          defaultValue={
+                            typeof form.getValues(`env.${key}`) === 'string' ? form.getValues(`env.${key}`) : ''
+                          }
+                          onBlur={(e) => updateEnvValue(key, e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeEnvKey(index)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {form.watch('server_type') === 'streamable_http' && <HTTPStreamableFields form={form} />}
+
               <FormField
                 control={form.control}
                 name="enabled"
@@ -495,44 +583,6 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
                 )}
               />
 
-              {/* Environment Variables */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <FormLabel>Environment Variables</FormLabel>
-                  <Button type="button" variant="outline" size="sm" onClick={addEnvKey} className="h-8">
-                    <PlusCircle className="mr-1 h-3 w-3" />
-                    Add
-                  </Button>
-                </div>
-
-                {envKeys.map((key, index) => (
-                  <div key={`env-${index}`} className="flex items-center gap-2">
-                    <Input
-                      className="flex-1"
-                      placeholder="Key"
-                      defaultValue={key}
-                      onChange={(e) => handleEnvKeyChange(index, e.target.value)}
-                    />
-                    <Input
-                      className="flex-1"
-                      placeholder="Value"
-                      defaultValue={
-                        typeof form.getValues(`env.${key}`) === 'string' ? form.getValues(`env.${key}`) : ''
-                      }
-                      onBlur={(e) => updateEnvValue(key, e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeEnvKey(index)}
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
               <DialogFooter>
                 <Button type="submit" disabled={toggleMutation.isPending}>
                   {toggleMutation.isPending && toggleMutation.variables?.serverId === server.id && (
@@ -546,5 +596,168 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// HTTP Streamable Fields Component
+interface HTTPStreamableFieldsProps {
+  form: ReturnType<typeof useForm<MCPServerFormValues>>;
+}
+
+function HTTPStreamableFields({ form }: HTTPStreamableFieldsProps) {
+  const [headerKeys, setHeaderKeys] = useState<string[]>([]);
+
+  // Initialize header keys from config
+  useEffect(() => {
+    const config = form.getValues('config') as { headers?: Record<string, string> };
+    if (config?.headers) {
+      setHeaderKeys(Object.keys(config.headers));
+    } else {
+      setHeaderKeys([]);
+    }
+  }, [form]);
+
+  const addHeaderKey = () => {
+    setHeaderKeys([...headerKeys, '']);
+  };
+
+  const removeHeaderKey = (index: number) => {
+    const keyToRemove = headerKeys[index];
+    const newHeaderKeys = [...headerKeys];
+    newHeaderKeys.splice(index, 1);
+    setHeaderKeys(newHeaderKeys);
+
+    if (keyToRemove) {
+      const currentConfig = (form.getValues('config') as { headers?: Record<string, string> }) || {};
+      const headers = { ...currentConfig.headers };
+      delete headers[keyToRemove];
+      form.setValue('config', { ...currentConfig, headers });
+    }
+  };
+
+  const handleHeaderKeyChange = (index: number, newKey: string) => {
+    const oldKey = headerKeys[index];
+    const currentConfig = (form.getValues('config') as { headers?: Record<string, string> }) || {};
+    const headers = { ...currentConfig.headers };
+    let value = '';
+
+    if (oldKey) {
+      value = headers[oldKey] || '';
+      delete headers[oldKey];
+    }
+
+    if (newKey.trim() !== '') {
+      headers[newKey] = value;
+    }
+
+    form.setValue('config', { ...currentConfig, headers });
+
+    const newHeaderKeys = [...headerKeys];
+    newHeaderKeys[index] = newKey;
+    setHeaderKeys(newHeaderKeys);
+  };
+
+  const updateHeaderValue = (key: string, value: string) => {
+    const currentConfig = (form.getValues('config') as { headers?: Record<string, string> }) || {};
+    const headers = { ...currentConfig.headers };
+    headers[key] = value;
+    form.setValue('config', { ...currentConfig, headers });
+  };
+
+  const getConfigValue = (key: string) => {
+    const config = form.getValues('config') as Record<string, unknown>;
+    return config?.[key] || '';
+  };
+
+  const setConfigValue = (key: string, value: unknown) => {
+    const currentConfig = (form.getValues('config') as Record<string, unknown>) || {};
+    form.setValue('config', { ...currentConfig, [key]: value });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border p-6">
+        <h4 className="mb-4 text-sm font-medium">HTTP Streamable Configuration</h4>
+
+        <div className="space-y-4">
+          {/* Timeout */}
+          <div>
+            <FormLabel className="text-sm font-medium">Timeout (seconds)</FormLabel>
+            <Input
+              type="number"
+              placeholder="30"
+              className="mt-1"
+              value={getConfigValue('timeout') as string}
+              onChange={(e) => setConfigValue('timeout', e.target.value ? parseInt(e.target.value) : undefined)}
+            />
+          </div>
+
+          {/* Tool Prefix */}
+          <div>
+            <FormLabel className="text-sm font-medium">Tool Prefix</FormLabel>
+            <Input
+              placeholder="e.g., my_server_"
+              className="mt-1"
+              value={getConfigValue('tool_prefix') as string}
+              onChange={(e) => setConfigValue('tool_prefix', e.target.value || undefined)}
+            />
+          </div>
+
+          {/* SSE Read Timeout */}
+          <div>
+            <FormLabel className="text-sm font-medium">SSE Read Timeout (seconds)</FormLabel>
+            <Input
+              type="number"
+              placeholder="60"
+              className="mt-1"
+              value={getConfigValue('sse_read_timeout') as string}
+              onChange={(e) =>
+                setConfigValue('sse_read_timeout', e.target.value ? parseInt(e.target.value) : undefined)
+              }
+            />
+          </div>
+
+          {/* Headers */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <FormLabel className="text-sm font-medium">HTTP Headers</FormLabel>
+              <Button type="button" variant="outline" size="sm" onClick={addHeaderKey} className="h-8">
+                <PlusCircle className="mr-1 h-3 w-3" />
+                Add
+              </Button>
+            </div>
+
+            {headerKeys.map((key, index) => (
+              <div key={`header-${index}`} className="flex items-center gap-2">
+                <Input
+                  className="flex-1"
+                  placeholder="Header Name"
+                  defaultValue={key}
+                  onChange={(e) => handleHeaderKeyChange(index, e.target.value)}
+                />
+                <Input
+                  className="flex-1"
+                  placeholder="Header Value"
+                  defaultValue={(() => {
+                    const config = form.getValues('config') as { headers?: Record<string, string> };
+                    return config?.headers?.[key] || '';
+                  })()}
+                  onBlur={(e) => updateHeaderValue(key, e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeHeaderKey(index)}
+                  className="h-8 w-8"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -35,15 +35,14 @@ type Model = components['schemas']['ModelRead'];
 type ModelCreate = components['schemas']['ModelCreate'];
 type ModelUpdate = components['schemas']['ModelUpdate'];
 
-// Form schema for model creation/update
+// Form schema for model creation/update - matching backend schema
 const modelSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   provider_id: z.string().min(1, 'Provider is required'),
   is_active: z.boolean().default(true),
-  max_tokens: z.number().min(1).default(4096),
-  temperature: z.number().min(0).max(2).default(0.7),
-  top_p: z.number().min(0).max(1).default(0.9),
-  config: z.record(z.never()).optional(),
+  default_max_tokens: z.number().min(1).default(4096),
+  default_temperature: z.number().min(0).max(2).default(0.7),
+  default_top_p: z.number().min(0).max(1).default(0.9),
 });
 
 type ModelFormValues = z.infer<typeof modelSchema>;
@@ -83,10 +82,9 @@ export function ModelSettings() {
       name: '',
       provider_id: '',
       is_active: true,
-      max_tokens: 4096,
-      temperature: 0.7,
-      top_p: 0.9,
-      config: {},
+      default_max_tokens: 4096,
+      default_temperature: 0.7,
+      default_top_p: 0.9,
     },
   });
 
@@ -166,7 +164,6 @@ export function ModelSettings() {
     } else {
       const createData: ModelCreate = {
         ...values,
-        config: values.config || {},
       };
       createMutation.mutate(createData);
     }
@@ -179,10 +176,9 @@ export function ModelSettings() {
       name: model.name,
       provider_id: model.provider_id,
       is_active: model.is_active,
-      max_tokens: model.max_tokens,
-      temperature: model.temperature,
-      top_p: model.top_p,
-      config: (model.config as Record<string, never>) || {},
+      default_max_tokens: model.default_max_tokens,
+      default_temperature: model.default_temperature,
+      default_top_p: model.default_top_p,
     });
     setIsCreateDialogOpen(true);
   };
@@ -193,10 +189,9 @@ export function ModelSettings() {
       name: '',
       provider_id: '',
       is_active: true,
-      max_tokens: 4096,
-      temperature: 0.7,
-      top_p: 0.9,
-      config: {},
+      default_max_tokens: 4096,
+      default_temperature: 0.7,
+      default_top_p: 0.9,
     });
     setIsCreateDialogOpen(true);
   };
@@ -283,18 +278,17 @@ export function ModelSettings() {
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="max_tokens"
+                  name="default_max_tokens"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Max Tokens</FormLabel>
+                      <FormLabel>Max Tokens</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min={1}
-                          step={1}
-                          placeholder="4096"
-                          className="h-9"
                           {...field}
+                          type="number"
+                          min="1"
+                          max="100000"
+                          className="w-full"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -305,19 +299,18 @@ export function ModelSettings() {
 
                 <FormField
                   control={form.control}
-                  name="temperature"
+                  name="default_temperature"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Temperature</FormLabel>
+                      <FormLabel>Temperature</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min={0}
-                          max={2}
-                          step={0.1}
-                          placeholder="0.7"
-                          className="h-9"
                           {...field}
+                          type="number"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          className="w-full"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -330,19 +323,18 @@ export function ModelSettings() {
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="top_p"
+                  name="default_top_p"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Top P</FormLabel>
+                      <FormLabel>Top P</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          placeholder="0.9"
-                          className="h-9"
                           {...field}
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          className="w-full"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>

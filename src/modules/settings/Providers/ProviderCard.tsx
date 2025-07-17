@@ -10,6 +10,11 @@ const providerIcons = {
   openai: Cloud,
   ollama: Terminal,
   custom: Globe,
+  gemini: Bot,
+  groq: Cloud,
+  mistral: Cloud,
+  cohere: Cloud,
+  bedrock: Cloud,
 } as const;
 
 interface ProviderCardProps {

@@ -68,7 +68,7 @@ export function MCPServerSettings() {
 
   // Mutations
   const toggleMutation = useMCPServerToggleMutation();
-  const createMutation = useMCPServerCreateMutation();
+  const createMutation = useMCPServerCreateMutation(() => setIsAddDialogOpen(false));
   const deleteMutation = useMCPServerDeleteMutation();
 
   // Function to handle server enable/disable

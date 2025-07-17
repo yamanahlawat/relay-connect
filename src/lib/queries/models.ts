@@ -1,6 +1,8 @@
-import { getModel, listModels, listModelsByProvider } from '@/lib/api/models';
+import { createModel, deleteModel, getModel, listModels, listModelsByProvider, updateModel } from '@/lib/api/models';
+import type { ModelCreate, ModelUpdate } from '@/types/model';
 import { ModelRead } from '@/types/model';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 // Query keys for models
 export const modelKeys = {
@@ -74,5 +76,53 @@ export function useModelsByProviderQuery() {
   return useQuery({
     queryKey: modelKeys.byProvider,
     queryFn: listModelsByProvider,
+  });
+}
+
+// Mutation hooks
+export function useModelCreateMutation(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ModelCreate) => createModel(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['models'] });
+      toast.success('Model created successfully');
+      onSuccess?.();
+    },
+    onError: () => {
+      toast.error('Failed to create model');
+    },
+  });
+}
+
+export function useModelUpdateMutation(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ modelId, data }: { modelId: string; data: ModelUpdate }) => updateModel(modelId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['models'] });
+      toast.success('Model updated successfully');
+      onSuccess?.();
+    },
+    onError: () => {
+      toast.error('Failed to update model');
+    },
+  });
+}
+
+export function useModelDeleteMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (modelId: string) => deleteModel(modelId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['models'] });
+      toast.success('Model deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete model');
+    },
   });
 }

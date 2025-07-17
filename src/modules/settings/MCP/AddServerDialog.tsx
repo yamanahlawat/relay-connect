@@ -13,7 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
-import { toast } from 'sonner';
 import * as z from 'zod';
 
 // Form schema for MCP server creation
@@ -199,7 +198,7 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
 
     createMutation.mutate(submitData, {
       onSuccess: () => {
-        toast.success('MCP server created successfully');
+        // Reset form state
         form.reset();
         setArgsInput('');
         setEnvKeys([]);
@@ -212,9 +211,6 @@ export function AddServerDialog({ isOpen, onClose, createMutation }: AddServerDi
           "config": {}
         }`);
         onClose();
-      },
-      onError: (err) => {
-        toast.error(`Failed to create MCP server: ${err}`);
       },
     });
   };

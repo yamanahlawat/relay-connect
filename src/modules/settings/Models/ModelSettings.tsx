@@ -16,24 +16,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { createModel, deleteModel, updateModel } from '@/lib/api/models';
-import type { components } from '@/lib/api/schema';
-import { useModelsByProviderQuery } from '@/lib/queries/models';
+import {
+  useModelCreateMutation,
+  useModelDeleteMutation,
+  useModelsByProviderQuery,
+  useModelUpdateMutation,
+} from '@/lib/queries/models';
 import { useProvidersQuery } from '@/lib/queries/providers';
 import { ModelGroup } from '@/modules/settings/models/ModelGroup';
+import type { ModelCreate, ModelRead, ModelUpdate } from '@/types/model';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
-import { toast } from 'sonner';
 import * as z from 'zod';
 import { EmptyState } from '../EmptyState';
-
-type Model = components['schemas']['ModelRead'];
-type ModelCreate = components['schemas']['ModelCreate'];
-type ModelUpdate = components['schemas']['ModelUpdate'];
 
 // Form schema for model creation/update - matching backend schema
 const modelSchema = z.object({
@@ -49,9 +47,8 @@ type ModelFormValues = z.infer<typeof modelSchema>;
 
 export function ModelSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
-  const queryClient = useQueryClient();
+  const [selectedModel, setSelectedModel] = useState<ModelRead | null>(null);
+  const [modelToDelete, setModelToDelete] = useState<ModelRead | null>(null);
   const searchParams = useSearchParams();
 
   const router = useRouter();
@@ -96,45 +93,14 @@ export function ModelSettings() {
   };
 
   // Handle delete click
-  const handleDeleteClick = (model: Model) => {
+  const handleDeleteClick = (model: ModelRead) => {
     setModelToDelete(model);
   };
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: ModelCreate) => createModel(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model created successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to create model');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ modelId, data }: { modelId: string; data: ModelUpdate }) => updateModel(modelId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model updated successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to update model');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (modelId: string) => deleteModel(modelId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model deleted successfully');
-    },
-    onError: () => {
-      toast.error('Failed to delete model');
-    },
-  });
+  const createMutation = useModelCreateMutation(handleDialogClose);
+  const updateMutation = useModelUpdateMutation(handleDialogClose);
+  const deleteMutation = useModelDeleteMutation();
 
   // Handle form submission
   const onSubmit = (values: ModelFormValues) => {
@@ -170,7 +136,7 @@ export function ModelSettings() {
   };
 
   // Edit model
-  const handleEditModel = (model: Model) => {
+  const handleEditModel = (model: ModelRead) => {
     setSelectedModel(model);
     form.reset({
       name: model.name,

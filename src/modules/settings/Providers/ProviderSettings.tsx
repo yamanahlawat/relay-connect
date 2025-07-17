@@ -16,24 +16,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { createProvider, deleteProvider, updateProvider } from '@/lib/api/providers';
-import type { components } from '@/lib/api/schema';
-import { useProvidersQuery } from '@/lib/queries/providers';
+import {
+  useProviderCreateMutation,
+  useProviderDeleteMutation,
+  useProvidersQuery,
+  useProviderUpdateMutation,
+} from '@/lib/queries/providers';
 import { EmptyState } from '@/modules/settings/EmptyState';
 import { ProviderGroup } from '@/modules/settings/providers/ProviderGroup';
+import type { ProviderCreate, ProviderRead, ProviderType, ProviderUpdate } from '@/types/provider';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import * as z from 'zod';
-
-type Provider = components['schemas']['ProviderRead'];
-type ProviderCreate = components['schemas']['ProviderCreate'];
-type ProviderUpdate = components['schemas']['ProviderUpdate'];
-type ProviderType = components['schemas']['ProviderType'];
 
 // Extract provider types from schema for form validation
 const providerTypes: ProviderType[] = ['openai', 'anthropic', 'gemini', 'groq', 'mistral', 'cohere', 'bedrock'];
@@ -62,9 +59,8 @@ type ProviderFormValues = z.infer<typeof providerSchema>;
 
 export function ProviderSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
-  const [providerToDelete, setProviderToDelete] = useState<Provider | null>(null);
-  const queryClient = useQueryClient();
+  const [selectedProvider, setSelectedProvider] = useState<ProviderRead | null>(null);
+  const [providerToDelete, setProviderToDelete] = useState<ProviderRead | null>(null);
   const searchParams = useSearchParams();
 
   const router = useRouter();
@@ -109,46 +105,14 @@ export function ProviderSettings() {
   };
 
   // Handle delete click
-  const handleDeleteClick = (provider: Provider) => {
+  const handleDeleteClick = (provider: ProviderRead) => {
     setProviderToDelete(provider);
   };
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: ProviderCreate) => createProvider(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
-      toast.success('Provider created successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to create provider');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ providerId, data }: { providerId: string; data: ProviderUpdate }) =>
-      updateProvider(providerId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
-      toast.success('Provider updated successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to update provider');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (providerId: string) => deleteProvider(providerId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
-      toast.success('Provider deleted successfully');
-    },
-    onError: () => {
-      toast.error('Failed to delete provider');
-    },
-  });
+  const createMutation = useProviderCreateMutation(handleDialogClose);
+  const updateMutation = useProviderUpdateMutation(handleDialogClose);
+  const deleteMutation = useProviderDeleteMutation();
 
   // Handle form submission
   const onSubmit = (values: ProviderFormValues) => {
@@ -188,7 +152,7 @@ export function ProviderSettings() {
   };
 
   // Edit provider
-  const handleEditProvider = (provider: Provider) => {
+  const handleEditProvider = (provider: ProviderRead) => {
     setSelectedProvider(provider);
     form.reset({
       name: provider.name,
@@ -224,7 +188,7 @@ export function ProviderSettings() {
         acc[type].push(provider);
         return acc;
       },
-      {} as Record<string, Provider[]>
+      {} as Record<string, ProviderRead[]>
     );
   }, [providers]);
 

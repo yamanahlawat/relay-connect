@@ -252,9 +252,10 @@ export function ModelSettings() {
                         <Input
                           {...field}
                           type="number"
-                          min="1"
-                          max="100000"
-                          className="w-full"
+                          min={1}
+                          step={1}
+                          placeholder="4096"
+                          className="h-9"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -273,10 +274,11 @@ export function ModelSettings() {
                         <Input
                           {...field}
                           type="number"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          className="w-full"
+                          min={0}
+                          max={2}
+                          step={0.1}
+                          placeholder="0.7"
+                          className="h-9"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -297,10 +299,11 @@ export function ModelSettings() {
                         <Input
                           {...field}
                           type="number"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          className="w-full"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          placeholder="0.9"
+                          className="h-9"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>

@@ -607,15 +607,17 @@ interface HTTPStreamableFieldsProps {
 function HTTPStreamableFields({ form }: HTTPStreamableFieldsProps) {
   const [headerKeys, setHeaderKeys] = useState<string[]>([]);
 
+  // Watch for config changes to update header keys
+  const config = form.watch('config') as { headers?: Record<string, string> } | undefined;
+
   // Initialize header keys from config
   useEffect(() => {
-    const config = form.getValues('config') as { headers?: Record<string, string> };
     if (config?.headers) {
       setHeaderKeys(Object.keys(config.headers));
     } else {
       setHeaderKeys([]);
     }
-  }, [form]);
+  }, [config]);
 
   const addHeaderKey = () => {
     setHeaderKeys([...headerKeys, '']);

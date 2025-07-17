@@ -29,7 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import * as z from 'zod';
 
 // Extract provider types from schema for form validation
@@ -80,7 +80,7 @@ export function ProviderSettings() {
 
   // Form setup
   const form = useForm<ProviderFormValues>({
-    resolver: zodResolver(providerSchema),
+    resolver: zodResolver(providerSchema) as unknown as Resolver<ProviderFormValues, object>,
     defaultValues: {
       name: '',
       type: 'anthropic',

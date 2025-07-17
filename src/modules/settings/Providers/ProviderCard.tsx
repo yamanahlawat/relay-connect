@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProviderRead, ProviderType } from '@/types/provider';
-import { Bot, Cloud, Settings2, Trash } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Bot, Cloud, Settings2, Trash } from 'lucide-react';
 
 const providerIcons: Record<ProviderType, LucideIcon> = {
   anthropic: Bot,

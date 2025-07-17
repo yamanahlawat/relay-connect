@@ -16,43 +16,39 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { createModel, deleteModel, updateModel } from '@/lib/api/models';
-import type { components } from '@/lib/api/schema';
-import { useModelsByProviderQuery } from '@/lib/queries/models';
+import {
+  useModelCreateMutation,
+  useModelDeleteMutation,
+  useModelsByProviderQuery,
+  useModelUpdateMutation,
+} from '@/lib/queries/models';
 import { useProvidersQuery } from '@/lib/queries/providers';
 import { ModelGroup } from '@/modules/settings/models/ModelGroup';
+import type { ModelCreate, ModelRead, ModelUpdate } from '@/types/model';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
-import { toast } from 'sonner';
 import * as z from 'zod';
 import { EmptyState } from '../EmptyState';
 
-type Model = components['schemas']['ModelRead'];
-type ModelCreate = components['schemas']['ModelCreate'];
-type ModelUpdate = components['schemas']['ModelUpdate'];
-
-// Form schema for model creation/update
+// Form schema for model creation/update - matching backend schema
 const modelSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   provider_id: z.string().min(1, 'Provider is required'),
   is_active: z.boolean().default(true),
-  max_tokens: z.number().min(1).default(4096),
-  temperature: z.number().min(0).max(2).default(0.7),
-  top_p: z.number().min(0).max(1).default(0.9),
-  config: z.record(z.never()).optional(),
+  default_max_tokens: z.number().min(1).default(4096),
+  default_temperature: z.number().min(0).max(2).default(0.7),
+  default_top_p: z.number().min(0).max(1).default(0.9),
 });
 
 type ModelFormValues = z.infer<typeof modelSchema>;
 
 export function ModelSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
-  const queryClient = useQueryClient();
+  const [selectedModel, setSelectedModel] = useState<ModelRead | null>(null);
+  const [modelToDelete, setModelToDelete] = useState<ModelRead | null>(null);
   const searchParams = useSearchParams();
 
   const router = useRouter();
@@ -83,10 +79,9 @@ export function ModelSettings() {
       name: '',
       provider_id: '',
       is_active: true,
-      max_tokens: 4096,
-      temperature: 0.7,
-      top_p: 0.9,
-      config: {},
+      default_max_tokens: 4096,
+      default_temperature: 0.7,
+      default_top_p: 0.9,
     },
   });
 
@@ -98,45 +93,14 @@ export function ModelSettings() {
   };
 
   // Handle delete click
-  const handleDeleteClick = (model: Model) => {
+  const handleDeleteClick = (model: ModelRead) => {
     setModelToDelete(model);
   };
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: ModelCreate) => createModel(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model created successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to create model');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ modelId, data }: { modelId: string; data: ModelUpdate }) => updateModel(modelId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model updated successfully');
-      handleDialogClose();
-    },
-    onError: () => {
-      toast.error('Failed to update model');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (modelId: string) => deleteModel(modelId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      toast.success('Model deleted successfully');
-    },
-    onError: () => {
-      toast.error('Failed to delete model');
-    },
-  });
+  const createMutation = useModelCreateMutation(handleDialogClose);
+  const updateMutation = useModelUpdateMutation(handleDialogClose);
+  const deleteMutation = useModelDeleteMutation();
 
   // Handle form submission
   const onSubmit = (values: ModelFormValues) => {
@@ -166,23 +130,21 @@ export function ModelSettings() {
     } else {
       const createData: ModelCreate = {
         ...values,
-        config: values.config || {},
       };
       createMutation.mutate(createData);
     }
   };
 
   // Edit model
-  const handleEditModel = (model: Model) => {
+  const handleEditModel = (model: ModelRead) => {
     setSelectedModel(model);
     form.reset({
       name: model.name,
       provider_id: model.provider_id,
       is_active: model.is_active,
-      max_tokens: model.max_tokens,
-      temperature: model.temperature,
-      top_p: model.top_p,
-      config: (model.config as Record<string, never>) || {},
+      default_max_tokens: model.default_max_tokens,
+      default_temperature: model.default_temperature,
+      default_top_p: model.default_top_p,
     });
     setIsCreateDialogOpen(true);
   };
@@ -193,10 +155,9 @@ export function ModelSettings() {
       name: '',
       provider_id: '',
       is_active: true,
-      max_tokens: 4096,
-      temperature: 0.7,
-      top_p: 0.9,
-      config: {},
+      default_max_tokens: 4096,
+      default_temperature: 0.7,
+      default_top_p: 0.9,
     });
     setIsCreateDialogOpen(true);
   };
@@ -283,18 +244,18 @@ export function ModelSettings() {
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="max_tokens"
+                  name="default_max_tokens"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Max Tokens</FormLabel>
+                      <FormLabel>Max Tokens</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="number"
                           min={1}
                           step={1}
                           placeholder="4096"
                           className="h-9"
-                          {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -305,19 +266,19 @@ export function ModelSettings() {
 
                 <FormField
                   control={form.control}
-                  name="temperature"
+                  name="default_temperature"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Temperature</FormLabel>
+                      <FormLabel>Temperature</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="number"
                           min={0}
                           max={2}
                           step={0.1}
                           placeholder="0.7"
                           className="h-9"
-                          {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
@@ -330,19 +291,19 @@ export function ModelSettings() {
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="top_p"
+                  name="default_top_p"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Top P</FormLabel>
+                      <FormLabel>Top P</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="number"
                           min={0}
                           max={1}
                           step={0.05}
                           placeholder="0.9"
                           className="h-9"
-                          {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>

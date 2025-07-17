@@ -1,21 +1,23 @@
 import { Button } from '@/components/ui/button';
-import { components } from '@/lib/api/schema';
 import { cn } from '@/lib/utils';
-import { Bot, Cloud, Globe, Settings2, Terminal, Trash } from 'lucide-react';
+import type { ProviderRead, ProviderType } from '@/types/provider';
+import type { LucideIcon } from 'lucide-react';
+import { Bot, Cloud, Settings2, Trash } from 'lucide-react';
 
-type Provider = components['schemas']['ProviderRead'];
-
-const providerIcons = {
+const providerIcons: Record<ProviderType, LucideIcon> = {
   anthropic: Bot,
   openai: Cloud,
-  ollama: Terminal,
-  custom: Globe,
+  gemini: Bot,
+  groq: Cloud,
+  mistral: Cloud,
+  cohere: Cloud,
+  bedrock: Cloud,
 } as const;
 
 interface ProviderCardProps {
-  provider: Provider;
-  onEdit: (provider: Provider) => void;
-  onDelete: (provider: Provider) => void;
+  provider: ProviderRead;
+  onEdit: (provider: ProviderRead) => void;
+  onDelete: (provider: ProviderRead) => void;
 }
 
 export function ProviderCard({ provider, onEdit, onDelete }: ProviderCardProps) {

@@ -1,5 +1,6 @@
 import type { components } from '@/lib/api/schema';
 
-type ProviderRead = components['schemas']['ProviderRead'];
-type ProviderCreate = components['schemas']['ProviderCreate'];
-type ProviderUpdate = components['schemas']['ProviderUpdate'];
+export type ProviderRead = components['schemas']['ProviderRead'];
+export type ProviderCreate = components['schemas']['ProviderCreate'];
+export type ProviderUpdate = components['schemas']['ProviderUpdate'];
+export type ProviderType = components['schemas']['ProviderType'];

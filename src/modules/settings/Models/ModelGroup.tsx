@@ -1,13 +1,11 @@
-import { components } from '@/lib/api/schema';
 import { ModelCard } from '@/modules/settings/models/ModelCard';
-
-type Model = components['schemas']['ModelRead'];
+import type { ModelRead } from '@/types/model';
 
 interface ModelGroupProps {
   title: string;
-  models: Model[];
-  onEdit: (model: Model) => void;
-  onDelete: (model: Model) => void;
+  models: ModelRead[];
+  onEdit: (model: ModelRead) => void;
+  onDelete: (model: ModelRead) => void;
 }
 
 export function ModelGroup({ title, models, onEdit, onDelete }: ModelGroupProps) {

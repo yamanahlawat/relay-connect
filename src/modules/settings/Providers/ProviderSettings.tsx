@@ -51,8 +51,8 @@ const providerSchema = z.object({
   name: z.string().min(1, 'Provider name is required'),
   type: z.enum(providerTypes as [ProviderType, ...ProviderType[]]),
   is_active: z.boolean(),
-  base_url: z.string().optional().or(z.literal('')),
-  api_key: z.string().optional().or(z.literal('')),
+  base_url: z.string().optional().default(''),
+  api_key: z.string().optional().default(''),
 });
 
 type ProviderFormValues = z.infer<typeof providerSchema>;

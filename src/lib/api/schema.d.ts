@@ -625,7 +625,7 @@ export interface paths {
      *     - **limit**: Maximum number of items to return (default: 10)
      *
      *     ### Returns
-     *     List of all MCP server configurations with status and available tools
+     *     List of all MCP server configurations with status.
      */
     get: operations['list_mcp_servers_api_v1_mcp__get'];
     put?: never;
@@ -635,12 +635,13 @@ export interface paths {
      *     Create a new MCP server configuration.
      *
      *     This endpoint allows creating new MCP server configurations directly from the frontend.
+     *     The server configuration is validated before creation.
      *
      *     ### Parameters
      *     - **server**: MCP server configuration
      *
      *     ### Returns
-     *     The created MCP server configuration with status
+     *     The created MCP server configuration with status.
      */
     post: operations['create_mcp_server_api_v1_mcp__post'];
     delete?: never;
@@ -669,10 +670,11 @@ export interface paths {
      *     - **server**: MCP server configuration update
      *
      *     ### Returns
-     *     The updated MCP server configuration with status
+     *     The updated MCP server configuration with status.
      *
      *     ### Raises
      *     - **404**: Server not found
+     *     - **400**: Server validation failed
      */
     put: operations['update_mcp_server_api_v1_mcp__server_id__put'];
     post?: never;
@@ -682,7 +684,6 @@ export interface paths {
      *     Delete an existing MCP server configuration.
      *
      *     This endpoint allows deleting an existing MCP server configuration directly from the frontend.
-     *     If the server is running, it will be shut down before deletion.
      *
      *     ### Parameters
      *     - **server_id**: UUID of the MCP server to delete
@@ -898,11 +899,6 @@ export interface components {
        * @default unknown
        */
       status: components['schemas']['ServerStatus'];
-      /**
-       * Available Tools
-       * @description Available tools from this server
-       */
-      available_tools?: components['schemas']['MCPTool'][];
     };
     /**
      * MCPServerUpdate
@@ -935,25 +931,6 @@ export interface components {
       env?: {
         [key: string]: string;
       } | null;
-    };
-    /**
-     * MCPTool
-     * @description Represents an MCP tool with its metadata.
-     */
-    MCPTool: {
-      /** Name */
-      name: string;
-      /** Description */
-      description?: string | null;
-      /**
-       * Server Name
-       * @description Name of the MCP server providing this tool
-       */
-      server_name: string;
-      /** Input Schema */
-      input_schema: {
-        [key: string]: unknown;
-      };
     };
     /**
      * MessageCreate

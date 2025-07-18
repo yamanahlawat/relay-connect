@@ -487,86 +487,95 @@ function EditServerDialog({ server, isOpen, onClose, toggleMutation }: EditServe
               <FormField
                 control={form.control}
                 name="command"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{form.watch('server_type') === 'streamable_http' ? 'Server URL' : 'Command'}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder={
-                          form.watch('server_type') === 'streamable_http'
-                            ? 'https://your-server.com/mcp'
-                            : 'path/to/executable'
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const serverType = form.watch('server_type');
+                  return (
+                    <FormItem>
+                      <FormLabel>{serverType === 'streamable_http' ? 'Server URL' : 'Command'}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={
+                            serverType === 'streamable_http' ? 'https://your-server.com/mcp' : 'path/to/executable'
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               {/* Conditional Fields Based on Server Type */}
-              {form.watch('server_type') === 'stdio' && (
-                <>
-                  <FormItem>
-                    <FormLabel>Arguments (space-separated)</FormLabel>
-                    <FormControl>
-                      <Input
-                        value={argsInput}
-                        onChange={(e) => {
-                          setArgsInput(e.target.value);
-                          // Store args in config.args as array
-                          const args = e.target.value.split(' ').filter((arg) => arg.trim() !== '');
-                          const currentConfig = form.getValues('config') || {};
-                          form.setValue('config', { ...currentConfig, args });
-                        }}
-                        placeholder="e.g., -y tavily-mcp@0.1.3"
-                      />
-                    </FormControl>
-                  </FormItem>
+              {(() => {
+                const serverType = form.watch('server_type');
+                return (
+                  serverType === 'stdio' && (
+                    <>
+                      <FormItem>
+                        <FormLabel>Arguments (space-separated)</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={argsInput}
+                            onChange={(e) => {
+                              setArgsInput(e.target.value);
+                              // Store args in config.args as array
+                              const args = e.target.value.split(' ').filter((arg) => arg.trim() !== '');
+                              const currentConfig = form.getValues('config') || {};
+                              form.setValue('config', { ...currentConfig, args });
+                            }}
+                            placeholder="e.g., -y tavily-mcp@0.1.3"
+                          />
+                        </FormControl>
+                      </FormItem>
 
-                  {/* Environment Variables - Only for stdio */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Environment Variables</FormLabel>
-                      <Button type="button" variant="outline" size="sm" onClick={addEnvKey} className="h-8">
-                        <PlusCircle className="mr-1 h-3 w-3" />
-                        Add
-                      </Button>
-                    </div>
+                      {/* Environment Variables - Only for stdio */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Environment Variables</FormLabel>
+                          <Button type="button" variant="outline" size="sm" onClick={addEnvKey} className="h-8">
+                            <PlusCircle className="mr-1 h-3 w-3" />
+                            Add
+                          </Button>
+                        </div>
 
-                    {envKeys.map((key, index) => (
-                      <div key={`env-${index}`} className="flex items-center gap-2">
-                        <Input
-                          className="flex-1"
-                          placeholder="Key"
-                          defaultValue={key}
-                          onChange={(e) => handleEnvKeyChange(index, e.target.value)}
-                        />
-                        <Input
-                          className="flex-1"
-                          placeholder="Value"
-                          defaultValue={
-                            typeof form.getValues(`env.${key}`) === 'string' ? form.getValues(`env.${key}`) : ''
-                          }
-                          onBlur={(e) => updateEnvValue(key, e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeEnvKey(index)}
-                          className="h-8 w-8"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {envKeys.map((key, index) => (
+                          <div key={`env-${index}`} className="flex items-center gap-2">
+                            <Input
+                              className="flex-1"
+                              placeholder="Key"
+                              defaultValue={key}
+                              onChange={(e) => handleEnvKeyChange(index, e.target.value)}
+                            />
+                            <Input
+                              className="flex-1"
+                              placeholder="Value"
+                              defaultValue={
+                                typeof form.getValues(`env.${key}`) === 'string' ? form.getValues(`env.${key}`) : ''
+                              }
+                              onBlur={(e) => updateEnvValue(key, e.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeEnvKey(index)}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                    </>
+                  )
+                );
+              })()}
 
-              {form.watch('server_type') === 'streamable_http' && <HTTPStreamableFields form={form} />}
+              {(() => {
+                const serverType = form.watch('server_type');
+                return serverType === 'streamable_http' && <HTTPStreamableFields form={form} />;
+              })()}
 
               <FormField
                 control={form.control}

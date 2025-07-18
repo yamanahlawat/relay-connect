@@ -188,7 +188,7 @@ export function ProviderSettings() {
         acc[type].push(provider);
         return acc;
       },
-      {} as Record<string, ProviderRead[]>
+      {} as Record<ProviderType, ProviderRead[]>
     );
   }, [providers]);
 

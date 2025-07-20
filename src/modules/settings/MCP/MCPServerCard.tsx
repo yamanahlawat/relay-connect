@@ -84,20 +84,6 @@ export function MCPServerCard({
           </Button>
         </div>
       </div>
-
-      {/* Tools List */}
-      {server.available_tools && server.available_tools.length > 0 && (
-        <div className="border-t p-2">
-          <h4 className="text-muted-foreground mb-1 text-xs font-medium">Available Tools</h4>
-          <div className="flex flex-wrap gap-1">
-            {server.available_tools.map((tool) => (
-              <div key={tool.name} className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 text-xs">
-                {tool.name}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

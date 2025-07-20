@@ -114,7 +114,7 @@ export default function MCPServers() {
               {/* Loading state */}
               {isLoading && (
                 <div className="flex h-full items-center justify-center">
-                  <div className="text-muted-foreground text-sm">Loading MCP servers...</div>
+                  <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                 </div>
               )}
 

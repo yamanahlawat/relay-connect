@@ -1,6 +1,7 @@
 import type { StreamingMessageProps } from '@/types/stream';
 import { memo } from 'react';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
+import { ReasoningBlockRenderer } from '../markdown/components/ReasoningBlock';
 import StreamingIndicator from './StreamingIndicator';
 import ToolGroup from './shared/ToolGroup';
 
@@ -10,15 +11,18 @@ const StreamingMessage = memo(function StreamingMessage({
   progressive_tool_args,
   message,
 }: StreamingMessageProps) {
-  const isStreaming = !blocks.some((block) => block.type === 'done');
+  const isStreaming = !blocks.some((block) => block.type === 'done') && message?.status !== 'completed';
 
   // Simple: if we have a done block, only show tools + final content
   const doneBlock = blocks.find((block) => block.type === 'done');
   if (doneBlock?.content) {
     const toolBlocks = blocks.filter((block) => ['tool_start', 'tool_call', 'tool_result'].includes(block.type));
+    const reasoningBlocks = blocks.filter((block) => block.type === 'reasoning');
+    const reasoningContent = reasoningBlocks.map((block) => block.content).join('');
 
     return (
       <div className="space-y-4">
+        {reasoningContent && <ReasoningBlockRenderer content={reasoningContent} isStreaming={false} />}
         {toolBlocks.length > 0 && (
           <ToolGroup toolBlocks={toolBlocks} isStreaming={false} progressive_tool_args={progressive_tool_args} />
         )}
@@ -32,16 +36,20 @@ const StreamingMessage = memo(function StreamingMessage({
   // Simple: group all blocks by type
   const toolBlocks = blocks.filter((block) => ['tool_start', 'tool_call', 'tool_result'].includes(block.type));
   const contentBlocks = blocks.filter((block) => block.type === 'content');
+  const reasoningBlocks = blocks.filter((block) => block.type === 'reasoning');
+
+  // Combine reasoning blocks content
+  const reasoningContent = reasoningBlocks.map((block) => block.content).join('');
 
   return (
     <div className="space-y-4">
       {/* Thinking during streaming */}
       {thinking?.is_thinking && thinking.content && isStreaming && (
-        <StreamingIndicator
-          type="thinking"
-          text={thinking.content.length > 100 ? `${thinking.content.substring(0, 100)}...` : thinking.content}
-        />
+        <StreamingIndicator type="thinking" text={thinking.content} />
       )}
+
+      {/* Reasoning blocks */}
+      {reasoningContent && <ReasoningBlockRenderer content={reasoningContent} isStreaming={isStreaming} />}
 
       {/* Tools */}
       {toolBlocks.length > 0 && (
@@ -52,7 +60,15 @@ const StreamingMessage = memo(function StreamingMessage({
       {contentBlocks.length > 0 && (
         <div className="prose prose-sm dark:prose-invert max-w-none">
           <MarkdownRenderer content={contentBlocks.map((block) => block.content).join('')} isStreaming={isStreaming} />
-          {isStreaming && <span className="ml-1 inline-block h-5 w-2 animate-pulse bg-current" />}
+          {isStreaming && (
+            <span
+              className="ml-0.5 inline-block h-4 w-1 bg-current"
+              style={{
+                animation: 'cursor-blink 1s infinite',
+                animationTimingFunction: 'step-end',
+              }}
+            />
+          )}
         </div>
       )}
 

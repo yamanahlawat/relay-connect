@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/api/v1/ai/complete/{session_id}/{message_id}/stream': {
+  '/api/v1/chat/complete/{session_id}/{message_id}/stream': {
     parameters: {
       query?: never;
       header?: never;
@@ -30,7 +30,7 @@ export interface paths {
      *     - **429**: Rate limit exceeded
      *     - **503**: AI service unavailable
      */
-    get: operations['stream_completion_api_v1_ai_complete__session_id___message_id__stream_get'];
+    get: operations['stream_completion_api_v1_chat_complete__session_id___message_id__stream_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -39,7 +39,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/ai/complete/{session_id}/stop': {
+  '/api/v1/chat/complete/{session_id}/stop': {
     parameters: {
       query?: never;
       header?: never;
@@ -64,7 +64,7 @@ export interface paths {
      *     ### Raises
      *     - **404**: Session not found
      */
-    post: operations['stop_completion_api_v1_ai_complete__session_id__stop_post'];
+    post: operations['stop_completion_api_v1_chat_complete__session_id__stop_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1348,7 +1348,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  stream_completion_api_v1_ai_complete__session_id___message_id__stream_get: {
+  stream_completion_api_v1_chat_complete__session_id___message_id__stream_get: {
     parameters: {
       query?: {
         max_tokens?: number;
@@ -1409,7 +1409,7 @@ export interface operations {
       };
     };
   };
-  stop_completion_api_v1_ai_complete__session_id__stop_post: {
+  stop_completion_api_v1_chat_complete__session_id__stop_post: {
     parameters: {
       query?: never;
       header?: never;

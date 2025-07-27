@@ -6,7 +6,6 @@ import Markdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { ThinkBlockRenderer } from './components/ThinkBlock';
 import { useContentProcessor } from './hooks/useContentProcessor';
 import { useLatexProcessor } from './hooks/useLatexProcessor';
 import { useMarkdownComponents } from './hooks/useMarkdownComponents';
@@ -64,15 +63,14 @@ export interface MarkdownRendererProps {
  * - LaTeX mathematical notation (inline and block)
  * - Code syntax highlighting
  * - Tables with proper math rendering
- * - Think blocks for LLM thought processes
  * - GFM (GitHub Flavored Markdown)
  */
 export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRendererProps) {
-  // Process the content to extract think blocks and regular content
+  // Process the content (now just returns the content string)
   const processedContent = useContentProcessor(content);
 
   // Process LaTeX syntax (e.g., \[ ... \] to $$ ... $$) for better compatibility with KaTeX
-  const latexProcessedContent = useLatexProcessor(processedContent.regularContent);
+  const latexProcessedContent = useLatexProcessor(processedContent);
 
   // Get custom markdown components for rendering different elements
   const markdownComponents = useMarkdownComponents();
@@ -80,33 +78,29 @@ export function MarkdownRenderer({ content, isStreaming = false }: MarkdownRende
   // Determine if content is actively streaming for animation effects
   const { isActivelyStreaming } = useStreamingState(content, isStreaming);
 
+  if (!processedContent.trim()) {
+    return null;
+  }
+
   return (
     <div
       className={cn(
         'prose prose-sm dark:prose-invert max-w-none break-words',
-        isActivelyStreaming && 'duration-75 animate-in fade-in-0'
+        isActivelyStreaming && 'animate-in fade-in-0 duration-75'
       )}
     >
-      {/* Think Block Content */}
-      {(processedContent.type === 'think' || processedContent.thinkContent) && (
-        <ThinkBlockRenderer content={processedContent.thinkContent} isStreaming={isActivelyStreaming} />
-      )}
-
-      {/* Regular Content with Math Support - Super Simplified */}
-      {processedContent.regularContent && (
-        <div className={cn(isActivelyStreaming && 'opacity-90')}>
-          <Markdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[
-              // Apply KaTeX processing for math rendering
-              [rehypeKatex, katexOptions],
-            ]}
-            components={markdownComponents}
-          >
-            {latexProcessedContent}
-          </Markdown>
-        </div>
-      )}
+      <div className={cn(isActivelyStreaming && 'opacity-90')}>
+        <Markdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[
+            // Apply KaTeX processing for math rendering
+            [rehypeKatex, katexOptions],
+          ]}
+          components={markdownComponents}
+        >
+          {latexProcessedContent}
+        </Markdown>
+      </div>
     </div>
   );
 }

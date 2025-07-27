@@ -19,7 +19,15 @@ export interface EmbeddedResource {
 export type ContentItem = TextContent | ImageContent | EmbeddedResource;
 
 // Block types - expanded to include new streaming types
-export type StreamBlockType = 'content' | 'thinking' | 'tool_start' | 'tool_call' | 'tool_result' | 'done' | 'error';
+export type StreamBlockType =
+  | 'content'
+  | 'thinking'
+  | 'reasoning'
+  | 'tool_start'
+  | 'tool_call'
+  | 'tool_result'
+  | 'done'
+  | 'error';
 
 // Progressive tool args - simplified for streaming UX only
 export interface ProgressiveToolArgs {

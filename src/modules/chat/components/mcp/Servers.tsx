@@ -9,7 +9,7 @@ import { CircuitBoard, Loader2, PocketKnife, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// A small helper component to show the "No servers" message
+// Component to show the "No servers" message
 function NoActiveServers({ onSettingsClick }: { onSettingsClick: () => void }) {
   return (
     <div className="flex h-full min-h-[200px] items-center justify-center">

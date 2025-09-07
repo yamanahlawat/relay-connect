@@ -18,6 +18,7 @@ interface UIStreamingContent {
 interface UIStreamState {
   contentSections: UIStreamingContent[];
   toolBlocks: (StreamBlock & { streamIndex: number })[];
+  reasoningBlocks: (StreamBlock & { streamIndex: number })[];
   lastIndex: number;
   thinking: {
     isThinking: boolean;
@@ -39,10 +40,18 @@ function adaptStreamState(state: StreamState): UIStreamState {
         isComplete: section.is_complete,
         streamIndex: section.stream_index ?? section.index,
       })) ?? [],
-    toolBlocks: (state.tool_blocks ?? []).map((block) => ({
-      ...block,
-      streamIndex: block.stream_index ?? 0,
-    })),
+    toolBlocks: (state.tool_blocks ?? [])
+      .filter((block) => ['tool_start', 'tool_call', 'tool_result'].includes(block.type))
+      .map((block) => ({
+        ...block,
+        streamIndex: block.stream_index ?? 0,
+      })),
+    reasoningBlocks: (state.tool_blocks ?? [])
+      .filter((block) => block.type === 'reasoning')
+      .map((block) => ({
+        ...block,
+        streamIndex: block.stream_index ?? 0,
+      })),
     lastIndex: state.last_index ?? 0,
     thinking: {
       isThinking: state.thinking?.is_thinking ?? false,
@@ -62,7 +71,7 @@ function reverseAdaptStreamState(state: UIStreamState): StreamState {
         is_complete: section.isComplete,
         stream_index: section.streamIndex, // Preserve stream order
       })) ?? [],
-    tool_blocks: state.toolBlocks.map((block) => {
+    tool_blocks: [...state.toolBlocks, ...state.reasoningBlocks].map((block) => {
       // Create a new object without streamIndex to avoid type errors
       const { streamIndex, ...rest } = block;
       return { ...rest, stream_index: streamIndex };
@@ -100,7 +109,7 @@ function getAllBlocks(streamState: StreamState): StreamBlock[] {
   }));
 
   // Create combined array with all blocks
-  const allBlocks = [...contentBlocks, ...adaptedState.toolBlocks];
+  const allBlocks = [...contentBlocks, ...adaptedState.toolBlocks, ...adaptedState.reasoningBlocks];
 
   // Sort by stream index to maintain chronological order
   return allBlocks.sort((a, b) => {
@@ -220,6 +229,7 @@ export function useChat(sessionId: string) {
       streamStateRef.current = {
         contentSections: [],
         toolBlocks: [],
+        reasoningBlocks: [],
         lastIndex: 0,
         thinking: {
           isThinking: false,
@@ -305,9 +315,25 @@ export function useChat(sessionId: string) {
             case 'thinking':
               streamStateRef.current.thinking = {
                 isThinking: true,
-                content: blockWithIndex.content as string,
+                content: typeof blockWithIndex.content === 'string' ? blockWithIndex.content : '',
               };
               // Update the UI to show thinking state
+              updateAssistantMessage();
+              break;
+
+            case 'reasoning':
+              if (currentSection) {
+                currentSection.isComplete = true;
+                currentSection = null;
+              }
+
+              // Store the reasoning block with stream index
+              streamStateRef.current.reasoningBlocks.push({
+                ...blockWithIndex,
+                streamIndex: streamIndex - 1, // Use same stream index assigned to the block
+              });
+
+              // Update UI for reasoning blocks
               updateAssistantMessage();
               break;
 
@@ -548,12 +574,9 @@ export function useChat(sessionId: string) {
                   timeoutId = null;
                 }
 
-                // Add a small delay before clearing refs to ensure state updates are processed
-                setTimeout(() => {
-                  // Now it's safe to clear the refs
-                  streamStateRef.current = null;
-                  assistantMessageIdRef.current = null;
-                }, 100);
+                // Clear refs immediately - no delay needed
+                streamStateRef.current = null;
+                assistantMessageIdRef.current = null;
 
                 // Return to exit the loop
                 return;
@@ -595,10 +618,8 @@ export function useChat(sessionId: string) {
                 }
 
                 // Clear refs after state update
-                setTimeout(() => {
-                  streamStateRef.current = null;
-                  assistantMessageIdRef.current = null;
-                }, 100);
+                streamStateRef.current = null;
+                assistantMessageIdRef.current = null;
 
                 return;
               }

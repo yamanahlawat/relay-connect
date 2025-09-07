@@ -36,7 +36,6 @@ import { AddServerDialog } from './AddServerDialog';
 import { MCPServerGroup } from './MCPServerGroup';
 
 // Form schema for MCP server creation/update
-// Uses ServerType from schema: components['schemas']['ServerType']
 const mcpServerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   command: z.string().min(1, 'Command/URL is required'),

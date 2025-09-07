@@ -19,7 +19,7 @@ export function SidebarToggle({ className }: { className?: string }) {
         <TooltipTrigger asChild>
           <SidebarTrigger className={className} />
         </TooltipTrigger>
-        <TooltipContent side="bottom">Toggle sidebar ({isMac ? '⌘' : 'Ctrl'}+B)</TooltipContent>
+        <TooltipContent side="bottom">Toggle Sidebar ({isMac ? '⌘' : 'Ctrl'}+B)</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

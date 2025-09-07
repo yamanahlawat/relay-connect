@@ -16,14 +16,14 @@ export function ChatSplitView({ children }: ChatSplitViewProps) {
 
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={shouldShowCodeView ? 40 : 100} minSize={40}>
+      <ResizablePanel defaultSize={shouldShowCodeView ? 50 : 100} minSize={40}>
         {children}
       </ResizablePanel>
 
       {shouldShowCodeView && (
         <>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={60} minSize={40} className="slide-in-from-right">
+          <ResizablePanel defaultSize={50} minSize={40} className="slide-in-from-right">
             <CodeCascadeView />
           </ResizablePanel>
         </>

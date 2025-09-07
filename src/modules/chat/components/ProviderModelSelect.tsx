@@ -294,7 +294,12 @@ export default function ProviderModelSelect() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link href="/">
-                  <Button variant="ghost" size="icon" aria-label="New Chat">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="New Chat"
+                    className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
                     <MessageSquarePlus className="h-5 w-5" />
                   </Button>
                 </Link>

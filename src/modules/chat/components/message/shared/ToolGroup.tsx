@@ -109,7 +109,6 @@ ToolResults.displayName = 'ToolResults';
 const ToolGroup = memo<ToolGroupProps>(function ToolGroup({ toolBlocks, isStreaming = false, progressive_tool_args }) {
   const [openTools, setOpenTools] = useState<Set<string>>(new Set());
 
-  // Optimized tool calls processing
   const toolCallsData = useMemo<ToolCallData[]>(() => {
     const groups: Record<string, StreamBlock[]> = {};
 
@@ -136,7 +135,6 @@ const ToolGroup = memo<ToolGroupProps>(function ToolGroup({ toolBlocks, isStream
     });
   }, [toolBlocks, progressive_tool_args]);
 
-  // Optimized toggle handler
   const toggleTool = useCallback((toolCallId: string, open: boolean) => {
     setOpenTools((prev) => {
       const newSet = new Set(prev);

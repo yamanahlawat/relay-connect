@@ -17,16 +17,6 @@ export interface MarkdownNode {
 }
 
 /**
- * Processed content with think blocks
- */
-export interface ProcessedContent {
-  type: 'regular' | 'think';
-  thinkContent: string;
-  regularContent: string;
-  isComplete: boolean;
-}
-
-/**
  * Code analysis result from the code analyzer
  */
 export interface CodeAnalysis {
@@ -42,14 +32,6 @@ export interface CodeAnalysis {
  */
 export interface MarkdownRendererProps {
   content: string | ContentItem[];
-  isStreaming?: boolean;
-}
-
-/**
- * Properties for think block renderer
- */
-export interface ThinkBlockProps {
-  content: string;
   isStreaming?: boolean;
 }
 

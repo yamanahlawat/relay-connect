@@ -7,7 +7,7 @@ A modern, open-source LLM Studio frontend built with Next.js. Relay Connect prov
 - **Multi-Provider Support**: Connect to various AI providers (OpenAI, Anthropic, etc.)
 - **Real-time Streaming**: Live streaming responses with tool calling support
 - **Model Configuration Protocol (MCP)**: Advanced server management and tool integration
-- **Modern UI**: Clean, responsive interface built with Tailwind CSS and Radix UI
+- **Modern UI**: Clean, responsive interface built with Tailwind CSS and shadcn/ui
 - **Session Management**: Organize conversations with persistent chat sessions
 - **Markdown Rendering**: Rich text rendering with syntax highlighting and math support
 - **Theme Support**: Light and dark mode themes
@@ -117,7 +117,7 @@ This project uses:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](.github/CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -132,7 +132,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
-- UI components from [Radix UI](https://www.radix-ui.com/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
 - Styled with [Tailwind CSS](https://tailwindcss.com/)
 - Icons from [Lucide React](https://lucide.dev/)
 
@@ -142,3 +142,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🐛 [Issue Tracker](https://github.com/yamanahlawat/relay-connect/issues)
 - 💬 [Discord Community](https://discord.gg/V5AHYx72Yv)
 - 📧 [Contact the maintainer](https://github.com/yamanahlawat)
+
+---
+
+<div align="center">
+
+**[⭐ Star us on GitHub](https://github.com/yamanahlawat/relay-connect)** if you find Relay Connect helpful!
+
+</div>

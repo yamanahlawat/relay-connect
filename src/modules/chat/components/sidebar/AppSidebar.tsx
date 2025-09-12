@@ -21,7 +21,8 @@ import { useChatGroups } from '@/modules/chat/hooks/useChatGroups';
 import { useIntersectionObserver } from '@/modules/chat/hooks/useIntersectionObserver';
 import { useCodeCascade } from '@/stores/codeCascade';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ComponentProps, useMemo, useState } from 'react';
@@ -117,10 +118,27 @@ export function AppSidebar({ className, ...props }: ComponentProps<typeof Sideba
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-1.5">
-              <div className="bg-primary text-primary-foreground flex aspect-square h-7 items-center justify-center rounded-lg transition-transform hover:scale-105">
-                <Sparkles className="h-3.5 w-3.5" />
+              <div className="flex aspect-square h-10 items-center justify-center rounded-lg transition-transform hover:scale-105">
+                {/* Light mode logo */}
+                <Image
+                  src="/logo/relay-dark.svg"
+                  alt="Relay Logo"
+                  width={40}
+                  height={40}
+                  className="block h-10 w-10 dark:hidden"
+                  priority
+                />
+                {/* Dark mode logo */}
+                <Image
+                  src="/logo/relay-light.svg"
+                  alt="Relay Logo"
+                  width={40}
+                  height={40}
+                  className="hidden h-10 w-10 dark:block"
+                  priority
+                />
               </div>
-              <span className="pl-1 font-semibold">Relay</span>
+              <span className="pt-4.5 font-semibold">Relay</span>
             </Link>
           </div>
         </div>

@@ -58,8 +58,8 @@ A modern, open-source LLM Studio frontend built with Next.js. Relay Connect prov
 3. **Set up environment variables**
 
    ```bash
-   cp .env .env.local
-   # Edit .env.local to point to your relay-serve backend URL
+   cp env.template .env
+   # Edit .env to point to your relay-serve backend URL
    # Default: NEXT_PUBLIC_RELAY_SERVE_HOST=http://localhost:8000
    ```
 

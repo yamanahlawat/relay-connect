@@ -15,7 +15,7 @@ export function ChatSplitView({ children }: ChatSplitViewProps) {
   const shouldShowCodeView = showCodeView || (isStreaming && isMultiLine);
 
   return (
-    <ResizablePanelGroup direction="horizontal">
+    <ResizablePanelGroup orientation="horizontal">
       <ResizablePanel defaultSize={shouldShowCodeView ? 50 : 100} minSize={40}>
         {children}
       </ResizablePanel>

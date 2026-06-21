@@ -1,5 +1,4 @@
 import { ContentItem } from '@/types/stream';
-import { useEffect, useState } from 'react';
 
 /**
  * Hook to process and manage markdown content
@@ -7,12 +6,5 @@ import { useEffect, useState } from 'react';
  * @returns Processed content string
  */
 export function useContentProcessor(content: string | ContentItem[]) {
-  const [processedContent, setProcessedContent] = useState<string>('');
-
-  useEffect(() => {
-    const result = typeof content === 'string' ? content : String(content);
-    setProcessedContent(result);
-  }, [content]);
-
-  return processedContent;
+  return typeof content === 'string' ? content : String(content);
 }

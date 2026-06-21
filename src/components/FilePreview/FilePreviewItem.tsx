@@ -25,7 +25,7 @@ const FilePreviewItem: React.FC<FilePreviewItemProps> = ({ file, onRemove, image
   // Get file type information from filename (since we don't have MIME type in FilePreviewData)
   const fileExtension = getFileExtension(file_name);
   const category = getFileCategory(file_name); // We'll infer from filename
-  const FileIcon = getFileIcon(category);
+  const fileIcon = getFileIcon(category);
   const fileColor = getFileColor(category);
   const isImage = category === 'image';
   const canPreview = canPreviewFile(category);
@@ -57,7 +57,7 @@ const FilePreviewItem: React.FC<FilePreviewItemProps> = ({ file, onRemove, image
                 status === 'uploading' && 'opacity-50'
               )}
             >
-              <FileIcon className={cn('mb-1 h-6 w-6', fileColor)} />
+              {React.createElement(fileIcon, { className: cn('mb-1 h-6 w-6', fileColor) })}
               <span className="text-muted-foreground w-full truncate text-center text-xs font-medium">
                 {fileExtension}
               </span>

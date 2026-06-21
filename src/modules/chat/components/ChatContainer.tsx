@@ -209,12 +209,14 @@ export default function ChatContainer() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [chatState.streamingMessageId, handleStopGeneration]);
 
-  // Update system context from session
-  useEffect(() => {
+  // Sync the editable system context whenever the loaded session changes.
+  const [prevSystemContext, setPrevSystemContext] = useState(sessionDetails?.system_context);
+  if (sessionDetails?.system_context !== prevSystemContext) {
+    setPrevSystemContext(sessionDetails?.system_context);
     if (sessionDetails?.system_context) {
       setSystemContext(sessionDetails.system_context);
     }
-  }, [sessionDetails]);
+  }
 
   // Determine if we should show the skeleton
   // NEVER show skeleton when navigating from welcome page (initialMessageId exists)

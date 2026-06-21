@@ -1,6 +1,6 @@
 import type { MessageRead, StreamingMessageRead } from '@/types/message';
 import { debounce } from 'lodash';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface ScrollManagementProps {
   scrollAreaRef: React.RefObject<HTMLDivElement | null>;
@@ -28,33 +28,30 @@ export function useScrollManagement({
   const shouldAutoScroll = useRef(true);
   const lastMessagesLength = useRef(messages.length);
 
-  // Create a ref for the debounced function
-  const debouncedScrollHandler = useRef(
-    debounce(
-      (
-        scrollArea: HTMLDivElement,
-        hasMore: boolean,
-        isFetching: boolean,
-        onFetch: () => void,
-        setShow: (show: boolean) => void
-      ) => {
-        const distanceFromBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
-        setShow(distanceFromBottom > 50);
+  // Create a stable debounced scroll handler once (useMemo avoids reading a ref's
+  // `.current` during render, which the react-hooks rules disallow).
+  const debouncedScrollHandler = useMemo(
+    () =>
+      debounce(
+        (
+          scrollArea: HTMLDivElement,
+          hasMore: boolean,
+          isFetching: boolean,
+          onFetch: () => void,
+          setShow: (show: boolean) => void
+        ) => {
+          const distanceFromBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
+          setShow(distanceFromBottom > 50);
 
-        // Update auto-scroll behavior based on user's scroll position
-        if (distanceFromBottom < 10) {
-          shouldAutoScroll.current = true;
-          userHasScrolled.current = false;
-        }
-
-        // Trigger pagination when near top
-        if (scrollArea.scrollTop <= 100 && hasMore && !isFetching) {
-          onFetch();
-        }
-      },
-      200
-    )
-  ).current;
+          // Trigger pagination when near top
+          if (scrollArea.scrollTop <= 100 && hasMore && !isFetching) {
+            onFetch();
+          }
+        },
+        200
+      ),
+    []
+  );
 
   // Handle manual scroll events
   const handleManualScroll = useCallback(() => {
@@ -67,6 +64,14 @@ export function useScrollManagement({
     if (streamingMessageId && distanceFromBottom > 100) {
       userHasScrolled.current = true;
       shouldAutoScroll.current = false;
+    }
+
+    // Re-enable auto-scroll once the user returns to the bottom. Done here (an event
+    // handler) rather than inside the debounced handler so refs aren't accessed from a
+    // function created during render.
+    if (distanceFromBottom < 10) {
+      shouldAutoScroll.current = true;
+      userHasScrolled.current = false;
     }
 
     debouncedScrollHandler(scrollArea, hasMoreMessages, isFetchingMore, onFetchMore, setShowScrollToBottom);

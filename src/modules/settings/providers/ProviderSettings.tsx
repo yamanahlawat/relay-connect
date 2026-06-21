@@ -65,15 +65,18 @@ export function ProviderSettings() {
 
   const router = useRouter();
 
-  // Check for add=true query parameter to open the dialog
-  useEffect(() => {
-    if (searchParams?.get('add') === 'true') {
-      handleAddProvider();
-      // Clean the URL to remove query parameters (prevents dialog reopening on refresh)
-      router.replace(window.location.pathname);
+  // Open the create dialog when deep-linked with ?add=true. Reacting to the param
+  // during render (with a previous-value guard) is the recommended alternative to a
+  // setState inside an effect.
+  const addParam = searchParams?.get('add');
+  const [prevAddParam, setPrevAddParam] = useState<string | null | undefined>(undefined);
+  if (addParam !== prevAddParam) {
+    setPrevAddParam(addParam);
+    if (addParam === 'true') {
+      setSelectedProvider(null);
+      setIsCreateDialogOpen(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router]);
+  }
 
   // Query for fetching providers
   const { data: providers = [], isLoading } = useProvidersQuery();
@@ -176,6 +179,14 @@ export function ProviderSettings() {
     });
     setIsCreateDialogOpen(true);
   };
+
+  // Remove the ?add=true param after it has been handled so the dialog doesn't
+  // reopen on refresh (side effect only — no local state updates).
+  useEffect(() => {
+    if (addParam === 'true') {
+      router.replace(window.location.pathname);
+    }
+  }, [addParam, router]);
 
   // Group providers by type
   const groupedProviders = useMemo(() => {

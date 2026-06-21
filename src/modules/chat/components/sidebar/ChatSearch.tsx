@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useIsMac } from '@/hooks/use-is-mac';
 import debounce from 'lodash/debounce';
 import { Search, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -14,13 +15,7 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearchRef = useRef<ReturnType<typeof debounce> | undefined>(undefined);
 
-  // Initialize to false so the server and initial client render match.
-  const [isMac, setIsMac] = useState(false);
-
-  useEffect(() => {
-    // Now that we're on the client, detect macOS.
-    setIsMac(/macintosh/i.test(navigator.userAgent));
-  }, []);
+  const isMac = useIsMac();
 
   // Create a stable debounced search function
   useEffect(() => {
@@ -66,7 +61,7 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
 
   return (
     <div className="relative w-full">
-      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
       <Input
         ref={searchInputRef}
         value={searchValue}
@@ -74,21 +69,21 @@ export function ChatSearch({ onSearch }: ChatSearchProps) {
         onChange={handleSearchChange}
         onFocus={() => setIsSearchFocused(true)}
         onBlur={() => setIsSearchFocused(false)}
-        className="h-9 w-full pl-9 pr-9"
+        className="h-9 w-full pr-9 pl-9"
       />
       {searchValue && (
         <Button
           onClick={handleClearSearch}
           variant="ghost"
           size="icon"
-          className="absolute right-2 top-2 h-5 w-5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          className="ring-offset-background absolute top-2 right-2 h-5 w-5 rounded-sm opacity-70 transition-opacity hover:opacity-100"
         >
           <X className="h-5 w-5" />
           <span className="sr-only">Clear search</span>
         </Button>
       )}
       {!searchValue && (
-        <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+        <kbd className="bg-muted pointer-events-none absolute top-2 right-2 hidden h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none sm:flex">
           <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span>K
         </kbd>
       )}

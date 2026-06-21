@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Brain, ChevronDown } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { MarkdownRenderer } from '../MarkdownRenderer';
 
 interface ReasoningBlockProps {
@@ -16,14 +16,15 @@ export function ReasoningBlockRenderer({ content, isStreaming = false }: Reasoni
   // Set initial state based on streaming status
   const [isOpen, setIsOpen] = useState(isStreaming ?? false);
 
-  // Auto-open when streaming starts, but don't auto-close when streaming ends
-  // This preserves user's manual open/close preference after completion
-  useEffect(() => {
+  // Auto-open when streaming starts, but don't auto-close when streaming ends, so the
+  // user's manual open/close preference is preserved after completion.
+  const [wasStreaming, setWasStreaming] = useState(isStreaming);
+  if (isStreaming !== wasStreaming) {
+    setWasStreaming(isStreaming);
     if (isStreaming) {
       setIsOpen(true);
     }
-    // Don't automatically close when streaming ends - let user control it
-  }, [isStreaming]);
+  }
 
   if (!content.trim()) {
     return null;

@@ -40,15 +40,21 @@ export function ChatInput({
   const isControlled = value !== undefined && onChange !== undefined;
   const currentValue = isControlled ? value : internalValue;
 
-  useEffect(() => {
-    if (editMessage) {
-      if (isControlled) {
-        onChange(editMessage);
-      } else {
-        setInternalValue(editMessage);
-      }
+  // Populate the input when an edit is requested. Uncontrolled: set local state here;
+  // controlled: notify the parent from the effect below.
+  const [prevEditMessage, setPrevEditMessage] = useState(editMessage);
+  if (editMessage !== prevEditMessage) {
+    setPrevEditMessage(editMessage);
+    if (editMessage && !isControlled) {
+      setInternalValue(editMessage);
     }
-  }, [isEditing, editMessage, isControlled, onChange]);
+  }
+
+  useEffect(() => {
+    if (editMessage && isControlled) {
+      onChange(editMessage);
+    }
+  }, [editMessage, isControlled, onChange]);
 
   const handleCancelEdit = () => {
     if (isControlled) {
@@ -178,7 +184,7 @@ export function ChatInput({
               onPaste={handlePaste}
               className={cn(
                 'min-h-[56px] w-full resize-none px-4 py-4',
-                'scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] overflow-y-auto',
+                'scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 max-h-[200px] scrollbar-thin overflow-y-auto',
                 'transition-[padding] duration-200 ease-in-out',
                 hasContent ? 'pr-20' : 'pr-4',
                 'border-0 focus-visible:ring-0',

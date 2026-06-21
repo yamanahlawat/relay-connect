@@ -90,12 +90,14 @@ export function InfiniteScrollSelect<T>({
     };
   }, []);
 
-  // Reset input when dropdown closes
-  useEffect(() => {
+  // Reset the search input whenever the dropdown closes.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setInputValue('');
     }
-  }, [open]);
+  }
 
   // Determine if we should show the loader
   const showLoader = isSearching || isLoading;
@@ -142,8 +144,8 @@ export function InfiniteScrollSelect<T>({
               className={showLoader ? 'pr-8' : ''}
             />
             {showLoader && (
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
               </div>
             )}
           </div>

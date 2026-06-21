@@ -22,8 +22,8 @@ const mcpServerSchema = z.object({
   command: z.string().min(1, 'Command/URL is required'),
   server_type: z.enum(['stdio', 'streamable_http'] as const).default('stdio'),
   enabled: z.boolean().default(true),
-  env: z.record(z.string()).optional(),
-  config: z.record(z.unknown()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 type MCPServerFormValues = z.infer<typeof mcpServerSchema>;
@@ -429,15 +429,11 @@ interface AddHTTPStreamableFieldsProps {
 }
 
 function AddHTTPStreamableFields({ form }: AddHTTPStreamableFieldsProps) {
-  const [headerKeys, setHeaderKeys] = useState<string[]>([]);
-
-  // Initialize header keys from config
-  useEffect(() => {
+  // Initialize header keys from the form's config once (lazy initializer, no effect).
+  const [headerKeys, setHeaderKeys] = useState<string[]>(() => {
     const config = form.getValues('config') as { headers?: Record<string, string> };
-    if (config?.headers) {
-      setHeaderKeys(Object.keys(config.headers));
-    }
-  }, [form]);
+    return config?.headers ? Object.keys(config.headers) : [];
+  });
 
   const addHeaderKey = () => {
     setHeaderKeys([...headerKeys, '']);

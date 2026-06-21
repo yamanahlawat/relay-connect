@@ -18,15 +18,13 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
   );
 
   // Enable the animation once, when this becomes the first post-transition message.
-  // Adjusting state during render (with a previous-value guard) is the recommended
-  // alternative to a synchronous setState in an effect.
   const [animatedTransition, setAnimatedTransition] = useState(false);
   if (isFirstMessageAfterTransition && !animatedTransition) {
     setAnimatedTransition(true);
     setShouldAnimate(true);
   }
 
-  // Disable the animation after it plays once (async setState in a timer).
+  // Disable the animation after it plays once.
   useEffect(() => {
     if (!shouldAnimate) return;
     const timer = setTimeout(() => setShouldAnimate(false), 500);

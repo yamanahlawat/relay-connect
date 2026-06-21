@@ -56,7 +56,7 @@ export default function MCPServers() {
 
   const hasServers = !!servers && servers.length > 0;
 
-  // Optimal popover height derived from the number of servers (clamped 200-400).
+  // Popover height scales with the number of servers, clamped to a sane range.
   const contentHeight = servers ? Math.max(200, Math.min(400, 140 + servers.length * 80)) : 0;
 
   const handleSettingsClick = () => {

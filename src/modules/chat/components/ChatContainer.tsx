@@ -209,8 +209,7 @@ export default function ChatContainer() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [chatState.streamingMessageId, handleStopGeneration]);
 
-  // Sync the editable system context whenever the loaded session changes. Adjusting
-  // state during render (with a previous-value guard) replaces the setState-in-effect.
+  // Sync the editable system context whenever the loaded session changes.
   const [prevSystemContext, setPrevSystemContext] = useState(sessionDetails?.system_context);
   if (sessionDetails?.system_context !== prevSystemContext) {
     setPrevSystemContext(sessionDetails?.system_context);

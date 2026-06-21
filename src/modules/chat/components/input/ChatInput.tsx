@@ -40,9 +40,8 @@ export function ChatInput({
   const isControlled = value !== undefined && onChange !== undefined;
   const currentValue = isControlled ? value : internalValue;
 
-  // Populate the input when an edit is requested. The uncontrolled case updates local
-  // state during render (previous-value guard); the controlled case notifies the parent
-  // from an effect (a prop callback, which is not local state).
+  // Populate the input when an edit is requested. Uncontrolled: set local state here;
+  // controlled: notify the parent from the effect below.
   const [prevEditMessage, setPrevEditMessage] = useState(editMessage);
   if (editMessage !== prevEditMessage) {
     setPrevEditMessage(editMessage);

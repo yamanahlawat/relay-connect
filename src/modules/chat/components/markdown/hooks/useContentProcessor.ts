@@ -6,6 +6,5 @@ import { ContentItem } from '@/types/stream';
  * @returns Processed content string
  */
 export function useContentProcessor(content: string | ContentItem[]) {
-  // Derived directly from props during render — no effect/state needed.
   return typeof content === 'string' ? content : String(content);
 }

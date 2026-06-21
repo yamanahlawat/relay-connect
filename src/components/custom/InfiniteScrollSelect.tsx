@@ -90,8 +90,7 @@ export function InfiniteScrollSelect<T>({
     };
   }, []);
 
-  // Reset the search input whenever the dropdown closes. Adjusting state during
-  // render with a previous-value guard is the recommended alternative to an effect.
+  // Reset the search input whenever the dropdown closes.
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);

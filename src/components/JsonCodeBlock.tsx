@@ -1,6 +1,9 @@
 import { useTheme } from 'next-themes';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+SyntaxHighlighter.registerLanguage('json', json);
 
 interface JsonCodeBlockProps {
   data: object;

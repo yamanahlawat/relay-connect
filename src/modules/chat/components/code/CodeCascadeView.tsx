@@ -4,7 +4,7 @@ import { useCodeCascade } from '@/stores/codeCascade';
 import { Loader2, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function CodeCascadeView() {
@@ -72,26 +72,26 @@ export function CodeCascadeView() {
 
   if (!activeCode && isStreaming) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-background p-4">
+      <div className="bg-background flex h-full flex-col items-center justify-center p-4">
         <div className="text-muted-foreground">Click on a code block to view it here</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="bg-background flex h-full flex-col">
       {/* Header remains the same */}
       <div className="flex h-11 items-center justify-between border-b px-3 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
             {language ? language.charAt(0).toUpperCase() + language.slice(1) : 'Code'}
           </span>
-          {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+          {isStreaming && <Loader2 className="text-primary h-3 w-3 animate-spin" />}
         </div>
 
         <div className="flex items-center gap-1">
           <CopyButton text={activeCode} className="h-7 w-7 opacity-100" />
-          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={clearCode}>
+          <Button variant="ghost" size="icon" className="hover:bg-muted h-7 w-7" onClick={clearCode}>
             <X className="h-3.5 w-3.5" />
           </Button>
         </div>

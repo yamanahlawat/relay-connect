@@ -17,8 +17,7 @@ export function ReasoningBlockRenderer({ content, isStreaming = false }: Reasoni
   const [isOpen, setIsOpen] = useState(isStreaming ?? false);
 
   // Auto-open when streaming starts, but don't auto-close when streaming ends, so the
-  // user's manual open/close preference is preserved after completion. Adjusting state
-  // during render (instead of in an effect) is the React-recommended pattern.
+  // user's manual open/close preference is preserved after completion.
   const [wasStreaming, setWasStreaming] = useState(isStreaming);
   if (isStreaming !== wasStreaming) {
     setWasStreaming(isStreaming);

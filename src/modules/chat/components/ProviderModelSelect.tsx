@@ -48,9 +48,7 @@ export default function ProviderModelSelect() {
   // Initialize selected model and track initial state for rollback
   useEffect(() => {
     if (selectedModelData && !seenModelIds.has(selectedModelData.id)) {
-      // Intentional: synchronize the local "seen models" set with the TanStack Query
-      // cache as the selected-model data arrives. Effects are the right tool for
-      // synchronizing with an external system (per the React docs).
+      // Seed the local "seen models" set as the selected-model data arrives from the cache.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeenModelIds((prev) => new Set([...prev, selectedModelData.id]));
       setSelectedModel(selectedModelData);
@@ -136,8 +134,7 @@ export default function ProviderModelSelect() {
 
     if (newIds.length === 0) return;
 
-    // Intentional: accumulate loaded model IDs from the query cache (an external system)
-    // so the selected model is only seeded into the list once.
+    // Accumulate loaded model IDs from the cache so the selected model is seeded only once.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSeenModelIds((prev) => new Set([...prev, ...newIds]));
   }, [models, seenModelIds]);

@@ -50,7 +50,8 @@ export function useProvidersWithLoadingQuery(enabled = true, options: UseProvide
 export function useProvidersQuery(isActive?: boolean) {
   return useQuery({
     queryKey: providerKeys.filtered(isActive, undefined, undefined, undefined),
-    queryFn: () => listProviders({ isActive, limit: 1000 }), // Fetch all providers at once for settings
+    // Backend caps `limit` at 100; providers are a small set, so this fetches all of them.
+    queryFn: () => listProviders({ isActive, limit: 100 }),
   });
 }
 

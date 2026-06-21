@@ -41,8 +41,8 @@ const mcpServerSchema = z.object({
   command: z.string().min(1, 'Command/URL is required'),
   server_type: z.enum(['stdio', 'streamable_http'] as const).default('stdio'),
   enabled: z.boolean().default(true),
-  env: z.record(z.string()).optional(),
-  config: z.record(z.unknown()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 type MCPServerFormValues = z.infer<typeof mcpServerSchema>;
@@ -53,14 +53,23 @@ export function MCPServerSettings() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Check for add=true query parameter to open the dialog
-  useEffect(() => {
-    if (searchParams?.get('add') === 'true') {
+  // Open the add dialog when deep-linked with ?add=true, reacting to the param during
+  // render (with a previous-value guard) instead of via a setState-in-effect.
+  const addParam = searchParams?.get('add');
+  const [prevAddParam, setPrevAddParam] = useState<string | null | undefined>(undefined);
+  if (addParam !== prevAddParam) {
+    setPrevAddParam(addParam);
+    if (addParam === 'true') {
       setIsAddDialogOpen(true);
-      // Clean the URL to remove query parameters (prevents dialog reopening on refresh)
+    }
+  }
+
+  // Remove the param after handling so the dialog doesn't reopen on refresh.
+  useEffect(() => {
+    if (addParam === 'true') {
       router.replace(window.location.pathname);
     }
-  }, [searchParams, router]);
+  }, [addParam, router]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState<MCPServerResponse | null>(null);
@@ -613,19 +622,20 @@ interface HTTPStreamableFieldsProps {
 }
 
 function HTTPStreamableFields({ form }: HTTPStreamableFieldsProps) {
-  const [headerKeys, setHeaderKeys] = useState<string[]>([]);
-
   // Watch for config changes to update header keys
   const config = form.watch('config') as { headers?: Record<string, string> } | undefined;
+  const configHeaderKeys = config?.headers ? Object.keys(config.headers) : [];
 
-  // Initialize header keys from config
-  useEffect(() => {
-    if (config?.headers) {
-      setHeaderKeys(Object.keys(config.headers));
-    } else {
-      setHeaderKeys([]);
-    }
-  }, [config]);
+  // Sync local header-key state when the watched config changes (compared by value).
+  // form.watch returns a new object each render, so guard on the joined key string to
+  // avoid an update loop — the recommended alternative to a setState-in-effect.
+  const [headerKeys, setHeaderKeys] = useState<string[]>(configHeaderKeys);
+  const [prevConfigKeys, setPrevConfigKeys] = useState(configHeaderKeys.join(' '));
+  const currentConfigKeys = configHeaderKeys.join(' ');
+  if (currentConfigKeys !== prevConfigKeys) {
+    setPrevConfigKeys(currentConfigKeys);
+    setHeaderKeys(configHeaderKeys);
+  }
 
   const addHeaderKey = () => {
     setHeaderKeys([...headerKeys, '']);

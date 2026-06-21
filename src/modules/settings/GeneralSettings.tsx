@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useIsClient } from '@/hooks/use-is-client';
 import { cn } from '@/lib/utils';
 import { LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 
 function ThemeItem({ theme, icon: Icon, label }: { theme: string; icon: LucideIcon; label: string }) {
   const { theme: currentTheme, setTheme } = useTheme();
@@ -28,13 +28,8 @@ function ThemeItem({ theme, icon: Icon, label }: { theme: string; icon: LucideIc
 }
 
 export function GeneralSettings() {
-  // State to track if component has mounted (client-side only)
-  const [mounted, setMounted] = useState(false);
-
-  // Set mounted to true on client-side only
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // True only after client-side hydration (prevents theme hydration mismatch).
+  const mounted = useIsClient();
 
   return (
     <div className="space-y-8">

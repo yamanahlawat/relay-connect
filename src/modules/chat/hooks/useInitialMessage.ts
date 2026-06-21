@@ -72,10 +72,10 @@ export function useInitialMessage({
   useEffect(() => {
     if (isError) {
       clearInitialMessageId();
-      setIsProcessing(false);
       toast.error(error instanceof Error ? error.message : 'Failed to fetch initial message');
     }
   }, [isError, error, clearInitialMessageId]);
 
-  return { initialMessage, isProcessing };
+  // Derive the processing flag so it reflects errors without a setState-in-effect.
+  return { initialMessage, isProcessing: isProcessing && !isError };
 }

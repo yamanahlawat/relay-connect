@@ -13,18 +13,25 @@ export function ChatMessage({ messages, role, isStreaming, onEditClick, editingM
   const [shouldAnimate, setShouldAnimate] = useState(false);
 
   // Determine if this is the first message after transitioning from welcome
-  const isFirstMessageAfterTransition =
-    initialMessageId && messages.some((msg) => msg.id === initialMessageId || msg.parent_id === initialMessageId);
+  const isFirstMessageAfterTransition = Boolean(
+    initialMessageId && messages.some((msg) => msg.id === initialMessageId || msg.parent_id === initialMessageId)
+  );
 
-  // Enable animation briefly after component mounts if this is the first message
+  // Enable the animation once, when this becomes the first post-transition message.
+  // Adjusting state during render (with a previous-value guard) is the recommended
+  // alternative to a synchronous setState in an effect.
+  const [animatedTransition, setAnimatedTransition] = useState(false);
+  if (isFirstMessageAfterTransition && !animatedTransition) {
+    setAnimatedTransition(true);
+    setShouldAnimate(true);
+  }
+
+  // Disable the animation after it plays once (async setState in a timer).
   useEffect(() => {
-    if (isFirstMessageAfterTransition) {
-      setShouldAnimate(true);
-      // Disable animation after it plays once
-      const timer = setTimeout(() => setShouldAnimate(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isFirstMessageAfterTransition]);
+    if (!shouldAnimate) return;
+    const timer = setTimeout(() => setShouldAnimate(false), 500);
+    return () => clearTimeout(timer);
+  }, [shouldAnimate]);
 
   // Combine attachments from all messages in the group (for user messages)
   const attachments =

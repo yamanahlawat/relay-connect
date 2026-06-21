@@ -2,16 +2,10 @@
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useEffect, useState } from 'react';
+import { useIsMac } from '@/hooks/use-is-mac';
 
 export function SidebarToggle({ className }: { className?: string }) {
-  // Initialize to false so the server and initial client render match.
-  const [isMac, setIsMac] = useState(false);
-
-  useEffect(() => {
-    // Now that we're on the client, detect macOS.
-    setIsMac(/macintosh/i.test(navigator.userAgent));
-  }, []);
+  const isMac = useIsMac();
 
   return (
     <TooltipProvider delayDuration={200} skipDelayDuration={0}>

@@ -5,6 +5,7 @@ import { SettingsButton } from '@/components/SettingsButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMac } from '@/hooks/use-is-mac';
 import { updateChatSession } from '@/lib/api/chatSessions';
 import type { components } from '@/lib/api/schema';
 import { useModelQuery, useModelsWithLoadingQuery } from '@/lib/queries/models';
@@ -47,6 +48,10 @@ export default function ProviderModelSelect() {
   // Initialize selected model and track initial state for rollback
   useEffect(() => {
     if (selectedModelData && !seenModelIds.has(selectedModelData.id)) {
+      // Intentional: synchronize the local "seen models" set with the TanStack Query
+      // cache as the selected-model data arrives. Effects are the right tool for
+      // synchronizing with an external system (per the React docs).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeenModelIds((prev) => new Set([...prev, selectedModelData.id]));
       setSelectedModel(selectedModelData);
 
@@ -131,6 +136,9 @@ export default function ProviderModelSelect() {
 
     if (newIds.length === 0) return;
 
+    // Intentional: accumulate loaded model IDs from the query cache (an external system)
+    // so the selected model is only seeded into the list once.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSeenModelIds((prev) => new Set([...prev, ...newIds]));
   }, [models, seenModelIds]);
 
@@ -229,11 +237,7 @@ export default function ProviderModelSelect() {
   const isUpdating = sessionId ? updateSessionMutation.isPending : false;
 
   // Platform detection for keyboard shortcuts
-  const [isMac, setIsMac] = useState(false);
-
-  useEffect(() => {
-    setIsMac(/macintosh/i.test(navigator.userAgent));
-  }, []);
+  const isMac = useIsMac();
 
   // Keyboard shortcut for new chat
   useEffect(() => {

@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import { MCPServerResponse } from '@/types/mcp';
 import { CircuitBoard, Loader2, PocketKnife, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 // Component to show the "No servers" message
 function NoActiveServers({ onSettingsClick }: { onSettingsClick: () => void }) {
@@ -53,25 +52,12 @@ function ServerStatusIcon({ isLoading, hasServers }: { isLoading: boolean; hasSe
 export default function MCPServers() {
   const { data: servers, isLoading } = useListMCPServersQuery();
   const toggleMutation = useMCPServerToggleMutation();
-  const [contentHeight, setContentHeight] = useState<number>(0);
   const router = useRouter();
 
   const hasServers = !!servers && servers.length > 0;
 
-  // Calculate optimal height based on content
-  useEffect(() => {
-    if (!servers) return;
-
-    // Base height for header and settings button
-    let height = 140;
-
-    // Add height for each server section
-    height += servers.length * 80;
-
-    // Cap at maximum height and ensure minimum height
-    const finalHeight = Math.max(200, Math.min(400, height));
-    setContentHeight(finalHeight);
-  }, [servers]);
+  // Optimal popover height derived from the number of servers (clamped 200-400).
+  const contentHeight = servers ? Math.max(200, Math.min(400, 140 + servers.length * 80)) : 0;
 
   const handleSettingsClick = () => {
     router.push('/settings/mcp-servers');
